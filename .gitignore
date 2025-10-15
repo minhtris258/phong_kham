@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# builds
+dist/
+build/
+client/dist/
+server/dist/
+
+# env & secrets
+.env
+.env.*
+client/.env
+server/.env
+
+# logs & caches
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+.cache/
+.tmp/
+
+# editor & misc
+.DS_Store
+.vscode/
+.idea/
+coverage/
+uploads/
