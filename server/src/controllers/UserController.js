@@ -1,5 +1,9 @@
-// GET /api/users/:id
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import User from "../models/UserModel.js";
+import Role from "../models/RoleModel.js";
+import Patient from "../models/PatientModel.js";
+import Doctor from "../models/DoctorModel.js";
 
 export const getUser = async (req, res) => {
   const { id } = req.params;
@@ -12,35 +16,96 @@ export const getUser = async (req, res) => {
   }
 };
 
-// POST /api/registerpublic
-export const registerPublic = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
-    const{ name, email, password } = req.body;
-    if(!name || !email || !password){
-      return res.status(400).json({ message: "Thiếu thông tin" });// 400: Yêu cầu không hợp lệ
+    const {email, password} =  req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Thiếu email hoặc password" });
+    }
+    const user = await User.findOne({ email }).populate("role_id", "name");
+    if(!user) return res.status(401).json({ error: "Email hoặc password không đúng" });
 
-      const existingUser = await User.findOne({ email });
-      if(existingUser){
-        return res.status(409).json({ message: "Email đã được sử dụng" });// 409: Xung đột
-      }
-      const patientRole = await Role.findOne({ name: "patient" });
-      if(!patientRole){
-        return res.status(500).json({ message: "Vai trò bệnh nhân không tồn tại" });// 500: Lỗi server
+    const isMatch =  await bcrypt.compare(password, user.password);
+    if(!isMatch) return res.status(401).json({ error: "Email hoặc password không đúng" });
 
-        const hash = await bcrypt.hash(password, 10);
-        const User = await User.create({
-          name,
-          email,
-          password: hash,
-          role_id: patientRole._id
-        });// Mặc định vai trò là bệnh nhân
-        await User.save();
-      }
-      res.status(201).json(patientRole);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    const token = jwt.sign(
+      {
+        _id: user._id,
+        email: user.email,
+        role: user.role_id.name,
+        status: user.status || "pending_profile",
+        profile_completed: !!user.profile_completed
+      },
+      process.env.JWT_SECRET || "minhtris_secret",
+      { expiresIn: "7d" }
+    );
+
+    return res.status(200).json({
+      message: "Đăng nhập thành công",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role_id.name,
+        status: user.status || "pending_profile",
+        profile_completed: !!user.profile_completed
+      },
+      next: (!user.profile_completed ? "/onboarding/profile" : "/dashboard")
+    });
+  } catch (e) { next(e); }
 };
+// POST /api/registerpublic
+export async function registerPublic(req, res, next) {
+  try {
+    const { name, email, password } = req.body; // Chỉ cần 3 thông tin này
+    if (!name || !email || !password)
+      return res.status(400).json({ error: "Thiếu name|email|password" });
+
+    const existed = await User.findOne({ email });
+    if (existed) return res.status(409).json({ error: "Email đã tồn tại" });
+
+    const patientRole = await Role.findOne({ name: "patient" });
+    if (!patientRole) return res.status(500).json({ error: "Chưa seed role 'patient'" });
+
+    const hash = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      name,
+      email,
+      password: hash,
+      role_id: patientRole._id,
+      profile_completed: false,
+      status: "pending_profile"
+    });
+ const token = jwt.sign(
+      {
+        _id: user._id,
+        email: user.email,
+        role: "patient",
+        status: "pending_profile",
+        profile_completed: false
+      },
+      process.env.JWT_SECRET || "minhtris_secret",
+      { expiresIn: "7d" }
+    );
+
+    return res.status(201).json({
+      message: "Đăng ký thành công. Vui lòng hoàn tất hồ sơ bệnh nhân.",
+      token, // FE lưu token để gọi API bước 2
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: "patient",
+        status: "pending_profile",
+        profile_completed: false
+      },
+      next: "/onboarding/profile" // 👈 gợi ý điều hướng
+    });
+  } catch (e) { next(e); }
+};
+
+
 
 // POST /api/users
 export const createUser = async (req, res) => {

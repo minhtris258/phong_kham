@@ -1,5 +1,5 @@
 import express from "express";
-import { getSpecialty, createSpecialty } from "../controllers/SpecialtiesController.js";
+import { getSpecialties, createSpecialty, updateSpecialty, deleteSpecialty } from "../controllers/SpecialtiesController.js";
 
 const router = express.Router();
 
