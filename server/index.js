@@ -1,12 +1,14 @@
-import express from 'express';
+import "dotenv/config";
+import app from "./src/app.js";
+import connectDB from "./config/database.js";
 
-const app = express();
+const PORT = process.env.PORT || 5000;
 
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-});
+const start = async () => {
+  await connectDB();                 // kết nối DB trước
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+  });
+};
 
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+start();
