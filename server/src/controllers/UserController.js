@@ -58,7 +58,7 @@ export const login = async (req, res, next) => {
 // POST /api/registerpublic
 export async function registerPublic(req, res, next) {
   try {
-    const { name, email, password } = req.body; // Chỉ cần 3 thông tin này
+    const { name, email, password } = req.body;
     if (!name || !email || !password)
       return res.status(400).json({ error: "Thiếu name|email|password" });
 
@@ -110,13 +110,14 @@ export async function registerPublic(req, res, next) {
 // POST /api/users
 export const createUser = async (req, res) => {
   try {
-    const { _id, name, email, image, role_id, password } = req.body;
+    const { _id, name, email, role_id, password } = req.body;
     const newUser = await User.create({ _id, name, email, image, role_id, password });
     res.status(201).json(newUser);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // Put //api/users/:id
 export const updateUser = async (req, res) => {

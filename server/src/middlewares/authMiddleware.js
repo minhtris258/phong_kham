@@ -1,55 +1,124 @@
+// middlewares/auth.js
 import jwt from "jsonwebtoken";
 import Patient from "../models/PatientModel.js";
+import Doctor from "../models/DoctorModel.js";
 
-/** Xác thực JWT */
+/** Xác thực JWT. Đọc Bearer token trước, rồi mới đến cookie `token`. */
 export const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization || req.headers.Authorization;
+  const headerVal = req.headers.authorization || req.headers.Authorization;
   let token = null;
 
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    token = authHeader.split(" ")[1];
+  if (typeof headerVal === "string" && headerVal.startsWith("Bearer ")) {
+    token = headerVal.slice(7);
   } else if (req.cookies?.token) {
-    // nếu bạn dùng cookie, thêm cookie-parser ở app.js
     token = req.cookies.token;
   }
 
   if (!token) return res.status(401).json({ message: "Chưa đăng nhập" });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "minhtris_secret");
-    // decoded nên gồm: { _id, email, role, status, profile_completed, iat, exp }
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "minhtris_secret",
+      { clockTolerance: 5 } // giây, tránh lệch giờ nhỏ
+    );
+    // decoded mong muốn: { _id, email, role, status, profile_completed, iat, exp }
     req.user = decoded;
-    next();
-  } catch (e) {
+    return next();
+  } catch {
     return res.status(401).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
   }
 };
 
-/** Bắt buộc có hồ sơ bệnh nhân trước khi dùng các chức năng chính.
- *  Middleware này phải chạy SAU verifyToken.
- */
+/** Tuỳ chọn: không bắt buộc đăng nhập nhưng nếu có token thì parse vào req.user */
+export const optionalAuth = (req, res, next) => {
+  const headerVal = req.headers.authorization || req.headers.Authorization;
+  let token = null;
+
+  if (typeof headerVal === "string" && headerVal.startsWith("Bearer ")) {
+    token = headerVal.slice(7);
+  } else if (req.cookies?.token) {
+    token = req.cookies.token;
+  }
+
+  if (!token) return next();
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "minhtris_secret",
+      { clockTolerance: 5 }
+    );
+    req.user = decoded;
+  } catch {
+    // token sai thì vẫn cho qua như chưa đăng nhập
+  }
+  return next();
+};
+
+/** Yêu cầu user có 1 trong các role */
+export const requireRole = (roles = []) => (req, res, next) => {
+  const role = req.user?.role || req.user?.role?.name;
+  if (!role) return res.status(401).json({ error: "Unauthorized" });
+  if (!roles.includes(role)) return res.status(403).json({ error: "Không đủ quyền" });
+  return next();
+};
+
+
+/** Chính chủ hoặc admin (so sánh `:id` trên params với `req.user._id`) */
+export const selfOrAdmin = (req, res, next) => {
+  if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+  const role = req.user.role || req.user.role?.name;
+  if (role === "admin") return next();
+  if (String(req.user._id) === String(req.params.id)) return next();
+  return res.status(403).json({ message: "Forbidden" });
+};
+
+/** Bắt buộc hồ sơ bệnh nhân đã tồn tại (dùng cho các tính năng cần profile) */
 export const checkPatientProfile = async (req, res, next) => {
   try {
-    const userRole = req.user.role;
-    // Nếu không phải bệnh nhân -> cho qua
-    if (userRole !== "patient") return next();
+    const role = req.user?.role || req.user?.role?.name;
+    if (role !== "patient") return next();
 
-    // Nếu token đã cho biết đã hoàn tất -> cho qua (tránh query DB)
-    if (req.user.profile_completed === true) return next();
+    // Nếu token đã có profile_completed = true thì cho qua nhanh
+    if (req.user?.profile_completed === true) return next();
 
-    // Chưa rõ hoặc chưa hoàn tất: kiểm tra DB
-    const userId = req.user._id; // chú ý: _id chứ không phải id
-    const patient = await Patient.findOne({ user_id: userId }).lean();
+    const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    if (!patient) {
+    const profile = await Patient.findOne({ user_id: userId }).lean();
+    if (!profile) {
       return res.status(403).json({
         code: "PROFILE_INCOMPLETE",
         message: "Bạn phải hoàn thiện hồ sơ bệnh nhân để tiếp tục."
       });
     }
-
-    next();
+    return next();
   } catch (e) {
-    next(e);
+    return next(e);
+  }
+};
+
+/** Tương tự cho bác sĩ — dùng cho trang/route của doctor */
+export const checkDoctorProfile = async (req, res, next) => {
+  try {
+    const role = req.user?.role || req.user?.role?.name;
+    if (role !== "doctor") return next();
+
+    if (req.user?.profile_completed === true) return next();
+
+    const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const profile = await Doctor.findOne({ user_id: userId }).lean();
+    if (!profile) {
+      return res.status(403).json({
+        code: "PROFILE_INCOMPLETE",
+        message: "Bạn phải hoàn thiện hồ sơ bác sĩ để tiếp tục."
+      });
+    }
+    return next();
+  } catch (e) {
+    return next(e);
   }
 };

@@ -9,6 +9,8 @@ import patientsRoutes from "./routes/PatientRoutes.js";
 import userRoutes from "./routes/UserRoutes.js";
 import roleRoutes from "./routes/RoleRoutes.js";
 import specialtyRoutes from "./routes/SpecialtiesRoutes.js";
+import DoctorRoutes from "./routes/DoctorRoutes.js";
+import DoctorScheduleRoutes from "./routes/DoctorScheduleRoutes.js";
 
 // Load biến môi trường
 dotenv.config();
@@ -31,13 +33,15 @@ app.get("/health/db", (_req, res) => {
 });
 
 // Route mặc định
-app.get("/", (_req, res) => res.send("🚀 PHONG-KHAM API is ready"));
+app.get("/", (_req, res) => res.send("PHONG-KHAM API is ready"));
 
 // Import và sử dụng các routes
 app.use("/api/users", userRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/specialties", specialtyRoutes);
 app.use("/api/patients", patientsRoutes);
+app.use("/api/doctors", DoctorRoutes);
+app.use("/api/doctor-schedules", DoctorScheduleRoutes);
 
 // 404 fallback
 app.use((_req, res) => res.status(404).json({ message: "Endpoint not found" }));

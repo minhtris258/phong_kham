@@ -1,11 +1,20 @@
 import express from "express";
-import { getSpecialties, createSpecialty, updateSpecialty, deleteSpecialty } from "../controllers/SpecialtiesController.js";
+import {
+    listSpecialties,   
+    getSpecialtyById,
+    createSpecialty,
+    updateSpecialty,
+    deleteSpecialty
+} from "../controllers/SpecialtyController.js";
+import {verifyToken, requireRole} from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getSpecialties);
-router.post("/", createSpecialty);
-router.put("/:id", updateSpecialty);
-router.delete("/:id", deleteSpecialty);
+router.get("/", listSpecialties);
+router.get("/:id", getSpecialtyById);
+
+router.post("/", verifyToken, requireRole(["admin"]), createSpecialty);
+router.put("/:id", verifyToken, requireRole(["admin"]), updateSpecialty);
+router.delete("/:id", verifyToken, requireRole(["admin"]), deleteSpecialty);
 
 export default router;
