@@ -6,7 +6,7 @@ const timeslotSchema = new mongoose.Schema(
         date: { type: Date, required: true },
         start: { type: String, required: true },
         end: { type: String, required: true },
-        status: { type: String, enum: ["available", "booked", "unavailable"], default: "available",index: true },
+        status: { type: String, enum: ["free", "held", "booked", "cancelled"], default: "free", index: true },
         appointment_id: { type: mongoose.Schema.Types.ObjectId, ref: "Appointment", default: null },
     },
     { timestamps: true }
