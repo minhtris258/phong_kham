@@ -1,4 +1,4 @@
-Hướng Dẫn Quy Trình Git cho Dự Án Shopee Clone
+Hướng Dẫn Quy Trình Git cho Dự Án phòng khám
 
 Tài liệu này mô tả quy trình sử dụng Git để đóng góp vào dự án Shopee Clone.
 
