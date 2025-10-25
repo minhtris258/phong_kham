@@ -14,6 +14,7 @@ import DoctorScheduleRoutes from "./routes/DoctorScheduleRoutes.js";
 import TimeSlotRoutes from "./routes/TimeSlotRoutes.js";
 import appointmentRoutes from "./routes/AppointmentRoutes.js";
 import visitRoutes from "./routes/VisitRoutes.js";
+import RatingRoutes from "./routes/RatingRoutes.js";
 
 // Load biến môi trường
 dotenv.config();
@@ -48,6 +49,7 @@ app.use("/api/doctors", DoctorRoutes);
 app.use("/api/doctor-schedules", DoctorScheduleRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/visits", visitRoutes);
+app.use("/api/ratings", RatingRoutes);
 
 // 404 fallback
 app.use((_req, res) => res.status(404).json({ message: "Endpoint not found" }));
