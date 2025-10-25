@@ -89,7 +89,10 @@ export const getDoctorSlotsByDate = async (req, res, next) => {
     if (isNaN(day.getTime())) return res.status(400).json({ error: "Định dạng date không hợp lệ" });
 
     const weekday = day.getUTCDay(); // 0..6
-    const baseRanges = schedule.weekly_template?.[weekday] || [];
+    const week = schedule.weekly_schedule || [];
+    const weekdayName = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][weekday];
+    const dayDef = week.find(d => d.dayOfWeek === weekdayName);
+    const baseRanges = dayDef?.timeRanges || [];
 
     // tìm exception của ngày này (theo string YYYY-MM-DD)
     const exception = (schedule.exceptions || []).find(ex => ex.date === date);
@@ -127,7 +130,7 @@ export const getMySchedule = async (req, res, next) => {
     const role = req.user?.role || req.user?.role?.name;
     if (role !== "doctor") return res.status(403).json({ error: "Chỉ bác sĩ được truy cập." });
 
-    const schedule = await DoctorSchedule.findOne({ doctor_id: req.user._id }).lean();
+    const schedule = await DoctorSchedule.findOne({ doctor_id: req.doctor._id }).lean();
     if (!schedule) return res.status(404).json({ error: "Bạn chưa cấu hình lịch." });
 
     return res.json({ schedule });
@@ -144,7 +147,7 @@ export const upsertMySchedule = async (req, res, next) => {
     const role = req.user?.role || req.user?.role?.name;
     if (role !== "doctor") return res.status(403).json({ error: "Chỉ bác sĩ được cập nhật." });
 
-    const { slot_minutes, weekly_template, exceptions } = req.body || {};
+    const { slot_minutes, weekly_schedule, exceptions } = req.body || {};
 
     // validate cơ bản
     if (slot_minutes && (typeof slot_minutes !== "number" || slot_minutes < 5 || slot_minutes > 240)) {
@@ -152,11 +155,11 @@ export const upsertMySchedule = async (req, res, next) => {
     }
 
     const updated = await DoctorSchedule.findOneAndUpdate(
-      { doctor_id: req.user._id },
+      { doctor_id: req.doctor._id },
       {
         $set: {
           ...(slot_minutes ? { slot_minutes } : {}),
-          ...(weekly_template ? { weekly_template } : {}),
+          ...(weekly_schedule ? { weekly_schedule } : {}),
           ...(exceptions ? { exceptions } : {}),
         },
       },
@@ -180,13 +183,13 @@ export const upsertMyException = async (req, res, next) => {
     const { date, isDayOff = false, add = [], removeSlot = [] } = req.body || {};
     if (!date) return res.status(400).json({ error: "Thiếu date" });
 
-    const schedule = await DoctorSchedule.findOne({ doctor_id: req.user._id });
+    const schedule = await DoctorSchedule.findOne({ doctor_id: req.doctor._id });
     if (!schedule) {
       // tạo mới nếu chưa có
       const created = await DoctorSchedule.create({
-        doctor_id: req.user._id,
+        doctor_id: req.doctor._id,
         slot_minutes: 30,
-        weekly_template: {},
+        weekly_schedule: [],
         exceptions: [{ date, isDayOff, add, removeSlot }],
       });
       return res.status(200).json({ message: "Lưu thành công.", schedule: created });

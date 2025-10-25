@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Timeslot from "../models/TimeslotModel.js";
+import TimeSlot from "../models/TimeslotModel.js";
 import Appointment from "../models/AppointmentModel.js";
 
 export const bookAppointment = async (req, res, next) => {
@@ -7,17 +7,20 @@ export const bookAppointment = async (req, res, next) => {
   try {
     const role = req.user?.role || req.user?.role?.name;
     if (role !== "patient") {
-      return res.status(403).json({ error: "Chỉ bệnh nhân mới được đặt lịch." });
+      return res
+        .status(403)
+        .json({ error: "Chỉ bệnh nhân mới được đặt lịch." });
     }
 
     const { timeslot_id, reason = "" } = req.body || {};
-    if (!timeslot_id) return res.status(400).json({ error: "Thiếu timeslot_id" });
+    if (!timeslot_id)
+      return res.status(400).json({ error: "Thiếu timeslot_id" });
 
     let created; // giữ appointment tạo ra
 
     await session.withTransaction(async () => {
       // 1) Giữ chỗ slot nếu còn "free"
-      const slot = await Timeslot.findOneAndUpdate(
+      const slot = await TimeSlot.findOneAndUpdate(
         { _id: timeslot_id, status: "free" },
         { $set: { status: "held" } },
         { new: true, session }
@@ -42,14 +45,16 @@ export const bookAppointment = async (req, res, next) => {
       created = appt;
 
       // 3) Đánh dấu slot đã book
-      await Timeslot.updateOne(
+      await TimeSlot.updateOne(
         { _id: slot._id },
         { $set: { status: "booked", appointment_id: appt._id } },
         { session }
       );
     });
 
-    return res.status(201).json({ message: "Đặt lịch thành công.", appointment: created });
+    return res
+      .status(201)
+      .json({ message: "Đặt lịch thành công.", appointment: created });
   } catch (e) {
     if (e.message === "SLOT_NOT_AVAILABLE") {
       return res.status(409).json({ error: "Khung giờ không khả dụng." });
@@ -71,7 +76,9 @@ export const cancelAppointment = async (req, res, next) => {
       if (!appt) throw new Error("NOT_FOUND");
 
       // chỉ admin hoặc chính chủ patient
-      if (!(role === "admin" || String(appt.patient_id) === String(req.user._id))) {
+      if (
+        !(role === "admin" || String(appt.patient_id) === String(req.user._id))
+      ) {
         throw new Error("FORBIDDEN");
       }
 
@@ -82,7 +89,7 @@ export const cancelAppointment = async (req, res, next) => {
       appt.status = "cancelled";
       await appt.save({ session });
 
-      await Timeslot.updateOne(
+      await TimeSlot.updateOne(
         { _id: appt.timeslot_id, appointment_id: appt._id },
         { $set: { status: "free", appointment_id: null } },
         { session }
@@ -91,8 +98,10 @@ export const cancelAppointment = async (req, res, next) => {
       return res.json({ message: "Huỷ lịch thành công." });
     });
   } catch (e) {
-    if (e.message === "NOT_FOUND") return res.status(404).json({ error: "Không tìm thấy lịch hẹn." });
-    if (e.message === "FORBIDDEN") return res.status(403).json({ error: "Không đủ quyền." });
+    if (e.message === "NOT_FOUND")
+      return res.status(404).json({ error: "Không tìm thấy lịch hẹn." });
+    if (e.message === "FORBIDDEN")
+      return res.status(403).json({ error: "Không đủ quyền." });
     next(e);
   } finally {
     session.endSession();
@@ -102,7 +111,8 @@ export const cancelAppointment = async (req, res, next) => {
 export const myAppointments = async (req, res, next) => {
   try {
     const role = req.user?.role || req.user?.role?.name;
-    if (role !== "patient") return res.status(403).json({ error: "Chỉ bệnh nhân." });
+    if (role !== "patient")
+      return res.status(403).json({ error: "Chỉ bệnh nhân." });
 
     const items = await Appointment.find({ patient_id: req.user._id })
       .sort({ createdAt: -1 })

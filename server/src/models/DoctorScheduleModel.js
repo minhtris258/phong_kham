@@ -10,7 +10,7 @@ const TimeRangeSchema = new mongoose.Schema(
  const WeeklyScheduleSchema = new mongoose.Schema(
     {
         dayOfWeek: { type: String, enum: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], required: true },
-        timeRanges: { type: [TimeRangeSchema], required: true },
+        timeRanges: { type: [TimeRangeSchema], default: [] }, 
     },
     { _id: false }
 );
@@ -18,7 +18,7 @@ const TimeRangeSchema = new mongoose.Schema(
 const ExceptionSchema = new mongoose.Schema(
     {
         date: { type: String, required: true },
-        isDayOff: { type: Boolean, required: true },
+        isDayOff: { type: Boolean, default: false },
         add: { type: [TimeRangeSchema], default: [] },
         removeSlot: { type: [TimeRangeSchema], default: [] },
     },
@@ -27,7 +27,7 @@ const ExceptionSchema = new mongoose.Schema(
 const doctorScheduleSchema = new mongoose.Schema({
     doctor_id: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true, unique: true, index: true },
     slot_minutes: { type: Number, required: true, default: 30 },
-    weekly_schedule: { type: [WeeklyScheduleSchema], required: true },
+    weekly_schedule: { type: [WeeklyScheduleSchema], default: [] },
     exceptions: { type: [ExceptionSchema], default: [] },
 }, { timestamps: true }
 );

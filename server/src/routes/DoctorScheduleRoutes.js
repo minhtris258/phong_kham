@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { verifyToken, requireRole } from "../middlewares/authMiddleware.js";
+import { attachDoctor } from "../middlewares/attachDoctor.js";
 import {
     getDoctorSchedule,
   getDoctorSlotsByDate,
@@ -10,9 +11,9 @@ import {
 
 const router = Router();
 
-router.get("/me/schedule", verifyToken, requireRole(["doctor"]), getMySchedule);
-router.post("/me/schedule", verifyToken, requireRole(["doctor"]), upsertMySchedule);
-router.post("/me/schedule/exceptions", verifyToken, requireRole(["doctor"]), upsertMyException);
+router.get("/me/schedule",  verifyToken, requireRole(["doctor"]),attachDoctor, getMySchedule);
+router.post("/me/schedule",  verifyToken, requireRole(["doctor"]),attachDoctor, upsertMySchedule);
+router.post("/me/schedule/exceptions",  verifyToken, requireRole(["doctor"]),attachDoctor, upsertMyException);
 
 router.get("/:doctorId", getDoctorSchedule);
 router.get("/:doctorId/slots", getDoctorSlotsByDate);
