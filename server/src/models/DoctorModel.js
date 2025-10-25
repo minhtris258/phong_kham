@@ -13,6 +13,7 @@ const doctorSchema = new mongoose.Schema({
     thumbnail: { type: String, default: "" },
     specialty_id: { type: mongoose.Schema.Types.ObjectId, ref: "Specialty", required: true },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
+    consultation_fee: { type: Number, default: 0, min: 0 },
 }, {timestamps: true}
 );
 const Doctor = mongoose.model("Doctor", doctorSchema);

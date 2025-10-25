@@ -96,6 +96,7 @@ export const completeDoctorProfile = async (req, res, next) => {
       note,
       thumbnail,
       specialty_id,
+      consultation_fee
     } = req.body;
 
     if (!fullName || !dob || !gender || !phone || !address || !specialty_id) {
@@ -142,6 +143,7 @@ export const completeDoctorProfile = async (req, res, next) => {
       thumbnail: thumbnail || "",
       specialty_id,
       status: "active",
+      consultation_fee,
     });
 
     await User.updateOne(
@@ -235,6 +237,7 @@ export const updateMyDoctorProfile = async (req, res, next) => {
       "note",
       "thumbnail",
       "specialty_id",
+      "consultation_fee"
     ]);
 
     const payload = {};
