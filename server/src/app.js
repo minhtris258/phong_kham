@@ -6,6 +6,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import patientsRoutes from "./routes/PatientRoutes.js";
 
+import authRoutes from "./routes/AuthRoutes.js";
 import userRoutes from "./routes/UserRoutes.js";
 import roleRoutes from "./routes/RoleRoutes.js";
 import specialtyRoutes from "./routes/SpecialtiesRoutes.js";
@@ -16,6 +17,7 @@ import appointmentRoutes from "./routes/AppointmentRoutes.js";
 import visitRoutes from "./routes/VisitRoutes.js";
 import RatingRoutes from "./routes/RatingRoutes.js";
 import PostRoutes from "./routes/PostRoutes.js";
+import NotificationRoutes from "./routes/NotificationRoutes.js";
 
 // Load biến môi trường
 dotenv.config();
@@ -41,6 +43,7 @@ app.get("/health/db", (_req, res) => {
 app.get("/", (_req, res) => res.send("PHONG-KHAM API is ready"));
 
 // Import và sử dụng các routes
+app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/specialties", specialtyRoutes);
@@ -52,6 +55,7 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api/visits", visitRoutes);
 app.use("/api/ratings", RatingRoutes);
 app.use("/api/posts", PostRoutes);
+app.use("/api/notifications", NotificationRoutes);
 
 // 404 fallback
 app.use((_req, res) => res.status(404).json({ message: "Endpoint not found" }));
