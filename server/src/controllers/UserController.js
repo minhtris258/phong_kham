@@ -36,7 +36,7 @@ export const login = async (req, res, next) => {
         status: user.status || "pending_profile",
         profile_completed: !!user.profile_completed
       },
-      process.env.JWT_SECRET || "minhtris_secret",
+      process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
@@ -85,7 +85,7 @@ export async function registerPublic(req, res, next) {
         status: "pending_profile",
         profile_completed: false
       },
-      process.env.JWT_SECRET || "minhtris_secret",
+      process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 

@@ -14,7 +14,7 @@ export const createPost = async (req, res) => {
       status: payload.status || "draft",
       published_at: payload.status === "published" ? new Date() : null,
       excerpt: payload.excerpt || "",
-      author: req.user.id,
+      author: req.user._id,
     });
 
     const saved = await newPost.save();
@@ -145,7 +145,7 @@ export async function relatedPosts(req, res) {
         status: "published",
         $text: { $search: base.name },
       })
-        .project({ score: { $meta: "textScore" }, name: 1, slug: 1, thumbnail: 1, excerpt: 1, published_at: 1 })
+        .select({ score: { $meta: "textScore" }, name: 1, slug: 1, thumbnail: 1, excerpt: 1, published_at: 1 })
         .sort({ score: { $meta: "textScore" } })
         .limit(6)
         .lean();
