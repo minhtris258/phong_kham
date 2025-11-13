@@ -1,19 +1,32 @@
-import React from 'react';
+// src/components/Title.jsx
+import React from "react";
 
-const Title = ({ title, align, font }) => {
+
+export default function Title({
+  children,
+  size = "md",
+  align = "center",
+  colorClass = "color-title",
+  as: Tag = "h2",
+  className = "",
+}) {
+  const sizeMap = {
+    sm: "text-xl lg:text-3xl",
+    md: "text-2xl lg:text-4xl", 
+    lg: "text-3xl lg:text-5xl",
+  };
+
+  const alignMap = {
+    left: "text-left",
+    center: "text-center",
+    right: "text-right",
+  };
+
   return (
-    <div
-      className={`flex flex-col justify-center items-center text-center ${
-        align === "left" && "md:items-start md:text-left"
-      }`}
+    <Tag
+      className={`${sizeMap[size]} font-bold py-4 mb-8 ${colorClass} ${alignMap[align]} ${className}`}
     >
-      <h1
-        className={`text-4xl md:text-[40px] ${font || "font-playfair"}`}
-      >
-        {title}
-      </h1>
-    </div>
+      {children}
+    </Tag>
   );
-};
-
-export default Title;
+}
