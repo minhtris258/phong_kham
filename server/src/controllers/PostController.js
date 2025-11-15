@@ -1,15 +1,69 @@
 import Post from "../models/PostModel.js";
+import { v2 as cloudinary } from "cloudinary"; // <-- ĐÃ THÊM IMPORT CLOUDINARY
 
-//POSt /api/posts
+// -----------------------------------------------------------------
+// Hàm Helper để xử lý upload MẢNG ảnh (dùng cho Images)
+// -----------------------------------------------------------------
+const uploadImageArray = async (images, folderName) => {
+    const uploadedImages = [];
+
+    for (const image of images) {
+        // Chỉ upload nếu url không phải là URL đã có (giả định là chuỗi http)
+        if (image.url && !image.url.startsWith('http')) {
+            try {
+                const uploadResult = await cloudinary.uploader.upload(image.url, {
+                    folder: folderName,
+                    resource_type: "image",
+                });
+                uploadedImages.push({
+                    url: uploadResult.secure_url,
+                    caption: image.caption || ""
+                });
+            } catch (error) {
+                console.error("Cloudinary batch upload error:", error);
+                // Có thể throw lỗi hoặc bỏ qua ảnh lỗi
+            }
+        } else if (image.url) {
+            // Giữ lại URL cũ nếu đã có (chỉ cập nhật caption nếu cần)
+            uploadedImages.push(image);
+        }
+    }
+    return uploadedImages;
+};
+// -----------------------------------------------------------------
+
+
+// POSt /api/posts
 export const createPost = async (req, res) => {
   try {
     const payload = req.body;
+    let thumbnailUrl = payload.thumbnail || "";
+    let uploadedImages = payload.images || [];
+
+    // 1. Xử lý Upload Thumbnail (nếu có)
+    if (payload.thumbnail) {
+        try {
+            const uploadResult = await cloudinary.uploader.upload(payload.thumbnail, {
+                folder: "blog_thumbnails",
+                resource_type: "image",
+            });
+            thumbnailUrl = uploadResult.secure_url;
+        } catch (uploadError) {
+            console.error("Cloudinary thumbnail upload error:", uploadError);
+            return res.status(500).json({ message: "Lỗi upload ảnh thumbnail." });
+        }
+    }
+
+    // 2. Xử lý Upload Mảng Ảnh (Images)
+    if (payload.images && payload.images.length > 0) {
+        uploadedImages = await uploadImageArray(payload.images, "blog_gallery");
+    }
 
     const newPost = new Post({
       name: payload.name,
       blocks: payload.blocks || [],
-      thumbnail: payload.thumbnail,
-      images: payload.images || [],
+      thumbnail: thumbnailUrl, // <-- Dùng URL từ Cloudinary
+      images: uploadedImages,    // <-- Dùng URLs từ Cloudinary
       tags: payload.tags || [],
       status: payload.status || "draft",
       published_at: payload.status === "published" ? new Date() : null,
@@ -33,11 +87,36 @@ export async function updatePost(req, res) {
   try {
     const { id } = req.params;
     const payload = req.body;
+    const updateFields = { ...payload };
+
+    // 1. Xử lý Upload/Cập nhật Thumbnail
+    if (payload.thumbnail && !payload.thumbnail.startsWith("http")) { 
+        try {
+            const uploadResult = await cloudinary.uploader.upload(payload.thumbnail, {
+                folder: "blog_thumbnails",
+                resource_type: "image",
+                // Giả định public_id có thể là post ID để ghi đè
+                public_id: `post_${id}_thumb`, 
+                overwrite: true,
+            });
+            updateFields.thumbnail = uploadResult.secure_url; // Ghi đè thumbnail bằng URL mới
+        } catch (uploadError) {
+            console.error("Cloudinary thumbnail update error:", uploadError);
+            return res.status(500).json({ message: "Lỗi cập nhật ảnh thumbnail." });
+        }
+    }
+
+    // 2. Xử lý Upload/Cập nhật Mảng Ảnh (Images)
+    if (payload.images && payload.images.length > 0) {
+        updateFields.images = await uploadImageArray(payload.images, "blog_gallery");
+    }
+
 
     const post = await Post.findByIdAndUpdate(
       id,
       {
-        ...payload,
+        ...updateFields,
+        // Cập nhật published_at nếu status thay đổi thành "published"
         ...(payload.status === "published" ? { published_at: new Date() } : {}),
       },
       { new: true, runValidators: true }
@@ -51,11 +130,16 @@ export async function updatePost(req, res) {
 }
 
 /** DELETE /api/posts/:id  (ADMIN ONLY) */
+// NOTE: Bạn có thể muốn thêm logic xóa ảnh trên Cloudinary ở đây nếu cần quản lý tài nguyên.
 export async function deletePost(req, res) {
   try {
     const { id } = req.params;
     const deleted = await Post.findByIdAndDelete(id);
     if (!deleted) return res.status(404).json({ message: "Không thấy bài viết" });
+    
+    // Ví dụ xóa ảnh liên quan trên Cloudinary (nếu bạn biết Public ID)
+    // await cloudinary.uploader.destroy(`post_${id}_thumb`); 
+    
     return res.json({ message: "Đã xoá" });
   } catch (e) {
     return res.status(400).json({ message: e.message });

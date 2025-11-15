@@ -1,9 +1,14 @@
 import mongoose from "mongoose";
 import TimeSlot from "../models/TimeslotModel.js";
 import Appointment from "../models/AppointmentModel.js";
+import Notification from "../models/NotificationModel.js"; 
+import User from "../models/UserModel.js"; 
+import QRCode from "qrcode"; 
 
 export const bookAppointment = async (req, res, next) => {
   const session = await mongoose.startSession();
+  let created; 
+
   try {
     const role = req.user?.role || req.user?.role?.name;
     if (role !== "patient") {
@@ -12,14 +17,14 @@ export const bookAppointment = async (req, res, next) => {
         .json({ error: "Chỉ bệnh nhân mới được đặt lịch." });
     }
 
+    const io = req.app.get('io'); 
+
     const { timeslot_id, reason = "" } = req.body || {};
     if (!timeslot_id)
       return res.status(400).json({ error: "Thiếu timeslot_id" });
 
-    let created; // giữ appointment tạo ra
-
     await session.withTransaction(async () => {
-      // 1) Giữ chỗ slot nếu còn "free"
+      // 1) Giữ chỗ (hold) timeslot
       const slot = await TimeSlot.findOneAndUpdate(
         { _id: timeslot_id, status: "free" },
         { $set: { status: "held" } },
@@ -50,11 +55,51 @@ export const bookAppointment = async (req, res, next) => {
         { $set: { status: "booked", appointment_id: appt._id } },
         { session }
       );
+    }); 
+
+    // 4) Chuẩn bị dữ liệu và tạo QR Code
+    const qrData = JSON.stringify({
+        apptId: created._id.toString(),
+        patientId: created.patient_id.toString(),
+        checkinCode: Math.random().toString(36).substring(2, 10), // Mã check-in ngẫu nhiên
     });
+    const qrCodeBase64 = await QRCode.toDataURL(qrData);
+    // 5) Lấy thông tin Bác sĩ để đưa vào Notification
+    const doctor = await User.findById(created.doctor_id).select('fullName').lean();
+    
+    const doctorName = doctor?.fullName || "Bác sĩ [Đã xóa]";
+    const formattedDate = new Date(created.date).toLocaleDateString('vi-VN');
+    // 6) Tạo Notification mới (lưu vào DB)
+    const notificationPayload = {
+        user_id: created.patient_id,
+        type: "appointment",
+        title: "Xác nhận Lịch Hẹn Thành Công",
+        body: `Lịch hẹn với Bác sĩ ${doctorName} vào lúc ${created.start} ngày ${formattedDate} đã được xác nhận. Vui lòng sử dụng QR code để Check-in.`,
+        data: {
+            doctorName: doctorName,
+            timeslot: created.start,
+            date: formattedDate
+        },
+        appointment_id: created._id,
+        qr: qrCodeBase64, // Lưu QR code dưới dạng base64
+        channels: ["in-app"], 
+        sent_at: new Date(),
+    };
+    const savedNotification = await Notification.create(notificationPayload);
+    
+    // 7) Gửi thông báo Realtime qua Socket.IO
+    if (io) {
+        // Gửi thông báo đến room có ID là ID của người dùng (Patient)
+        io.to(created.patient_id.toString()).emit('new_notification', {
+            message: savedNotification.title,
+            notification: savedNotification,
+            // Có thể thêm unreadCount ở đây nếu có logic tính toán
+        });
+    }
 
     return res
       .status(201)
-      .json({ message: "Đặt lịch thành công.", appointment: created });
+      .json({ message: "Đặt lịch thành công và đã gửi thông báo.", appointment: created });
   } catch (e) {
     if (e.message === "SLOT_NOT_AVAILABLE") {
       return res.status(409).json({ error: "Khung giờ không khả dụng." });
@@ -70,9 +115,12 @@ export const cancelAppointment = async (req, res, next) => {
   try {
     const { id } = req.params;
     const role = req.user?.role || req.user?.role?.name;
+    const io = req.app.get('io'); // Lấy io instance
+
+    let appt;
 
     await session.withTransaction(async () => {
-      const appt = await Appointment.findById(id).session(session);
+      appt = await Appointment.findById(id).session(session);
       if (!appt) throw new Error("NOT_FOUND");
 
       // chỉ admin hoặc chính chủ patient
@@ -94,6 +142,37 @@ export const cancelAppointment = async (req, res, next) => {
         { $set: { status: "free", appointment_id: null } },
         { session }
       );
+
+      // -----------------------------------------------------------------
+      // ✨ THÔNG BÁO HỦY LỊCH REALTIME ✨
+      // -----------------------------------------------------------------
+      const doctor = await User.findById(appt.doctor_id).select('fullName').lean();
+      const notificationPayload = {
+          user_id: appt.patient_id,
+          type: "appointment",
+          title: "Lịch Hẹn Đã Bị Hủy",
+          body: `Lịch hẹn khám với Bác sĩ ${doctor?.fullName || "Doctor"} vào lúc ${appt.start} ngày ${new Date(appt.date).toLocaleDateString('vi-VN')} đã bị hủy.`,
+          appointment_id: appt._id,
+          channels: ["in-app"], 
+          sent_at: new Date(),
+          status: "unread",
+      };
+      const savedNotification = await Notification.create(notificationPayload);
+      
+      if (io) {
+          // Gửi thông báo đến Patient
+          io.to(appt.patient_id.toString()).emit('new_notification', {
+              message: savedNotification.title,
+              notification: savedNotification,
+          });
+          // [Tùy chọn]: Gửi thông báo cho Doctor biết slot đã trống
+          io.to(appt.doctor_id.toString()).emit('appointment_cancelled', {
+              message: "Một lịch hẹn đã bị hủy.",
+              appointmentId: appt._id,
+              timeslotId: appt.timeslot_id,
+          });
+      }
+      // -----------------------------------------------------------------
 
       return res.json({ message: "Huỷ lịch thành công." });
     });
