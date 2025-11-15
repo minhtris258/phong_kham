@@ -20,41 +20,47 @@
     const closeBtn = document.getElementById("close-menu");
     const drawer = document.getElementById("mobile-drawer");
 
-    // =========================
-    // MAINBAR POSITIONING
-    // =========================
-    if (mainbar) {
-      const positionMainbar = () => {
-        const topH = topbar ? topbar.offsetHeight || 0 : 0;
-        const scrolledPastTopbar = window.scrollY > topH;
+// =========================
+// MAINBAR POSITIONING
+// =========================
+if (mainbar) {
+  const positionMainbar = () => {
+    const topH = topbar ? topbar.offsetHeight || 0 : 0;
+    const scrollY = window.scrollY || window.pageYOffset;
 
-        if (scrolledPastTopbar) {
-          mainbar.style.top = "0px";
-          mainbar.classList.remove("z-40");
-          mainbar.classList.add("z-50");
-        } else {
-          mainbar.style.top = topH + "px";
-          mainbar.classList.remove("z-50");
-          mainbar.classList.add("z-40");
-        }
-      };
+    // Khoảng offset còn lại của topbar
+    const offset = topH - scrollY;
 
-      // Init + listeners
-      positionMainbar();
-      add(window, "resize", positionMainbar);
-      add(window, "scroll", positionMainbar, { passive: true });
-
-      // Theo dõi thay đổi chiều cao của topbar (vd: font load, responsive)
-      if (topbar && "ResizeObserver" in window) {
-        const ro = new ResizeObserver(positionMainbar);
-        ro.observe(topbar);
-        // cleanup
-        listeners.push(() => ro.disconnect());
-      }
-
-      // cũng chạy sau khi mọi tài nguyên load xong (ảnh, font)
-      add(window, "load", positionMainbar);
+    if (offset <= 0) {
+      // Đã cuộn qua hết topbar -> mainbar dính sát trên
+      mainbar.style.top = "0px";
+      mainbar.classList.remove("z-40");
+      mainbar.classList.add("z-50");
+    } else {
+      // Đang cuộn trong đoạn có topbar -> mainbar trượt theo
+      mainbar.style.top = offset + "px";
+      mainbar.classList.remove("z-50");
+      mainbar.classList.add("z-40");
     }
+  };
+
+  // Init + listeners
+  positionMainbar();
+  add(window, "resize", positionMainbar);
+  add(window, "scroll", positionMainbar, { passive: true });
+
+  // Theo dõi thay đổi chiều cao của topbar (vd: font load, responsive)
+  if (topbar && "ResizeObserver" in window) {
+    const ro = new ResizeObserver(positionMainbar);
+    ro.observe(topbar);
+    // cleanup
+    listeners.push(() => ro.disconnect());
+  }
+
+  // cũng chạy sau khi mọi tài nguyên load xong (ảnh, font)
+  add(window, "load", positionMainbar);
+}
+
 
     // =========================
     // MOBILE DRAWER
