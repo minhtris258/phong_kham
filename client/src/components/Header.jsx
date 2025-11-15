@@ -63,11 +63,11 @@ export default function Header() {
         className="bg-[#28303f] py-2 hidden sm:block z-50 relative"
       >
         <div className="container mx-auto px-4 flex items-center">
-          <ul className="flex gap-3 text-white border-l pl-3">
-            <li><a href="#">FaceBook</a></li>
-            <li><a href="#">Zalo</a></li>
-            <li><a href="#">YouTube</a></li>
-            <li><a href="#">TikTok</a></li>
+          <ul className="flex gap-3 text-white pl-3">
+            <li><a href="#" >FaceBook</a></li>
+            <li><a href="#" className="border-l pl-3">Zalo</a></li>
+            <li><a href="#" className="border-l pl-3">YouTube</a></li>
+            <li><a href="#" className="border-l pl-3">TikTok</a></li>
           </ul>
           <div className="ml-auto flex gap-6 text-white">
             <a href="mailto:medpro@example.com" className="flex gap-2">

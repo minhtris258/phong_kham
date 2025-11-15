@@ -7,7 +7,7 @@ import logo from "../assets/logo-ft.svg";
 
 export default function Footer() {
   return (
-    <footer className="bg-white border-t-4 border-indigo-500 mt-8">
+    <footer className="bg-white mt-8">
       <div className="container mx-auto px-4 py-6 lg:py-10 lg:grid lg:grid-cols-5 lg:gap-8">
         {/* Cột thông tin */}
         <div className="lg:col-span-2">
