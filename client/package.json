@@ -12,6 +12,7 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.54.0",
     "axios": "^1.13.2",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.553.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
