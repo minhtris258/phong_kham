@@ -1,17 +1,41 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, KeyRound } from 'lucide-react';
 import Modal from '../../components/admin/Modal';
 import { initialMockPatients } from "../../mocks/mockdata";
-// Placeholder đa năng hơn
+
+// Giả định thêm trường profile_completed cho mock data nếu chưa có
+const initialPatientsWithStatus = initialMockPatients.map((p, index) => ({
+    ...p,
+    profile_completed: index % 2 === 0 ? true : false,
+    // Thêm trường password/passwordHash giả định nếu cần cho đổi mật khẩu
+    // mockPassword: 'password123', 
+}));
+
 const PatientManagement = () => {
-    const [patients, setPatients] = useState(initialMockPatients);
+    const [patients, setPatients] = useState(initialPatientsWithStatus);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPatient, setEditingPatient] = useState(null); 
     const [formData, setFormData] = useState({});
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [viewingPatient, setViewingPatient] = useState(null);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [patientToChangePassword, setPatientToChangePassword] = useState(null);
+
+    const handleViewPatient = (patient) => {
+        setViewingPatient(patient);
+        setIsViewModalOpen(true);
+    };
+
+    const handleChangePassword = (patient) => {
+        setPatientToChangePassword(patient);
+        setIsPasswordModalOpen(true);
+    };
+
     const handleAddEdit = (patient) => {
         setEditingPatient(patient);
+        // Khi thêm mới, chỉ khởi tạo Tên, Email, và Mật khẩu tạm (password)
         setFormData(patient ? patient : { 
             user_id: 'mock-u-' + Date.now().toString().slice(-6),
             fullName: '', 
@@ -19,7 +43,9 @@ const PatientManagement = () => {
             gender: 'male', 
             dob: '1990-01-01', 
             email: '',
-            address: '' 
+            address: '',
+            password: '', // Trường MỚI cho thêm nhanh
+            profile_completed: false,
         });
         setIsModalOpen(true);
     };
@@ -33,30 +59,68 @@ const PatientManagement = () => {
         setConfirmDeleteId(null);
     };
 
-    const handleSave = (e) => {
+ const handleSave = (e) => {
         e.preventDefault();
         
-        if (!formData.fullName || !formData.phone || !formData.email || !formData.address) {
-            console.error('Lỗi: Vui lòng điền đầy đủ thông tin bắt buộc.');
-            return;
-        }
+        // Định nghĩa các trường cần thiết để coi là "HOÀN THÀNH" hồ sơ
+        const requiredFieldsForCompletion = [
+            'fullName', 'phone', 'email', 'address', 'gender', 'dob'
+        ];
+        
+        // Kiểm tra xem tất cả các trường đều có giá trị (không rỗng, không 'N/A', không '1990-01-01' mặc định)
+        const isProfileComplete = requiredFieldsForCompletion.every(field => {
+            const value = formData[field];
+            return value && value !== 'N/A' && value !== '1990-01-01';
+        });
 
+        // --- LOGIC XÁC THỰC VÀ LƯU ---
         if (editingPatient) {
-            setPatients(patients.map(p => (p.id === editingPatient.id ? { ...p, ...formData } : p)));
+            // Chế độ SỬA
+            if (!formData.fullName || !formData.email) {
+                console.error('Lỗi: Tên và Email là bắt buộc.');
+                return;
+            }
+            
+            setPatients(patients.map(p => (
+                p.id === editingPatient.id 
+                    ? { 
+                        ...p, 
+                        ...formData, 
+                        profile_completed: isProfileComplete // Đặt trạng thái hoàn thành theo kết quả kiểm tra
+                    } 
+                    : p
+            )));
         } else {
+            // Chế độ THÊM MỚI
+            if (!formData.fullName || !formData.email || !formData.password) {
+                console.error('Lỗi: Vui lòng điền Tên, Email và Mật khẩu khi tạo mới.');
+                return;
+            }
+            
             const newPatient = {
                 ...formData,
                 id: 'mock-p-' + Date.now().toString().slice(-6),
+                // Gán giá trị mặc định cho các trường còn thiếu (để tránh lỗi undefined)
+                phone: formData.phone || 'N/A',
+                address: formData.address || 'N/A',
+                gender: formData.gender || 'male',
+                dob: formData.dob || '1990-01-01',
+                // Đặt trạng thái hoàn thành theo kết quả kiểm tra
+                profile_completed: isProfileComplete, 
             };
             setPatients([...patients, newPatient]);
         }
+
         setIsModalOpen(false);
         setEditingPatient(null);
     };
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+        const { name, value, type, checked } = e.target;
+        setFormData({ 
+            ...formData, 
+            [name]: type === 'checkbox' ? checked : value 
+        });
     };
 
     const getGenderVietnamese = (gender) => {
@@ -66,6 +130,10 @@ const PatientManagement = () => {
             case 'other': return 'Khác';
             default: return 'N/A';
         }
+    }
+
+    const getProfileStatusStyle = (isCompleted) => {
+        return isCompleted ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800';
     }
 
     return (
@@ -91,7 +159,7 @@ const PatientManagement = () => {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SĐT</th>
                                 <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giới Tính</th>
                                 <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày Sinh</th>
-                                <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Địa Chỉ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hồ Sơ</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành Động</th>
                             </tr>
                         </thead>
@@ -102,18 +170,26 @@ const PatientManagement = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{p.phone}</td>
                                     <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getGenderVietnamese(p.gender)}</td>
                                     <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{p.dob}</td>
-                                    <td className="hidden lg:table-cell px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{p.address}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button 
-                                            onClick={() => handleAddEdit(p)}
-                                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded-md hover:bg-indigo-50 transition"
-                                        >
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getProfileStatusStyle(p.profile_completed)}`}>
+                                            {p.profile_completed ? 'Hoàn thành' : 'Chưa đủ'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end items-center space-x-2">
+                                        
+                                        <button onClick={() => handleViewPatient(p)} className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50 transition" title="Xem chi tiết">
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                        
+                                        <button onClick={() => handleAddEdit(p)} className="text-indigo-600 hover:text-indigo-900 p-1 rounded-md hover:bg-indigo-50 transition" title="Sửa thông tin">
                                             <Edit className="w-4 h-4" />
                                         </button>
-                                        <button 
-                                            onClick={() => confirmDelete(p.id)}
-                                            className="text-red-600 hover:text-red-900 ml-2 p-1 rounded-md hover:bg-red-50 transition"
-                                        >
+
+                                        <button onClick={() => handleChangePassword(p)} className="text-yellow-600 hover:text-yellow-900 p-1 rounded-md hover:bg-yellow-50 transition" title="Đổi mật khẩu">
+                                            <KeyRound className="w-4 h-4" />
+                                        </button>
+                                        
+                                        <button onClick={() => confirmDelete(p.id)} className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition" title="Xóa bệnh nhân">
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </td>
@@ -134,95 +210,145 @@ const PatientManagement = () => {
                     <div className="space-y-4">
                         <label className="block">
                             <span className="text-gray-700">Họ và Tên:</span>
-                            <input 
-                                type="text" 
-                                name="fullName"
-                                value={formData.fullName || ''}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
-                                required
-                            />
+                            <input type="text" name="fullName" value={formData.fullName || ''} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border" required />
                         </label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <label className="block">
-                                <span className="text-gray-700">Điện Thoại:</span>
-                                <input 
-                                    type="text" 
-                                    name="phone"
-                                    value={formData.phone || ''}
-                                    onChange={handleInputChange}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
-                                    required
-                                />
-                            </label>
-                            <label className="block">
-                                <span className="text-gray-700">Giới Tính:</span>
-                                <select 
-                                    name="gender"
-                                    value={formData.gender || 'male'}
-                                    onChange={handleInputChange}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border bg-white"
-                                >
-                                    <option value="male">Nam</option>
-                                    <option value="female">Nữ</option>
-                                    <option value="other">Khác</option>
-                                </select>
-                            </label>
-                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <label className="block">
                                 <span className="text-gray-700">Email:</span>
-                                <input 
-                                    type="email" 
-                                    name="email"
-                                    value={formData.email || ''}
-                                    onChange={handleInputChange}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
-                                    required
-                                />
+                                <input type="email" name="email" value={formData.email || ''} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border" required />
                             </label>
-                            <label className="block">
-                                <span className="text-gray-700">Ngày Sinh:</span>
-                                <input 
-                                    type="date" 
-                                    name="dob"
-                                    value={formData.dob || new Date().toISOString().split('T')[0]}
-                                    onChange={handleInputChange}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
-                                />
-                            </label>
+
+                            {/* Trường MẬT KHẨU chỉ hiển thị khi THÊM MỚI */}
+                            {!editingPatient && (
+                                <label className="block">
+                                    <span className="text-gray-700">Mật khẩu:</span>
+                                    <input type="password" name="password" value={formData.password || ''} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border" required />
+                                </label>
+                            )}
                         </div>
-                        <label className="block">
-                            <span className="text-gray-700">Địa Chỉ:</span>
-                            <textarea
-                                name="address"
-                                value={formData.address || ''}
-                                onChange={handleInputChange}
-                                rows="2"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
-                                required
-                            ></textarea>
-                        </label>
+
+                        {/* HIỂN THỊ CÁC TRƯỜNG CHI TIẾT CHỈ KHI SỬA (hoặc nếu bạn muốn nhập đầy đủ) */}
+                        {editingPatient && (
+                            <>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <label className="block">
+                                        <span className="text-gray-700">Điện Thoại:</span>
+                                        <input type="text" name="phone" value={formData.phone || ''} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border" required />
+                                    </label>
+                                    <label className="block">
+                                        <span className="text-gray-700">Giới Tính:</span>
+                                        <select name="gender" value={formData.gender || 'male'} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border bg-white">
+                                            <option value="male">Nam</option>
+                                            <option value="female">Nữ</option>
+                                            <option value="other">Khác</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <label className="block">
+                                    <span className="text-gray-700">Ngày Sinh:</span>
+                                    <input type="date" name="dob" value={formData.dob || new Date().toISOString().split('T')[0]} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border" />
+                                </label>
+                                <label className="block">
+                                    <span className="text-gray-700">Địa Chỉ:</span>
+                                    <textarea name="address" value={formData.address || ''} onChange={handleInputChange} rows="2" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border" required></textarea>
+                                </label>
+                                <label className="flex items-center space-x-2">
+                                    <input 
+                                        type="checkbox" 
+                                        name="profile_completed" 
+                                        checked={!!formData.profile_completed}
+                                        onChange={handleInputChange}
+                                        className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50"
+                                    />
+                                    <span className="text-gray-700">Hồ sơ đã hoàn thành</span>
+                                </label>
+                            </>
+                        )}
                     </div>
                     <div className="mt-6 flex justify-end space-x-3">
-                        <button 
-                            type="button"
-                            onClick={() => setIsModalOpen(false)}
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-                        >
-                            Hủy
-                        </button>
-                        <button 
-                            type="submit"
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold"
-                        >
-                            Lưu
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">Hủy</button>
+                        <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold">
+                            {editingPatient ? 'Lưu' : 'Tạo Tài Khoản'}
                         </button>
                     </div>
                 </form>
             </Modal>
 
-            {/* Modal Xác nhận Xóa */}
+            {/* Modal Xem Chi tiết Bệnh Nhân (Giữ nguyên) */}
+            <Modal
+                title={`Chi Tiết Bệnh Nhân: ${viewingPatient?.fullName || ''}`}
+                isOpen={isViewModalOpen}
+                onClose={() => setIsViewModalOpen(false)}
+                className="max-w-xl"
+            >
+                {viewingPatient && (
+                    <div className="space-y-4 text-gray-700">
+                        <div className="grid grid-cols-2 gap-4 border-b pb-3">
+                            <div>
+                                <p className="text-sm font-semibold">Họ và Tên:</p>
+                                <p className="text-md font-medium text-gray-800">{viewingPatient.fullName}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold">Email:</p>
+                                <p className="text-md font-medium">{viewingPatient.email}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-sm font-semibold">Điện Thoại:</p>
+                                <p>{viewingPatient.phone || 'Chưa cập nhật'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold">Giới Tính:</p>
+                                <p>{getGenderVietnamese(viewingPatient.gender)}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-sm font-semibold">Ngày Sinh:</p>
+                                <p>{viewingPatient.dob || 'Chưa cập nhật'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold">Trạng Thái Hồ Sơ:</p>
+                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getProfileStatusStyle(viewingPatient.profile_completed)}`}>
+                                    {viewingPatient.profile_completed ? 'Hoàn thành' : 'Chưa đủ'}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="border-t pt-3 mt-4">
+                            <p className="text-sm font-semibold">Địa Chỉ:</p>
+                            <p>{viewingPatient.address || 'Chưa cập nhật'}</p>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+            
+            {/* Modal Đổi Mật Khẩu (Giữ nguyên) */}
+            <Modal
+                title={`Đổi Mật Khẩu cho ${patientToChangePassword?.fullName || ''}`}
+                isOpen={isPasswordModalOpen}
+                onClose={() => setIsPasswordModalOpen(false)}
+                className="max-w-md"
+            >
+                <form onSubmit={(e) => { e.preventDefault(); alert('Đã giả lập đổi mật khẩu cho ' + patientToChangePassword.fullName); setIsPasswordModalOpen(false); }}>
+                    <div className="space-y-4">
+                        <label className="block">
+                            <span className="text-gray-700">Mật khẩu mới:</span>
+                            <input type="password" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border" />
+                        </label>
+                        <label className="block">
+                            <span className="text-gray-700">Xác nhận mật khẩu:</span>
+                            <input type="password" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border" />
+                        </label>
+                    </div>
+                    <div className="mt-6 flex justify-end space-x-3">
+                        <button type="button" onClick={() => setIsPasswordModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">Hủy</button>
+                        <button type="submit" className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-semibold">Xác nhận đổi</button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Modal Xác nhận Xóa (Giữ nguyên) */}
             <Modal
                 title="Xác nhận Xóa Bệnh Nhân"
                 isOpen={!!confirmDeleteId}
@@ -231,18 +357,8 @@ const PatientManagement = () => {
             >
                 <p className="text-gray-700 mb-6">Bạn có chắc chắn muốn xóa bệnh nhân này khỏi hệ thống?</p>
                 <div className="flex justify-end space-x-3">
-                    <button 
-                        onClick={() => setConfirmDeleteId(null)}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-                    >
-                        Hủy
-                    </button>
-                    <button 
-                        onClick={handleDelete}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
-                    >
-                        Xóa
-                    </button>
+                    <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">Hủy</button>
+                    <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold">Xóa</button>
                 </div>
             </Modal>
         </main>

@@ -12,6 +12,7 @@ import AppointmentManagement from "./pages/admin/AppointmentManagement";
 import PatientManagement from "./pages/admin/PatientManagement";
 import DoctorManagement from "./pages/admin/DoctorManagement";
 import ProfileSettings from "./pages/admin/ProfileSettings";
+import SpecialtyManagement from "./pages/admin/specialtyManagement";
 
 // Doctor Pages
 import DoctorProfile from "./pages/doctor/DoctorProfile";
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="appointments" element={<AppointmentManagement />} />
           <Route path="patients" element={<PatientManagement />} />
           <Route path="doctors" element={<DoctorManagement />} />
+          <Route path="specialty" element={<SpecialtyManagement />} />
           <Route path="profile" element={<ProfileSettings />} />
         </Route>
 

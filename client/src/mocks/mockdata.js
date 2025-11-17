@@ -142,6 +142,33 @@ export const initialMockPatients = [
     },
 ];
 
+
+// --- LOGIC TÍNH TOÁN DYNAMIC MOCK DATA CHO CHUYÊN KHOA ---
+
+/**
+ * Hàm này tính toán số lượng bác sĩ cho mỗi chuyên khoa dựa trên initialMockDoctors.
+ * @returns {Object} Một object map ID chuyên khoa với số lượng bác sĩ.
+ */
+const calculateDoctorCounts = () => {
+    return initialMockDoctors.reduce((acc, doctor) => {
+        const specialtyId = doctor.specialty_id;
+        acc[specialtyId] = (acc[specialtyId] || 0) + 1;
+        return acc;
+    }, {});
+};
+
+const doctorCounts = calculateDoctorCounts();
+
+// Ánh xạ lại mảng mockSpecialties để thêm doctorCount chính xác
+export const initialMockSpecialtys = mockSpecialties
+    // Lọc chỉ lấy các chuyên khoa đã có trong MOCK_IDS
+    .filter(s => Object.values(MOCK_IDS.specialties).includes(s.id)) 
+    .map(specialty => ({
+        id: specialty.id,
+        name: specialty.name,
+        // Lấy số lượng đã tính toán, nếu không có bác sĩ thì là 0
+        doctorCount: doctorCounts[specialty.id] || 0,
+    }));
 // DoctorScheduleModel.js (Lịch làm việc cố định)
 export const mockDoctorSchedules = [
     {
@@ -260,48 +287,53 @@ export const mockStatusData = [
 ];
 
 export const mockActivity = [
-  { time: '14:30', user: initialMockPatients[1].fullName, action: 'vừa đặt lịch (MOCK) với BS. Hùng.', type: 'sale' },
-  { time: '12:00', user: initialMockDoctors[0].fullName, action: 'đã hoàn thành lịch hẹn #A1.', type: 'inventory' },
-  { time: '09:00', user: 'Admin', action: 'đã thêm BS. Trần Ngọc Anh.', type: 'user' },
-  { time: '08:30', user: 'Hệ thống', action: 'Gửi email nhắc nhở lịch hẹn trong ngày.', type: 'system' },
+    // Cập nhật tên người dùng để sử dụng biến đã được định nghĩa
+    { time: '14:30', user: initialMockPatients[1].fullName, action: 'vừa đặt lịch (MOCK) với BS. Hùng.', type: 'sale' },
+    { time: '12:00', user: initialMockDoctors[0].fullName, action: 'đã hoàn thành lịch hẹn #A1.', type: 'inventory' },
+    { time: '09:00', user: 'Admin', action: 'đã thêm BS. Trần Ngọc Anh.', type: 'user' },
+    { time: '08:30', user: 'Hệ thống', action: 'Gửi email nhắc nhở lịch hẹn trong ngày.', type: 'system' },
 ];
+const totalFee = initialMockDoctors.reduce((sum, doc) => sum + doc.consultation_fee, 0);
+const avgFee = totalFee / initialMockDoctors.length;
+const formatAvgFee = (avgFee / 1000).toFixed(0) + 'K'; // Chuyển sang format '250K'
 
 export const mockKPIs = [
   // Cập nhật lại logic dựa trên MOCK data mới nếu cần, nhưng giữ cấu trúc hiển thị
   {
-    title: 'Lịch Hẹn Hôm Nay',
-    value: '1/100 (Confirmed)', // Chỉ có 1 lịch hẹn hôm nay là Confirmed
-    change: '+5.5%',
-    period: 'Hôm qua',
-    isPositive: true,
-    icon: Calendar,
-    color: 'indigo'
-  },
-  {
-    title: 'Bệnh Nhân Mới (Tuần)',
-    value: '3', // Dựa trên mockPatients
-    change: '+0.8%',
-    period: 'Tuần trước',
-    isPositive: true,
-    icon: Heart,
-    color: 'green'
-  },
-  {
-    title: 'Bác Sĩ Đang Hoạt Động',
-    value: initialMockDoctors.length.toString(),
-    change: '+1',
-    period: 'Tháng này',
-    isPositive: true,
-    icon: Stethoscope,
-    color: 'blue'
-  },
-  {
-    title: 'Phí Khám TB',
-    value: '250K', // Lấy trung bình (250+300+200)/3
-    change: '-1.2%',
-    period: 'Tuần trước',
-    isPositive: false,
-    icon: DollarSign,
-    color: 'yellow'
-  },
+        title: 'Lịch Hẹn Hôm Nay',
+        value: `${initialMockAppointments.filter(a => a.date === today && a.status === 'confirmed').length}/${initialMockAppointments.filter(a => a.date === today).length} (Confirmed)`,
+        change: '+5.5%',
+        period: 'Hôm qua',
+        isPositive: true,
+        icon: Calendar,
+        color: 'indigo'
+    },
+    {
+        title: 'Bệnh Nhân Mới (Tuần)',
+        value: initialMockPatients.length.toString(),
+        change: '+0.8%',
+        period: 'Tuần trước',
+        isPositive: true,
+        icon: Heart,
+        color: 'green'
+    },
+    {
+        title: 'Bác Sĩ Đang Hoạt Động',
+        value: initialMockDoctors.length.toString(),
+        change: '+1',
+        period: 'Tháng này',
+        isPositive: true,
+        icon: Stethoscope,
+        color: 'blue'
+    },
+    // Cập nhật KPI Phí Khám TB
+    {
+        title: 'Phí Khám TB',
+        value: formatAvgFee, 
+        change: '-1.2%',
+        period: 'Tuần trước',
+        isPositive: false,
+        icon: DollarSign,
+        color: 'yellow'
+    },
 ];
