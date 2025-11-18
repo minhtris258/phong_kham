@@ -22,12 +22,12 @@ import DoctorSettings from "./pages/doctor/DoctorSettings";
 // User Pages
 import HomePage from "./pages/Home";
 import LoginSection from "./components/LoginSection";
-import DoctorDetailPage from "./pages/public/DoctorDetailPage"; // ← Đảm bảo import đúng
-import PatientDashboard from "./pages/public/PatientDashboard";
-import PatientProfileContent from "./pages/public/patient/PatientProfileContent";
-import AppointmentListContent from "./pages/public/patient/AppointmentListContent";
-import PaymentHistoryContent from "./pages/public/patient/PaymentHistoryContent";
-import AccountSettingsContent from "./pages/public/patient/AccountSettingsContent";
+import DoctorDetailPage from "./pages/patient/DoctorDetail"; // ← Đảm bảo import đúng
+import PatientDashboard from "./pages/patient/Dashboard";
+import PatientProfileContent from "./pages/patient/dashboard-sections/PatientProfile";
+import AppointmentListContent from "./pages/patient/dashboard-sections/AppointmentList";
+import PaymentHistoryContent from "./pages/patient/dashboard-sections/PaymentHistory";
+import AccountSettingsContent from "./pages/patient/dashboard-sections/AccountSettings";
 
 
 export default function App() {
