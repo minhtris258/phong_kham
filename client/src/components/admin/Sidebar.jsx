@@ -15,6 +15,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { name: 'Quản lý Lịch Hẹn', icon: Calendar, to: 'appointments' },
         { name: 'Quản lý Bác Sĩ', icon: Stethoscope, to: 'doctors' }, 
         { name: 'Quản lý Bệnh Nhân', icon: Users, to: 'patients' },
+        { name: 'Quản Lý Khoa', icon: Stethoscope, to: 'specialty' },
         { name: 'Báo Cáo', icon: BarChart, to: 'reports' },
         { name: 'Profile', icon: Users, to: 'profile' }, 
         { name: 'Cài Đặt', icon: Settings, to: 'settings' },

@@ -8,7 +8,6 @@ const patientSchema = new mongoose.Schema({
     phone: { type: String, required: true },
     email: { type: String, required: true },
     address: { type: String, required: true },
-     thumbnail: { type: String, default: "" },
     note: { type: String }
 }, { timestamps: true }
 );

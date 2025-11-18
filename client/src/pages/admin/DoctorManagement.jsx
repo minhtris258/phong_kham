@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye } from 'lucide-react'; // Thêm Eye
 import Modal from '../../components/admin/Modal';
 import { initialMockDoctors, mockSpecialties } from "../../mocks/mockdata";
 
@@ -10,7 +10,17 @@ const DoctorManagement = () => {
     const [formData, setFormData] = useState({});
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
+    // Thêm state cho Modal Xem Chi tiết
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [viewingDoctor, setViewingDoctor] = useState(null);
+
     const specialtyMap = useMemo(() => new Map(mockSpecialties.map(s => [s.id, s.name])), []);
+
+    // Xử lý Xem Chi tiết Bác sĩ
+    const handleViewDoctor = (doctor) => {
+        setViewingDoctor(doctor);
+        setIsViewModalOpen(true);
+    };
 
     const handleAddEdit = (doctor) => {
         setEditingDoctor(doctor);
@@ -46,12 +56,15 @@ const DoctorManagement = () => {
             return;
         }
 
+        const feeValue = parseInt(formData.consultation_fee, 10);
+        
         if (editingDoctor) {
-            setDoctors(doctors.map(doc => (doc.id === editingDoctor.id ? { ...doc, ...formData } : doc)));
+            setDoctors(doctors.map(doc => (doc.id === editingDoctor.id ? { ...doc, ...formData, consultation_fee: feeValue } : doc)));
         } else {
             const newDoctor = {
                 ...formData,
                 id: 'mock-d-' + Date.now().toString().slice(-6),
+                consultation_fee: feeValue,
             };
             setDoctors([...doctors, newDoctor]);
         }
@@ -66,6 +79,14 @@ const DoctorManagement = () => {
 
     const getStatusStyle = (status) => {
         return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    }
+
+    const getGenderVietnamese = (gender) => {
+        switch (gender) {
+            case 'male': return 'Nam';
+            case 'female': return 'Nữ';
+            default: return 'Khác';
+        }
     }
 
 
@@ -108,16 +129,28 @@ const DoctorManagement = () => {
                                             {doc.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end items-center">
+                                        {/* Nút Xem Chi tiết */}
+                                        <button 
+                                            onClick={() => handleViewDoctor(doc)}
+                                            className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50 transition"
+                                            title="Xem chi tiết Bác sĩ"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                        {/* Nút Sửa */}
                                         <button 
                                             onClick={() => handleAddEdit(doc)}
-                                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded-md hover:bg-indigo-50 transition"
+                                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded-md hover:bg-indigo-50 transition ml-2"
+                                            title="Chỉnh sửa thông tin Bác sĩ"
                                         >
                                             <Edit className="w-4 h-4" />
                                         </button>
+                                        {/* Nút Xóa */}
                                         <button 
                                             onClick={() => confirmDelete(doc.id)}
                                             className="text-red-600 hover:text-red-900 ml-2 p-1 rounded-md hover:bg-red-50 transition"
+                                            title="Xóa Bác sĩ"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
@@ -129,7 +162,7 @@ const DoctorManagement = () => {
                 </div>
             </div>
 
-            {/* Modal Form cho Thêm/Sửa Bác Sĩ */}
+            {/* Modal Form cho Thêm/Sửa Bác Sĩ (Giữ nguyên) */}
             <Modal 
                 title={editingDoctor ? 'Chỉnh Sửa Thông Tin Bác Sĩ' : 'Thêm Bác Sĩ Mới'} 
                 isOpen={isModalOpen} 
@@ -218,7 +251,6 @@ const DoctorManagement = () => {
                                 value={formData.address || ''}
                                 onChange={handleInputChange}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
-                                required
                             />
                         </label>
                         <label className="block">
@@ -252,7 +284,7 @@ const DoctorManagement = () => {
                 </form>
             </Modal>
 
-            {/* Modal Xác nhận Xóa */}
+            {/* Modal Xác nhận Xóa (Giữ nguyên) */}
             <Modal
                 title="Xác nhận Xóa Bác Sĩ"
                 isOpen={!!confirmDeleteId}
@@ -275,6 +307,64 @@ const DoctorManagement = () => {
                     </button>
                 </div>
             </Modal>
+            
+            {/* Modal Xem Chi tiết Bác Sĩ (MỚI) */}
+            <Modal
+                title={`Chi Tiết Bác Sĩ: ${viewingDoctor?.fullName || ''}`}
+                isOpen={isViewModalOpen}
+                onClose={() => setIsViewModalOpen(false)}
+                className="max-w-xl"
+            >
+                {viewingDoctor && (
+                    <div className="space-y-4 text-gray-700">
+                        <div className="grid grid-cols-2 gap-4 border-b pb-3">
+                            <div>
+                                <p className="text-sm font-semibold">Chuyên Khoa:</p>
+                                <p className="text-md font-medium text-indigo-600">
+                                    {specialtyMap.get(viewingDoctor.specialty_id) || 'N/A'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold">Phí Khám:</p>
+                                <p className="text-md font-medium">
+                                    {viewingDoctor.consultation_fee.toLocaleString('vi-VN')} VNĐ
+                                </p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-sm font-semibold">Giới Tính:</p>
+                                <p>{getGenderVietnamese(viewingDoctor.gender)}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold">Ngày Sinh:</p>
+                                <p>{viewingDoctor.dob}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-sm font-semibold">SĐT:</p>
+                                <p>{viewingDoctor.phone}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold">Email:</p>
+                                <p>{viewingDoctor.email}</p>
+                            </div>
+                        </div>
+                        <div className="border-t pt-3 mt-4">
+                            <p className="text-sm font-semibold">Địa Chỉ:</p>
+                            <p>{viewingDoctor.address}</p>
+                        </div>
+                        <div className="mt-4">
+                            <p className="text-sm font-semibold">Trạng Thái:</p>
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(viewingDoctor.status)}`}>
+                                {viewingDoctor.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                            </span>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+            
         </main>
     );
 };
