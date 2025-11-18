@@ -1,0 +1,52 @@
+a {
+  text-decoration: none !important;
+}
+ul > li {
+  list-style: none;
+}
+
+.font-roboto {
+  font-family: "Roboto", ui-sans-serif, system-ui, Arial, sans-serif;
+}
+.container {
+  max-width: 1232px;
+  margin: 0 auto;
+}
+.color-title {
+  color: #003553 !important;
+}
+.color-title-hover {
+  color: #1da1f2 !important;
+}
+h2 {
+  text-transform: uppercase;
+}
+.border-color-hover {
+  border-style: solid;
+  border-width: 0;
+  border-color: #1da1f2 !important;
+}
+
+.border-color-hover:hover {
+  border-width: 1px; 
+}
+.bg-fade-vert {
+  @apply bg-[#e8f4fd];
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
+}
+#mainbar {
+  transition: top 0.5s ease-out;
+}
