@@ -9,6 +9,7 @@ import PatientManagement from "./pages/admin/PatientManagement";
 import DoctorManagement from "./pages/admin/DoctorManagement";
 import ProfileSettings from "./pages/admin/ProfileSettings";
 import HomePage from "./pages/Home";
+import LoginSection from "./components/LoginSection";
 
 export default function App() {
  return (
@@ -39,6 +40,9 @@ export default function App() {
           
           {/* /admin/profile => ProfileSettings */}
           <Route path="profile" element={<ProfileSettings />} />
+
+          {/* /admin/profile => ProfileSettings */}
+          <Route path="Loginsection" element={<LoginSection />} />
 
           {/* ... các routes khác */}
         </Route>
