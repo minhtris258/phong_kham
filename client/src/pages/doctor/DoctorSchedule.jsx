@@ -2,6 +2,9 @@
 import React from 'react';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { mockDoctorSchedules, initialMockAppointments, initialMockPatients, MOCK_IDS } from '../../mocks/mockdata.js';
+import ScheduleLegend from '../../components/doctor/schedule/ScheduleLegend.jsx';
+import ScheduleHeader from '../../components/doctor/schedule/ScheduleHeader.jsx';
+import ScheduleBodyRow from '../../components/doctor/schedule/ScheduleBodyRow.jsx';
 
 const currentDoctorId = MOCK_IDS.doctors.d1; // BS Lê Thị Mai
 const schedule = mockDoctorSchedules.find(s => s.doctor_id === currentDoctorId);
@@ -70,57 +73,21 @@ export default function DoctorSchedule() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
             {/* Header ngày */}
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="sticky left-0 z-20 bg-gray-50 px-6 py-4 text-left text-sm font-semibold text-gray-700 w-28">
-                  Giờ
-                </th>
-                {weekDays.map((day, idx) => {
-                  const { isOff } = getSlotsForDay(day);
-                  return (
-                    <th key={day.toISOString()} className="px-4 py-4 text-center min-w-36">
-                      <div className="font-semibold text-gray-800">{dayNames[idx]}</div>
-                      <div className="text-2xl font-bold text-blue-600 mt-1">
-                        {format(day, 'dd')}
-                      </div>
-                      <div className="text-sm text-gray-500">{format(day, 'MM/yyyy')}</div>
-                      {isOff && (
-                        <span className="inline-block mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                          Nghỉ
-                        </span>
-                      )}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
+            <ScheduleHeader 
+              weekDays={weekDays} 
+              dayNames={dayNames} 
+              getSlotsForDay={getSlotsForDay} 
+                        />  
 
             {/* Body khung giờ */}
             <tbody className="divide-y divide-gray-200">
               {allTimeSlots.map(time => (
-                <tr key={time} className="hover:bg-gray-50 transition">
-                  <td className="sticky left-0 z-10 bg-white px-6 py-4 font-medium text-gray-700 border-r">
-                    {time}
-                  </td>
-                  {weekDays.map(day => {
-                    const { slots, isOff } = getSlotsForDay(day);
-                    const slot = slots.find(s => s.time === time);
-
-                    return (
-                      <td key={day.toISOString()} className="px-4 py-4 text-center">
-                        {isOff ? (
-                          <span className="text-red-600 text-sm font-medium">Bận</span>
-                        ) : slot?.patient ? (
-                          <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium inline-block min-w-28">
-                            {slot.patient}
-                          </div>
-                        ) : slot ? (
-                          <span className="text-green-600 text-sm font-medium">Trống</span>
-                        ) : null}
-                      </td>
-                    );
-                  })}
-                </tr>
+                <ScheduleBodyRow 
+                                    key={time} 
+                                    time={time} 
+                                    weekDays={weekDays} 
+                                    getSlotsForDay={getSlotsForDay} 
+                                />
               ))}
             </tbody>
           </table>
@@ -128,20 +95,7 @@ export default function DoctorSchedule() {
       </div>
 
       {/* Chú thích */}
-      <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-500 rounded"></div>
-          <span>Trống</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-blue-500 rounded"></div>
-          <span>Đã đặt</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-500 rounded"></div>
-          <span>Nghỉ / Báo bận</span>
-        </div>
-      </div>
+    <ScheduleLegend />
     </div>
   );
 }
