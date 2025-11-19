@@ -24,7 +24,7 @@ export default function Hero() {
 
               <a
                 href="#"
-                className="inline-block mt-4 px-6 py-3 text-white bg-[#16B7D7] rounded hover:bg-[#14c4e9] transition"
+                className="inline-block mt-4 px-6 py-3 btn-color rounded transition"
               >
                 Đặt Lịch Ngay
               </a>

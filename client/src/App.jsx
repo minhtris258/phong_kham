@@ -21,13 +21,15 @@ import DoctorSettings from "./pages/doctor/DoctorSettings";
 
 // User Pages
 import HomePage from "./pages/Home";
-import LoginSection from "./components/LoginSection";
+import LoginPage from "./pages/auth/LoginPage";
+import RegisterPage from "./pages/auth/RegisterPage";
 import DoctorDetailPage from "./pages/patient/DoctorDetail"; // ← Đảm bảo import đúng
 import PatientDashboard from "./pages/patient/Dashboard";
 import PatientProfileContent from "./pages/patient/dashboard-sections/PatientProfile";
 import AppointmentListContent from "./pages/patient/dashboard-sections/AppointmentList";
 import PaymentHistoryContent from "./pages/patient/dashboard-sections/PaymentHistory";
 import AccountSettingsContent from "./pages/patient/dashboard-sections/AccountSettings";
+
 
 
 export default function App() {
@@ -38,7 +40,8 @@ export default function App() {
         {/* ==================== USER LAYOUT (CÓ HEADER + FOOTER) ==================== */}
         <Route path="/" element={<UserLayout />}>
           <Route index element={<HomePage />} />
-          <Route path="Login" element={<LoginSection />} />
+          <Route path="Login" element={<LoginPage />} />
+          <Route path="Register" element={<RegisterPage />} />
           <Route path="bac-si/:id" element={<DoctorDetailPage />} />
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
