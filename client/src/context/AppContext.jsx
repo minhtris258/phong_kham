@@ -64,7 +64,7 @@ export const AppProvider = ({ children }) => {
         const currentToken = initialToken || localStorage.getItem('token');
         
         if (!currentToken) {
-            setAuthToken(null); // Đảm bảo token bị xóa nếu không hợp lệ
+            // setAuthToken(null); // Đảm bảo token bị xóa nếu không hợp lệ
             setIsLoading(false);
             return;
         }
@@ -97,7 +97,7 @@ export const AppProvider = ({ children }) => {
 
         } catch (error) {
             console.error('Lỗi tải thông tin người dùng:', error);
-            setAuthToken(null);
+            // setAuthToken(null);
         } finally {
             setIsLoading(false);
         }
@@ -118,7 +118,7 @@ export const AppProvider = ({ children }) => {
             }
         } catch (error) {
             // Xóa token nếu đăng nhập thất bại
-            setAuthToken(null);
+            // setAuthToken(null);
             throw error; 
         }
     };

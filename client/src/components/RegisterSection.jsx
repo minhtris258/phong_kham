@@ -1,4 +1,4 @@
-import React from "react";
+
 
 import { useState } from "react";
 import axios from "axios";
@@ -7,10 +7,11 @@ import "../assets/assets.js";
 import hero from "../assets/slider-03-b.jpg";
 import logo from "../assets/logo.png";
 
-export default function LoginSection() {
-  // ✅ Đặt state lên trên, không dùng 'form' trước dòng này
+export default function RegisterSection() {
   const [form, setForm] = useState({
+    name: "",
     email: "",
+    phone: "",
     password: "",
   });
 
@@ -30,9 +31,15 @@ export default function LoginSection() {
     setSuccess("");
 
     try {
+      const payload = {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      };
+
       const res = await axios.post(
-        "http://localhost:3000/api/auth/login",
-        form,
+        "http://localhost:3000/api/auth/register",
+        payload,
         {
           headers: {
             "Content-Type": "application/json",
@@ -40,12 +47,15 @@ export default function LoginSection() {
         }
       );
 
-      // Thành công
-      console.log("Login success:", res.data);
+      console.log("Register success:", res.data);
+
+      // Lưu token nếu muốn auto login sau khi đăng ký
       localStorage.setItem("token", res.data.token);
-      setSuccess("Đăng nhập thành công!");
-      // ví dụ: điều hướng theo backend gợi ý
-      window.location.href = res.data.next || "/home";
+
+      setSuccess(res.data.message || "Đăng ký thành công!");
+
+      // Xoá mật khẩu cho an toàn
+      setForm((s) => ({ ...s, password: "" }));
     } catch (err) {
       console.error(err);
       const message =
@@ -60,7 +70,7 @@ export default function LoginSection() {
 
   return (
     <div
-      className="lg:h-[780px] object-cover bg-no-repeat"
+      className="lg:h-[820px] object-cover bg-no-repeat"
       style={{ backgroundImage: `url(${hero})` }}
     >
       <div className="container">
@@ -73,6 +83,21 @@ export default function LoginSection() {
             />
 
             <form className="w-full px-20 pt-4 pb-8" onSubmit={onSubmit}>
+              {/* Họ tên */}
+              <label htmlFor="name" className="sr-only">
+                Họ tên
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                placeholder="Họ và tên"
+                className="w-full h-12 mt-6 px-4 rounded-lg bg-white color-title border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus:border-white/30 focus:ring-2 focus:ring-white/15 transition"
+                value={form.name}
+                onChange={onChange}
+                required
+              />
+
               {/* Email */}
               <label htmlFor="email" className="sr-only">
                 Email
@@ -82,31 +107,52 @@ export default function LoginSection() {
                 id="email"
                 name="email"
                 placeholder="you@example.com"
-                className="w-full h-12 mt-6 px-4 rounded-lg bg-white color-title border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus:border-white/30 focus:ring-2 focus:ring-white/15 transition"
+                className="w-full h-12 mt-4 px-4 rounded-lg bg-white color-title border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus:border-white/30 focus:ring-2 focus:ring-white/15 transition"
                 value={form.email}
+                onChange={onChange}
+                required
+              />
+
+              {/* Số điện thoại */}
+              <label htmlFor="phone" className="sr-only">
+                Số điện thoại
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                placeholder="Số điện thoại"
+                className="w-full h-12 mt-4 px-4 rounded-lg bg-white color-title border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus:border-white/30 focus:ring-2 focus:ring-white/15 transition"
+                value={form.phone}
                 onChange={onChange}
                 required
               />
 
               {/* Password */}
               <label htmlFor="password" className="sr-only">
-                Password
+                Mật khẩu
               </label>
               <input
                 type="password"
                 id="password"
                 name="password"
-                placeholder="Password"
-                className="w-full h-12 px-4 mt-4 rounded-lg bg-white color-title border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus:border-white/30 focus:ring-2 focus:ring-white/15 transition"
+                placeholder="Mật khẩu"
+                className="w-full h-12 mt-4 px-4 rounded-lg bg-white color-title border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus:border-white/30 focus:ring-2 focus:ring-white/15 transition"
                 value={form.password}
                 onChange={onChange}
                 required
               />
 
               {/* Thông báo */}
-              {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
+              {error && (
+                <p className="mt-4 text-sm text-red-300">
+                  {error}
+                </p>
+              )}
               {success && (
-                <p className="mt-4 text-sm text-emerald-300">{success}</p>
+                <p className="mt-4 text-sm text-emerald-300">
+                  {success}
+                </p>
               )}
 
               <button
@@ -114,21 +160,17 @@ export default function LoginSection() {
                 type="submit"
                 disabled={loading}
               >
-                {loading ? "Đang đăng nhập..." : "Đăng Nhập"}
+                {loading ? "Đang đăng ký..." : "Đăng Ký"}
               </button>
-              <a
-                href="/register"
-                className="font-semibold text-white underline mt-4 block text-right px-2"
-              >
-                Đăng ký tài khoản ?
-              </a>
+              <a href="/login" className="font-semibold text-white underline mt-4 block text-right px-2">Đăng nhập ?</a>
             </form>
 
             <p className="mb-4 text-center">------------ OR ------------</p>
 
             <div className="flex justify-center gap-4">
-              {/* 3 nút social giữ nguyên */}
+              {/* Các nút social giữ nguyên nếu bạn muốn */}
               <button className="bg-white rounded-lg p-3 shadow-md transition">
+                {/* Facebook */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   height="26"
@@ -139,6 +181,7 @@ export default function LoginSection() {
                 </svg>
               </button>
               <button className="bg-white rounded-lg p-3 shadow-md transition">
+                {/* Twitter/X */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   height="26"
@@ -149,6 +192,7 @@ export default function LoginSection() {
                 </svg>
               </button>
               <button className="bg-white rounded-lg p-3 shadow-md transition">
+                {/* Google */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   height="26"

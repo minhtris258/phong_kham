@@ -12,6 +12,7 @@ ul > li {
   max-width: 1232px;
   margin: 0 auto;
 }
+/* color title */
 .color-title {
   color: #003553 !important;
 }
@@ -21,6 +22,8 @@ ul > li {
 h2 {
   text-transform: uppercase;
 }
+
+/* border */
 .border-color-hover {
   border-style: solid;
   border-width: 0;
@@ -29,6 +32,16 @@ h2 {
 
 .border-color-hover:hover {
   border-width: 1px; 
+}
+
+/* Button */
+.btn-color{
+  background-color: #16B7D7;
+  color: white;
+  font-weight: 600;
+}
+.btn-color:hover{
+  background-color: #2d3435;
 }
 .bg-fade-vert {
   @apply bg-[#e8f4fd];

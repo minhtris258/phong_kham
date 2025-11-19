@@ -39,7 +39,7 @@ export const login = async (req, res, next) => {
         status: user.status || "pending_profile",
         profile_completed: !!user.profile_completed
       },
-      next: (!user.profile_completed ? "/onboarding/profile" : "/dashboard")
+      next: (!user.profile_completed ? "/" : "/")
     });
   } catch (e) { next(e); }
 };
