@@ -9,7 +9,10 @@ const DoctorEditModal = ({
     handleInputChange,
     handleSave,
     editingDoctor,
-    specialties = [] // Danh sách chuyên khoa từ API hoặc mock
+    specialties = [], // Danh sách chuyên khoa từ API hoặc mock
+    handleFileChange, // <-- THÊM PROP: Xử lý thay đổi file
+    clearThumbnail,   // <-- THÊM PROP: Xử lý xóa ảnh
+    isImagePending,   // <-- THÊM PROP: Trạng thái đang tải ảnh
 }) => {
     // Xử lý ngày sinh (chuyển Date → string yyyy-MM-dd)
     const formatDateForInput = (date) => {
@@ -18,15 +21,17 @@ const DoctorEditModal = ({
         return d.toISOString().split('T')[0];
     };
 
+    const currentThumbnail = formData.thumbnail || editingDoctor?.thumbnail;
+
     return (
         <Modal
             title={`Chỉnh sửa thông tin bác sĩ: ${editingDoctor?.fullName || 'Đang tải...'}`}
             isOpen={isOpen}
             onClose={onClose}
-            maxWidth="md"
+            maxWidth="3xl" // Tăng maxWidth để dễ nhìn
         >
             <form onSubmit={handleSave} className="space-y-6">
-                {/* Họ và tên */}
+                {/* === Hàng 1: Họ tên === */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         Họ và tên <span className="text-red-500">*</span>
@@ -42,7 +47,7 @@ const DoctorEditModal = ({
                     />
                 </div>
 
-                {/* Giới tính & Ngày sinh & Chuyên khoa */}
+                {/* === Hàng 2: Giới tính & Ngày sinh & Chuyên khoa === */}
                 <div className="grid grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -97,7 +102,48 @@ const DoctorEditModal = ({
                     </div>
                 </div>
 
-                {/* SĐT, Email, Phí khám */}
+                {/* --- Phần Upload Ảnh (Thumbnail) --- */}
+                <div className="grid grid-cols-3 gap-4 items-end">
+                    <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ảnh đại diện (Thumbnail)
+                        </label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange} // Sử dụng prop mới
+                            className="w-full border border-gray-300 rounded-lg p-2 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                            disabled={isImagePending}
+                        />
+                        {isImagePending && (
+                            <p className="text-sm text-indigo-600 mt-1">Đang tải ảnh lên...</p>
+                        )}
+                        
+                    </div>
+                    
+                    {/* Xem trước ảnh và xóa ảnh */}
+                    <div className="col-span-1">
+                        {currentThumbnail && (
+                            <div className="flex items-center space-x-2">
+                                <img
+                                    src={currentThumbnail}
+                                    alt="Thumbnail"
+                                    className="w-12 h-12 object-cover rounded-full border border-gray-300"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={clearThumbnail} // Sử dụng prop mới
+                                    className="text-sm text-red-600 hover:text-red-800 transition font-medium"
+                                >
+                                    Xóa ảnh cũ
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                {/* ------------------------------------ */}
+                
+                {/* Hàng 3: SĐT, Email, Phí khám */}
                 <div className="grid grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -119,9 +165,9 @@ const DoctorEditModal = ({
                         <input
                             type="email"
                             name="email"
-                            value={formData.email || ''}
-                            onChange={handleInputChange}
-                            disabled // Email không cho sửa (đã dùng để đăng nhập)
+                            // Lấy email từ editingDoctor vì trường này bị disable
+                            value={editingDoctor?.email || ''} 
+                            disabled 
                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
                         />
                     </div>
@@ -192,7 +238,8 @@ const DoctorEditModal = ({
                     </label>
                     <select
                         name="status"
-                        value={formData.status || 'pending_profile'}
+                        // Nếu status có trong formData thì dùng, nếu không thì dùng từ editingDoctor, mặc định là pending_profile
+                        value={formData.status || editingDoctor?.status || 'pending_profile'}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
                     >
@@ -214,8 +261,9 @@ const DoctorEditModal = ({
                     <button
                         type="submit"
                         className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium shadow-sm"
+                        disabled={isImagePending} // Disable khi đang tải ảnh
                     >
-                        Lưu Thay Đổi
+                        {isImagePending ? 'Đang lưu...' : 'Lưu Thay Đổi'}
                     </button>
                 </div>
             </form>

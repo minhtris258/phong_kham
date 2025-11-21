@@ -25,11 +25,13 @@ dotenv.config();
 const app = express();
 
 // Middleware cơ bản
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const BODY_LIMIT = '50mb';
+app.use(express.json({ limit: BODY_LIMIT }));
+app.use(express.urlencoded({ limit: BODY_LIMIT, extended: true }));
+
+// Cấu hình CORS (Giữ nguyên)
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
-
 // Health check DB
 app.get("/health/db", (_req, res) => {
   res.json({

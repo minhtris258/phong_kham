@@ -2,7 +2,8 @@ import React from 'react';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
-const DoctorList = ({ doctors, handleAddEdit, handleViewDoctor, confirmDelete }) => {
+// Thêm prop specialtyMap để hiển thị tên chuyên khoa (nếu chưa được populate)
+const DoctorList = ({ doctors, specialtyMap, handleAddEdit, handleViewDoctor, confirmDelete }) => {
     const doctorsArray = Array.isArray(doctors) ? doctors : [];
 
     return (
@@ -21,6 +22,8 @@ const DoctorList = ({ doctors, handleAddEdit, handleViewDoctor, confirmDelete })
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
+                            <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">STT</th> {/* THÊM STT */}
+                            <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ảnh</th> {/* THÊM CỘT ẢNH */}
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên Bác Sĩ</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chuyên Khoa</th>
                             <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phí Khám</th>
@@ -31,13 +34,35 @@ const DoctorList = ({ doctors, handleAddEdit, handleViewDoctor, confirmDelete })
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {doctorsArray.length > 0 ? (
-                            doctorsArray.map((doc) => (
-                                <tr key={doc._id} className="hover:bg-gray-50"> {/* ← Dùng _id thay vì id */}
+                            // Sử dụng index trong map để tạo STT
+                            doctorsArray.map((doc, index) => ( 
+                                <tr key={doc._id} className="hover:bg-gray-50">
+                                    {/* CỘT STT */}
+                                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                        {index + 1}
+                                    </td>
+                                    
+                                    {/* CỘT ẢNH */}
+                                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 text-center">
+                                        {doc.thumbnail ? (
+                                            <img 
+                                                src={doc.thumbnail} 
+                                                alt={`Ảnh ${doc.fullName}`} 
+                                                className="w-10 h-10 rounded-full object-cover mx-auto border border-gray-200" 
+                                            />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-500 mx-auto">
+                                                Ảnh
+                                            </div>
+                                        )}
+                                    </td>
+                                    
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                         {doc.fullName}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {doc.specialty_id?.name || 'Chưa chọn'} {/* ← Lấy tên từ object */}
+                                        {/* Sử dụng specialty_id.name nếu đã populate, nếu không dùng specialtyMap */}
+                                        {doc.specialty_id?.name || specialtyMap?.get(doc.specialty_id) || 'Chưa chọn'} 
                                     </td>
                                     <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {doc.consultation_fee?.toLocaleString('vi-VN')} VNĐ
@@ -49,13 +74,25 @@ const DoctorList = ({ doctors, handleAddEdit, handleViewDoctor, confirmDelete })
                                         <StatusBadge status={doc.status} />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end items-center gap-2">
-                                        <button onClick={() => handleViewDoctor(doc)} className="text-blue-600 hover:text-blue-900">
+                                        <button 
+                                            onClick={() => handleViewDoctor(doc)} 
+                                            className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition"
+                                            title="Xem chi tiết"
+                                        >
                                             <Eye className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => handleAddEdit(doc)} className="text-indigo-600 hover:text-indigo-900">
+                                        <button 
+                                            onClick={() => handleAddEdit(doc)} 
+                                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50 transition"
+                                            title="Chỉnh sửa"
+                                        >
                                             <Edit className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => confirmDelete(doc._id)} className="text-red-600 hover:text-red-900">
+                                        <button 
+                                            onClick={() => confirmDelete(doc._id)} 
+                                            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition"
+                                            title="Xóa"
+                                        >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </td>
@@ -63,7 +100,7 @@ const DoctorList = ({ doctors, handleAddEdit, handleViewDoctor, confirmDelete })
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                                <td colSpan="8" className="px-6 py-4 text-center text-gray-500"> {/* Tăng colSpan lên 8 */}
                                     Không có dữ liệu bác sĩ.
                                 </td>
                             </tr>

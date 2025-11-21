@@ -258,17 +258,142 @@ export const getDoctorById = async (req, res, next) => {
     next(e);
   }
 };
-
-/** PUT /api/doctors/me  (Bác sĩ hoặc Admin cập nhật hồ sơ → TỰ ĐỘNG HOÀN THÀNH NẾU ĐỦ) */
+/** PUT /api/doctors/me  (Bác sĩ cập nhật hồ sơ của mình) */
 export const updateMyDoctorProfile = async (req, res, next) => {
   try {
     const userId = req.user?._id;
     const role = req.user?.role || req.user?.role?.name;
-    if (!userId) return res.status(401).json({ error: "Thiếu token." });
+    if (!userId)
+      return res.status(401).json({ error: "Thiếu hoặc sai token." });
+    if (role !== "doctor") {
+      return res
+        .status(403)
+        .json({ error: "Chỉ tài khoản bác sĩ mới được truy cập." });
+    }
 
+    // các field cho phép cập nhật
+    const ALLOWED = new Set([
+      "fullName",
+      "gender",
+      "dob",
+      "phone",
+      "address",
+      "introduction",
+      "note",
+      "thumbnail", // <--- Field này cần được xử lý upload
+      "specialty_id",
+      "consultation_fee",
+    ]);
+
+    const payload = {};
+    for (const [k, v] of Object.entries(req.body || {})) {
+      if (ALLOWED.has(k) && v !== undefined && v !== null) {
+        payload[k] = v;
+      }
+    }
+
+    // validate cơ bản
+    if (payload.gender) {
+      const allowedGender = ["male", "female", "other"];
+      if (!allowedGender.includes(payload.gender)) {
+        return res.status(400).json({ error: "Giá trị gender không hợp lệ." });
+      }
+    }
+    if (payload.dob) {
+      const d = new Date(payload.dob);
+      if (isNaN(d.getTime())) {
+        return res.status(400).json({ error: "Định dạng dob không hợp lệ." });
+      }
+      payload.dob = d;
+    }
+    if (payload.specialty_id) {
+      const s = await Specialty.findById(payload.specialty_id).lean();
+      if (!s)
+        return res.status(404).json({ error: "Chuyên khoa không tồn tại." });
+    }
+    if (payload.phone) {
+      const phoneTaken = await Doctor.findOne({
+        user_id: { $ne: userId },
+        phone: payload.phone,
+      }).lean();
+      if (phoneTaken)
+        return res
+          .status(409)
+          .json({ error: "Số điện thoại đã được dùng cho hồ sơ khác." });
+    }
+
+    // -----------------------------------------------------------------
+    // ✨ Xử lý Upload ảnh thumbnail lên Cloudinary (nếu có) ✨
+    // -----------------------------------------------------------------
+    if (payload.thumbnail) {
+      // Kiểm tra xem payload.thumbnail có phải là URL cũ (không cần upload lại)
+      // hay là dữ liệu mới cần upload (base64 hoặc đường dẫn file tạm)
+
+      // Giả định: Nếu chuỗi không bắt đầu bằng "http" thì đó là dữ liệu mới cần upload
+      if (!payload.thumbnail.startsWith("http")) {
+        try {
+          // Upload ảnh mới
+          const uploadResult = await cloudinary.uploader.upload(
+            payload.thumbnail,
+            {
+              folder: "doctor_profiles",
+              resource_type: "image",
+              // Sử dụng public ID độc nhất, có thể ghi đè ảnh cũ của doctor này
+              public_id: `doctor_${userId}_avatar`,
+              overwrite: true,
+            }
+          );
+          // Gán URL mới vào payload để lưu vào DB
+          payload.thumbnail = uploadResult.secure_url;
+        } catch (uploadError) {
+          console.error("Cloudinary upload error:", uploadError);
+          return res
+            .status(500)
+            .json({ error: "Lỗi khi upload ảnh đại diện mới." });
+        }
+      }
+      // Nếu payload.thumbnail bắt đầu bằng "http", ta coi đó là URL cũ và không làm gì.
+    }
+    // -----------------------------------------------------------------
+
+    const updated = await Doctor.findOneAndUpdate(
+      { user_id: userId },
+      { $set: payload },
+      { new: true, runValidators: true }
+    )
+      .populate({ path: "specialty_id", select: "name code" })
+      .select("-__v")
+      .lean();
+
+    if (!updated) {
+      return res.status(404).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
+    }
+    return res
+      .status(200)
+      .json({ message: "Cập nhật thành công.", profile: updated });
+  } catch (e) {
+    next(e);
+  }
+};
+/** PUT /api/doctors/:id  (Admin cập nhật hồ sơ → TỰ ĐỘNG HOÀN THÀNH NẾU ĐỦ) */
+export const updateDoctorAdmin = async (req, res, next) => {
+  try {
+    const userId = req.user?._id;
+    const role = req.user?.role || req.user?.role?.name;
+    const doctorToUpdateId = req.params.id;
+    
+    if (!userId) return res.status(401).json({ error: "Thiếu token." });
+const existingDoctor = await Doctor.findById(doctorToUpdateId);
+    
+    if (!existingDoctor) {
+        // Trả về 404 nếu không tìm thấy document Doctor
+        return res.status(404).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
+    }
     // Cho phép cả doctor và admin sửa
-    if (role !== "doctor" && role !== "admin") {
-      return res.status(403).json({ error: "Không có quyền." });
+    if (role !== "admin" && userId.toString() !== doctorToUpdateId) {
+      return res
+        .status(403)
+        .json({ error: "Không có quyền cập nhật hồ sơ của người khác." });
     }
 
     const ALLOWED_FIELDS = [
@@ -298,15 +423,23 @@ export const updateMyDoctorProfile = async (req, res, next) => {
 
     // === XỬ LÝ UPLOAD ẢNH (nếu có) ===
     if (payload.thumbnail && !payload.thumbnail.startsWith("http")) {
-      try {
-        const upload = await cloudinary.uploader.upload(payload.thumbnail, {
-          folder: "doctor_profiles",
-          public_id: `doctor_${userId}_avatar`,
-          overwrite: true,
+      try {
+        const upload = await cloudinary.uploader.upload(payload.thumbnail, {
+          folder: "doctor_profiles",
+          // SỬ DỤNG existingDoctor ĐÃ TÌM ĐƯỢC
+          public_id: `doctor_${existingDoctor.user_id.toString()}_avatar`, 
+          overwrite: true,
+        });
+        payload.thumbnail = upload.secure_url;
+      } catch (err) {
+        // Thêm console.error để xem lỗi chi tiết trong Terminal
+        console.error("LỖI CHI TIẾT CLOUDINARY:", err.message);
+
+        // Trả về lỗi chi tiết cho client (chỉ nên làm trong môi trường dev/test)
+        return res.status(500).json({
+          error: "Lỗi upload ảnh đại diện.",
+          detail: err.message, // Trả về thông báo lỗi cụ thể
         });
-        payload.thumbnail = upload.secure_url;
-      } catch (err) {
-        return res.status(500).json({ error: "Lỗi upload ảnh đại diện." });
       }
     }
 
@@ -331,7 +464,7 @@ export const updateMyDoctorProfile = async (req, res, next) => {
     if (payload.phone) {
       const taken = await Doctor.findOne({
         phone: payload.phone,
-        user_id: { $ne: userId },
+        _id: { $ne: doctorToUpdateId }, // <-- SỬ DỤNG ID CỦA DOCTOR ĐANG CẬP NHẬT
       });
       if (taken)
         return res
@@ -341,7 +474,7 @@ export const updateMyDoctorProfile = async (req, res, next) => {
 
     // === CẬP NHẬT HỒ SƠ ===
     const updatedDoctor = await Doctor.findOneAndUpdate(
-      { user_id: userId },
+      { _id: doctorToUpdateId }, // <-- DÙNG ID CỦA DOCTOR TRONG URL
       { $set: payload },
       { new: true, runValidators: true }
     ).populate({ path: "specialty_id", select: "name code" });
@@ -372,7 +505,7 @@ export const updateMyDoctorProfile = async (req, res, next) => {
     if (isComplete && updatedDoctor.status !== "active") {
       updatedDoctor.status = "active";
       await updatedDoctor.save();
-      await User.findByIdAndUpdate(userId, {
+      await User.findByIdAndUpdate(existingDoctor.user_id, {
         profile_completed: true,
         status: "active",
       });

@@ -24,7 +24,7 @@ const DoctorManagement = () => {
 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingDoctor, setViewingDoctor] = useState(null);
-
+const [isImagePending, setIsImagePending] = useState(false); // Trạng thái tải ảnh Base64
   // Danh sách chuyên khoa
   const [specialties, setSpecialties] = useState([]);
 
@@ -71,11 +71,15 @@ const DoctorManagement = () => {
 
   // Mở modal thêm/sửa
   const handleAddEdit = (doctor = null) => {
-    setEditingDoctor(doctor);
-    if (doctor) {
-      // Sửa: copy toàn bộ dữ liệu bác sĩ
-      setFormData({ ...doctor });
-    } else {
+  setEditingDoctor(doctor);
+  if (doctor) {
+    // Sửa: copy toàn bộ dữ liệu bác sĩ
+    setFormData({ 
+        ...doctor,
+        // Đảm bảo specialty_id là chuỗi khi được lưu vào form data
+        specialty_id: doctor.specialty_id?._id || doctor.specialty_id || '',
+    });
+  } else {
       // Thêm mới: CHỈ set 3 trường bắt buộc
       setFormData({
         name: "",
@@ -151,7 +155,35 @@ const DoctorManagement = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
+    // Chuyển file thành Base64
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+
+    reader.onloadstart = () => setIsImagePending(true);
+
+    reader.onload = () => {
+      // Lưu chuỗi Base64 vào formData để backend xử lý
+      setFormData((prev) => ({ ...prev, thumbnail: reader.result }));
+      setIsImagePending(false);
+    };
+
+    reader.onerror = (error) => {
+      console.error("Lỗi đọc file:", error);
+      setIsImagePending(false);
+      alert("Lỗi tải ảnh cục bộ. Vui lòng thử lại.");
+    };
+  };
+
+  const clearThumbnail = () => {
+    // Xóa ảnh trong form data. Gửi giá trị null hoặc chuỗi rỗng để backend xử lý
+    // (Trong backend hiện tại, chuỗi rỗng/null sẽ giữ lại ảnh cũ, nhưng đây là cách để xóa ảnh ở FE)
+    setFormData((prev) => ({ ...prev, thumbnail: "" })); 
+    // Nếu bạn muốn backend xóa ảnh, bạn có thể gửi một giá trị đặc biệt như "REMOVE_IMAGE"
+  };
   if (loading)
     return (
       <div className="text-center p-8 text-xl">
@@ -202,6 +234,9 @@ const DoctorManagement = () => {
             handleSave={handleSave}
             editingDoctor={editingDoctor}
             specialties={specialties.length > 0 ? specialties : mockSpecialties} // ← ĐÚNG TÊN PROP
+            handleFileChange={handleFileChange}
+            clearThumbnail={clearThumbnail}
+            isImagePending={isImagePending}
           />
         )}
 
