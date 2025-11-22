@@ -1,10 +1,15 @@
+// src/components/DoctorsFavorite.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import "../index.css";
 import Title from "./Title";
 
-// util: format tiền VND
+// 👈 KHAI BÁO URL BACKEND 1 LẦN Ở ĐÂY
+// Đổi 5000 thành đúng port server của bạn
+const API_URL = "http://localhost:3000/api/doctors";
+
+// ====================== UTIL ======================
 const formatVND = (n) =>
   typeof n === "number"
     ? n.toLocaleString("vi-VN") + "đ"
@@ -12,25 +17,28 @@ const formatVND = (n) =>
     ? Number(n).toLocaleString("vi-VN") + "đ"
     : "—";
 
-// 1 card bác sĩ
+const resolveDoctorImage = (thumbnail) =>
+  thumbnail ||
+  "https://via.placeholder.com/300x300.png?text=Doctor";
+
+// =================== 1 CARD BÁC SĨ ===================
 function DoctorCard({ doc }) {
   const {
     _id,
     fullName,
     thumbnail,
     consultation_fee,
-    specialty_name, // nếu API trả kèm tên chuyên khoa
-    specialty, // hoặc object { name: '...' }
+    specialty_name,
+    specialty,
   } = doc || {};
 
   const specText = specialty_name || specialty?.name || "Bác Sĩ Chuyên Khoa";
-
   const imgSrc = resolveDoctorImage(thumbnail);
 
   return (
     <Link to={`/doctors/${_id || ""}`} className="block">
-      <div className="relative items-center justify-center bg-white h-[485px] rounded-lg p-4 shadow-[0_10px_25px_rgba(0,0,0,0.08)]">
-        <Title>Được tin tưởng hợp tác và đồng hành</Title>
+      <div className="relative items-center justify-center shadow-xl/20  bg-white h-[485px] box-shadow rounded-lg p-4  border-color-hover">
+        
         <img
           className="h-40 w-auto mx-auto object-cover"
           src={imgSrc}
@@ -38,16 +46,16 @@ function DoctorCard({ doc }) {
           loading="lazy"
         />
 
-        {/* hàng đánh giá / lượt khám (mock nếu chưa có field) */}
-        <div className="py-4 bg-[#ebf9fd] flex gap-4 px-3 rounded-md mt-4">
+        {/* Đánh giá / lượt khám */}
+        <div className="py-4 bg-[#ebf9fd] flex gap-4 px-2 rounded-md mt-4">
           <div className="flex gap-1">
-            <p className="text-base font-bold font-roboto">Đánh giá:</p>
+            <p className="text-sm font-bold font-roboto">Đánh giá:</p>
             <p className="flex text-base font-roboto font-semibold text-yellow-500">
               {doc?.rating ?? 5}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                height="22"
-                width="22"
+                height="20"
+                width="20"
                 viewBox="0 0 576 512"
               >
                 <path
@@ -59,7 +67,7 @@ function DoctorCard({ doc }) {
           </div>
 
           <div className="flex gap-1 ml-auto">
-            <p className="text-base font-bold font-roboto">Lượt khám:</p>
+            <p className="text-sm font-bold font-roboto">Lượt khám:</p>
             <p className="flex text-base text-yellow-500 font-semibold font-roboto">
               {doc?.visits ?? 30}
               <svg
@@ -79,9 +87,7 @@ function DoctorCard({ doc }) {
 
         {/* Chức danh */}
         <div className="flex pt-4">
-          <span className="font-roboto lg:text-2xl text-xl color-title">
-            BS
-          </span>
+          <span className="font-roboto lg:text-2xl text-xl color-title">BS</span>
           <span className="font-roboto lg:text-2xl text-xl color-title">
             .CKI
           </span>
@@ -101,7 +107,7 @@ function DoctorCard({ doc }) {
             viewBox="0 0 576 512"
             className="self-center color-title"
           >
-            <path d="M32 48C32 21.5 53.5 0 80 0l48 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-32 0 0 128c0 53 43 96 96 96s96-43 96-96l0-128-32 0c-17.7 0-32-14.3-32-32S238.3 0 256 0l48 0c26.5 0 48 21.5 48 48l0 144c0 77.4-55 142-128 156.8l0 19.2c0 61.9 50.1 112 112 112s112-50.1 112-112l0-85.5c-37.3-13.2-64-48.7-64-90.5 0-53 43-96 96-96s96 43 96 96c0 41.8-26.7 77.4-64 90.5l0 85.5c0 97.2-78.8 176-176 176S160 465.2 160 368l0-19.2C87 334 32 269.4 32 192L32 48zM480 224a32 32 0 1 0 0-64 32 32 0 1 0 0 64z" />
+            <path d="M32 48C32 21.5 53.5 0 80 0l48 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-32 0 0 128c0 53 43 96 96 96s96-43 96-96l0-128-32 0c-17.7 0-32-14.3-32-32S238.3 0 256 0l48 0c26.5 0 48 21.5 48 48l0 144c0 77.4-55 142-128 156.8l0 19.2C87 334 32 269.4 32 192L32 48zM480 224a32 32 0 1 0 0-64 32 32 0 1 0 0 64z" />
           </svg>
           <p className="text-base font-roboto color-title">{specText}</p>
         </div>
@@ -141,7 +147,7 @@ function DoctorCard({ doc }) {
           </p>
         </div>
 
-        <button className="w-full mt-2 px-4 py-2 bg-[#00b5f1] text-white rounded">
+        <button className="w-full mt-2 px-4 py-2 btn-color rounded">
           Tư Vấn ngay
         </button>
       </div>
@@ -149,7 +155,7 @@ function DoctorCard({ doc }) {
   );
 }
 
-// Section danh sách
+// =================== SECTION DANH SÁCH ===================
 export default function DoctorsFavorite({
   title = "Bác sĩ được yêu thích nhất",
   doctors: doctorsProp,
@@ -159,15 +165,31 @@ export default function DoctorsFavorite({
 
   useEffect(() => {
     if (!shouldFetch) return;
+
+    let cancelled = false;
+
     (async () => {
       try {
-        // đổi URL theo API của bạn
-        const res = await axios.get("/api/doctors?topLiked=true&limit=8");
-        setDoctors(res.data?.data || res.data || []);
+        const res = await axios.get(API_URL, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        // backend trả { doctors: [...] }
+        const list = res.data?.doctors || [];
+
+        if (!cancelled) {
+          setDoctors(Array.isArray(list) ? list : []);
+        }
       } catch (e) {
         console.error("Fetch doctors failed:", e);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [shouldFetch]);
 
   return (

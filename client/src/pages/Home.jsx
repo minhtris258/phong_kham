@@ -1,6 +1,7 @@
 import React from 'react';
 import Hero from '../components/Hero';
 import PartnersSection from '../components/PartnersSection';
+import DoctorsFavorite from '../components/DoctorsFavorite';
 
 
 const Home = () => {
@@ -8,6 +9,7 @@ const Home = () => {
     <>
         <Hero />
         <PartnersSection />
+        <DoctorsFavorite />
     </>
   );
 };
