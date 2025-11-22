@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { initialMockPatients } from '../../mocks/mockdata';
+import { initialMockPatients } from '../../../mocks/mockdata';
 
 const AppointmentCalendar = ({ appointments, currentMonth, setCurrentMonth, onSelectDate }) => {
     const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
