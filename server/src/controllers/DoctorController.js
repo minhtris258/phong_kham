@@ -390,11 +390,11 @@ const existingDoctor = await Doctor.findById(doctorToUpdateId);
         return res.status(404).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
     }
     // Cho phép cả doctor và admin sửa
-    if (role !== "admin" && userId.toString() !== doctorToUpdateId) {
-      return res
-        .status(403)
-        .json({ error: "Không có quyền cập nhật hồ sơ của người khác." });
-    }
+   if (role !== "admin" && userId.toString() !== existingDoctor.user_id.toString()) {
+      return res
+        .status(403)
+        .json({ error: "Không có quyền cập nhật hồ sơ của người khác." });
+    }
 
     const ALLOWED_FIELDS = [
       "fullName",

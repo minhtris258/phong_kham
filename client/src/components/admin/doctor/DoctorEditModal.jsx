@@ -245,7 +245,6 @@ const DoctorEditModal = ({
                     >
                         <option value="active">Hoạt động (Hiển thị cho bệnh nhân)</option>
                         <option value="inactive">Tạm dừng</option>
-                        <option value="pending_profile">Chờ hoàn tất hồ sơ</option>
                     </select>
                 </div>
 
