@@ -45,7 +45,7 @@ export default function LoginSection() {
       localStorage.setItem("token", res.data.token);
       setSuccess("Đăng nhập thành công!");
       // ví dụ: điều hướng theo backend gợi ý
-      window.location.href = res.data.next || "/home";
+      window.location.href = res.data.next || "/";
     } catch (err) {
       console.error(err);
       const message =
