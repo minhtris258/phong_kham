@@ -57,20 +57,24 @@ const applyException = (baseRanges, exception) => {
 
 /** GET /api/doctors/:id/schedule (public/admin tuỳ bạn) */
 export const getDoctorSchedule = async (req, res, next) => {
-  try {
-    const { id } = req.params; // doctor id
-    const doctor = await Doctor.findById(id).lean();
-    if (!doctor) return res.status(404).json({ error: "Không tìm thấy bác sĩ." });
+  try {
+    // 1. Lấy đúng tên tham số từ route
+    const { doctorId } = req.params; 
+    
+    // 2. Tìm Doctor
+    const doctor = await Doctor.findById(doctorId).lean();
+    if (!doctor) return res.status(404).json({ error: "Không tìm thấy bác sĩ." });
 
-    const schedule = await DoctorSchedule.findOne({ doctor_id: id }).lean();
-    if (!schedule) return res.status(404).json({ error: "Bác sĩ chưa cấu hình lịch." });
+    // 3. Tìm Schedule
+    const schedule = await DoctorSchedule.findOne({ doctor_id: doctorId }).lean();
+    // Nếu không tìm thấy lịch, trả về lỗi khác (vì đã tìm thấy bác sĩ)
+    if (!schedule) return res.status(404).json({ error: "Bác sĩ chưa cấu hình lịch." });
 
-    return res.json({ schedule });
-  } catch (e) {
-    next(e);
-  }
+    return res.json({ schedule });
+  } catch (e) {
+    next(e);
+  }
 };
-
 /** GET /api/doctors/:id/slots?date=YYYY-MM-DD
  * Trả danh sách slot trống theo template + exceptions (chưa trừ các booking).
  * Bạn có thể lọc thêm “đã đặt” bằng cách trừ các Appointment trong khoảng ngày đó.
@@ -204,6 +208,56 @@ export const upsertMyException = async (req, res, next) => {
     await schedule.save();
 
     return res.status(200).json({ message: "Lưu thành công.", schedule });
+  } catch (e) {
+    next(e);
+  }
+};
+
+// POST /api/doctor-schedules/:doctorId/exceptions (Admin thêm/cập nhật 1 exception của ngày)
+export const adminUpsertDoctorException = async (req, res, next) => {
+  try {
+    // 1. Kiểm tra quyền Admin (Cần có Middleware)
+    const role = req.user?.role || req.user?.role?.name;
+    if (role !== "admin") return res.status(403).json({ error: "Không có quyền Admin." });
+
+    const { doctorId } = req.params; // Lấy ID bác sĩ từ URL
+    const { date, isDayOff = false, add = [], removeSlot = [] } = req.body || {};
+    
+    if (!date || !doctorId) return res.status(400).json({ error: "Thiếu date hoặc doctorId." });
+
+    // 2. Tìm hoặc tạo mới DoctorSchedule
+    const schedule = await DoctorSchedule.findOne({ doctor_id: doctorId });
+
+    if (!schedule) {
+      // Nếu chưa có lịch khám, tạo mới với ngoại lệ này
+      const created = await DoctorSchedule.create({
+        doctor_id: doctorId,
+        slot_minutes: 30,
+        weekly_schedule: [],
+        exceptions: [{ date, isDayOff, add, removeSlot }],
+      });
+      return res.status(200).json({ message: "Admin: Lưu lịch nghỉ thành công (tạo mới).", schedule: created });
+    }
+
+    // 3. Cập nhật hoặc thêm exception vào mảng
+    const idx = schedule.exceptions.findIndex(ex => ex.date === date);
+
+    if (idx > -1) {
+      // Cập nhật exception đã tồn tại
+      schedule.exceptions[idx] = { date, isDayOff, add, removeSlot };
+    } else {
+      // Thêm exception mới
+      schedule.exceptions.push({ date, isDayOff, add, removeSlot });
+    }
+
+    const updated = await schedule.save();
+
+    // 4. CHÚ Ý QUAN TRỌNG: Cần thêm logic kiểm tra các lịch hẹn đã đặt
+    // Nếu Admin cho nghỉ cả ngày (`isDayOff: true`), hệ thống cần:
+    // a) Thông báo cho Admin biết có bao nhiêu lịch hẹn bị ảnh hưởng.
+    // b) Yêu cầu Admin xác nhận để hủy/chuyển các lịch hẹn đó (tùy theo logic nghiệp vụ).
+
+    return res.status(200).json({ message: "Admin: Cập nhật ngoại lệ lịch khám thành công.", schedule: updated });
   } catch (e) {
     next(e);
   }

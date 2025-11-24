@@ -4,6 +4,7 @@ import {
   adminUpdatePatientPassword,
   completePatientProfile,
   createPatient,
+  deletePatientById,
   getAllPatients,
   getMyPatientProfile,
   getPatientById,
@@ -24,6 +25,7 @@ router.put(
   requireRole(["admin"]),
   adminUpdatePatientPassword
 ); // PUT /api/patients/:id/password (Chỉ Admin)
+router.delete("/:id", verifyToken, requireRole("admin"), deletePatientById); // DELETE /api/patients/:id
 
 // --- Tuyến đường Cá nhân (Patient) ---
 router.post(

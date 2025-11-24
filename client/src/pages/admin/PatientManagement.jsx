@@ -1,5 +1,6 @@
 // src/pages/admin/DoctorManagement.jsx (PatientManagement)
 import React, { useState, useEffect } from "react";
+import { toastSuccess, toastError } from "../../utils/toast";
 import patientService from "../../services/PatientService";
 
 // Import components
@@ -72,9 +73,9 @@ const PatientManagement = () => {
       await patientService.deletePatient(confirmDeleteId);
       setConfirmDeleteId(null);
       fetchPatients();
-      alert("Xóa bệnh nhân thành công!");
+      toastSuccess("Xóa bệnh nhân thành công!");
     } catch (err) {
-      alert(
+      toastError(
         "Xóa thất bại: " + (err.response?.data?.error || "Lỗi không xác định")
       );
     }
@@ -104,7 +105,7 @@ const PatientManagement = () => {
           email: email.trim(),
           password: password,
         });
-        alert(
+        toastSuccess(
           "Tạo tài khoản bệnh nhân thành công!\n\nBệnh nhân sẽ nhận thông tin đăng nhập và cần hoàn tất hồ sơ cá nhân khi đăng nhập lần đầu."
         );
       }
@@ -113,7 +114,7 @@ const PatientManagement = () => {
       fetchPatients();
     } catch (err) {
       const errorMsg = err.response?.data?.error || "Lỗi không xác định";
-      alert("Lỗi: " + errorMsg);
+      toastError("Lỗi: " + errorMsg);
       console.error("Lỗi lưu bệnh nhân:", err);
     }
   };

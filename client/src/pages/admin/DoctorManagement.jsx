@@ -1,10 +1,12 @@
 // src/pages/admin/DoctorManagement.jsx
 import React, { useState, useMemo, useEffect } from "react";
 import doctorService from "../../services/doctorService";
+import doctorSchedulesService from "../../services/DoctorScheduleService";
 
 // Import components
 import DoctorList from "./../../components/admin/doctor/DoctorList";
 import DoctorAddModal from "../../components/admin/doctor/DoctorAddModal";
+import DoctorScheduleAdminModal from "../../components/admin/doctor/DoctorScheduleAdminModal";
 import DoctorEditModal from "../../components/admin/doctor/DoctorEditModal";
 import DoctorViewModal from "./../../components/admin/doctor/DoctorViewModal";
 import DoctorDeleteModal from "./../../components/admin/doctor/DoctorDeleteModal";
@@ -24,7 +26,10 @@ const DoctorManagement = () => {
 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingDoctor, setViewingDoctor] = useState(null);
-const [isImagePending, setIsImagePending] = useState(false); // Trạng thái tải ảnh Base64
+  const [isImagePending, setIsImagePending] = useState(false); // Trạng thái tải ảnh Base64
+
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleDoctor, setScheduleDoctor] = useState(null); // Doctor đang được quản lý lịch
   // Danh sách chuyên khoa
   const [specialties, setSpecialties] = useState([]);
 
@@ -68,18 +73,22 @@ const [isImagePending, setIsImagePending] = useState(false); // Trạng thái t�
   useEffect(() => {
     fetchDoctors();
   }, []);
-
+  // Mở modal quản lý lịch bác sĩ
+  const handleManageSchedule = (doctor) => {
+    setScheduleDoctor(doctor);
+    setIsScheduleModalOpen(true);
+  };
   // Mở modal thêm/sửa
   const handleAddEdit = (doctor = null) => {
-  setEditingDoctor(doctor);
-  if (doctor) {
-    // Sửa: copy toàn bộ dữ liệu bác sĩ
-    setFormData({ 
+    setEditingDoctor(doctor);
+    if (doctor) {
+      // Sửa: copy toàn bộ dữ liệu bác sĩ
+      setFormData({
         ...doctor,
         // Đảm bảo specialty_id là chuỗi khi được lưu vào form data
-        specialty_id: doctor.specialty_id?._id || doctor.specialty_id || '',
-    });
-  } else {
+        specialty_id: doctor.specialty_id?._id || doctor.specialty_id || "",
+      });
+    } else {
       // Thêm mới: CHỈ set 3 trường bắt buộc
       setFormData({
         name: "",
@@ -155,7 +164,7 @@ const [isImagePending, setIsImagePending] = useState(false); // Trạng thái t�
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-const handleFileChange = (e) => {
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -181,7 +190,7 @@ const handleFileChange = (e) => {
   const clearThumbnail = () => {
     // Xóa ảnh trong form data. Gửi giá trị null hoặc chuỗi rỗng để backend xử lý
     // (Trong backend hiện tại, chuỗi rỗng/null sẽ giữ lại ảnh cũ, nhưng đây là cách để xóa ảnh ở FE)
-    setFormData((prev) => ({ ...prev, thumbnail: "" })); 
+    setFormData((prev) => ({ ...prev, thumbnail: "" }));
     // Nếu bạn muốn backend xóa ảnh, bạn có thể gửi một giá trị đặc biệt như "REMOVE_IMAGE"
   };
   if (loading)
@@ -211,6 +220,7 @@ const handleFileChange = (e) => {
             setIsViewModalOpen(true);
           }}
           confirmDelete={confirmDelete}
+          handleManageSchedule={handleManageSchedule}
         />
 
         {/* Modal Thêm bác sĩ */}
@@ -223,7 +233,14 @@ const handleFileChange = (e) => {
             handleSave={handleSave}
           />
         )}
-
+        {isScheduleModalOpen && scheduleDoctor && (
+          <DoctorScheduleAdminModal
+            isOpen={isScheduleModalOpen}
+            onClose={() => setIsScheduleModalOpen(false)}
+            doctorId={scheduleDoctor?._id || scheduleDoctor?.id} // Rất an toàn
+            doctorName={scheduleDoctor?.fullName}
+          />
+        )}
         {/* Modal Sửa bác sĩ */}
         {isModalOpen && editingDoctor && (
           <DoctorEditModal

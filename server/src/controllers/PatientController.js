@@ -447,6 +447,7 @@ export const deletePatientById = async (req, res, next) => {
   try {
     const patientId = req.params.id;
     const deleted = await Patient.findByIdAndDelete(patientId).lean();
+    await User.findByIdAndDelete(deleted.user_id);
     if (!deleted) {
       return res.status(404).json({ error: "Không tìm thấy hồ sơ bệnh nhân." });
     }

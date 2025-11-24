@@ -1,6 +1,9 @@
 import React from "react";
 import "./index.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 import AdminLayout from "./layouts/AdminLayout";
 import UserLayout from "./layouts/UserLayout";
@@ -12,7 +15,7 @@ import AppointmentManagement from "./pages/admin/AppointmentManagement";
 import PatientManagement from "./pages/admin/PatientManagement";
 import DoctorManagement from "./pages/admin/DoctorManagement";
 import ProfileSettings from "./pages/admin/ProfileSettings";
-import SpecialtyManagement from "./pages/admin/specialtyManagement";
+import SpecialtyManagement from "./pages/admin/SpecialtyManagement";
 
 // Doctor Pages
 import DoctorProfile from "./pages/doctor/DoctorProfile";
@@ -84,6 +87,7 @@ export default function App() {
         } />
 
       </Routes>
+      <ToastContainer />
     </BrowserRouter>
   );
 }
