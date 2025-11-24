@@ -63,7 +63,7 @@ export const bookAppointment = async (req, res, next) => {
     
     // A. Lấy thông tin chi tiết để hiển thị trong thông báo
     const patient = await User.findById(req.user._id).lean();
-    const doctor = await Doctor.findOne({ user_id: createdAppt.doctor_id }).lean(); 
+    const doctor = await Doctor.findOne({ _id: createdAppt.doctor_id }).lean(); 
     // Nếu không tìm thấy trong bảng Doctor, tìm tạm trong User
     const doctorName = doctor?.fullName || "Bác sĩ"; 
     

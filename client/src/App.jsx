@@ -33,6 +33,7 @@ import AppointmentListContent from "./pages/patient/dashboard-sections/Appointme
 import PaymentHistoryContent from "./pages/patient/dashboard-sections/PaymentHistory";
 import AccountSettingsContent from "./pages/patient/dashboard-sections/AccountSettings";
 import HolidayManagement from "./pages/admin/HolidayManagement";
+import NotificationPage from "./pages/NotificationPage";
 
 
 
@@ -46,6 +47,7 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="Login" element={<LoginPage />} />
           <Route path="Register" element={<RegisterPage />} />
+          <Route path="Notification" element={<NotificationPage />} />
           <Route path="bac-si/:id" element={<DoctorDetailPage />} />
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
