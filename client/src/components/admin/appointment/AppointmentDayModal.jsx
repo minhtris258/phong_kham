@@ -48,8 +48,8 @@ const AppointmentDayModal = ({
                         {apps.length > 0 ? (
                             apps.sort((a, b) => a.start.localeCompare(b.start)).map((app) => (
                                 <tr key={app.id} className="hover:bg-indigo-50/50 transition">
-                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{getPatientName(app.patient_id)}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{getDoctorName(app.doctor_id)}</td>
+                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{app.patient_id?.name || app.patient_id?.fullName || "N/A"}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{app.doctor_id?.fullName || app.doctor_id?.name || "N/A"}</td>
                                     <td className="px-4 py-3 text-sm font-medium text-gray-800">{app.start}</td>
                                     <td className="px-4 py-3 text-sm">
                                         <span className={`px-2 py-1 inline-flex text-xs font-bold rounded-full ${getStatusStyle(app.status)}`}>
@@ -58,7 +58,7 @@ const AppointmentDayModal = ({
                                     </td>
                                     <td className="px-4 py-3 text-right text-sm font-medium flex justify-end items-center">
                                         <button onClick={() => { handleAddEdit(app); onClose(); }} className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full" title="Sửa">Sửa</button>
-                                        <button onClick={() => confirmDelete(app.id)} className="text-red-600 hover:text-red-900 p-1 rounded-full ml-1" title="Xóa">Xóa</button>
+                                        <button onClick={() => confirmDelete(app._id)} className="text-red-600 hover:text-red-900 p-1 rounded-full ml-1" title="Xóa">Xóa</button>
                                     </td>
                                 </tr>
                             ))

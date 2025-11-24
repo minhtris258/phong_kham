@@ -1,6 +1,6 @@
 // src/pages/admin/DoctorManagement.jsx
 import React, { useState, useMemo, useEffect } from "react";
-import doctorService from "../../services/doctorService";
+import doctorService from "../../services/DoctorService";
 import doctorSchedulesService from "../../services/DoctorScheduleService";
 
 // Import components

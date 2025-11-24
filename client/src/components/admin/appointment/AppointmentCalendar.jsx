@@ -1,15 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { initialMockPatients } from '../../../mocks/mockdata';
 
-const AppointmentCalendar = ({ appointments, currentMonth, setCurrentMonth, onSelectDate }) => {
+const AppointmentCalendar = ({ 
+    appointments, 
+    currentMonth, 
+    setCurrentMonth, 
+    onSelectDate,
+    getPatientName // <--- Nhận thêm prop này từ cha
+}) => {
     const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
     const [selectedDate, setSelectedDate] = useState(null);
 
     const getDaysInMonth = (date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
-        const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 for Sunday, 1 for Monday
+        const firstDayOfMonth = new Date(year, month, 1).getDay(); 
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         
         // Convert JS Sunday (0) to Vietnamese Sunday (6). Monday (1) stays (0).
@@ -18,14 +23,18 @@ const AppointmentCalendar = ({ appointments, currentMonth, setCurrentMonth, onSe
         return { startDayIndex, daysInMonth };
     };
 
+    // Gom nhóm lịch hẹn theo ngày (YYYY-MM-DD)
     const appointmentsByDate = useMemo(() => {
         const map = {};
         appointments.forEach(app => {
-            const date = app.date;
-            if (!map[date]) {
-                map[date] = [];
+            if (!app.date) return;
+            // Chuyển đổi ngày từ API (ISO) sang YYYY-MM-DD
+            const dateStr = new Date(app.date).toISOString().split('T')[0];
+            
+            if (!map[dateStr]) {
+                map[dateStr] = [];
             }
-            map[date].push(app);
+            map[dateStr].push(app);
         });
         return map;
     }, [appointments]);
@@ -43,7 +52,12 @@ const AppointmentCalendar = ({ appointments, currentMonth, setCurrentMonth, onSe
     };
 
     const handleDateClick = (day) => {
-        const dateString = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        // Tạo chuỗi YYYY-MM-DD chuẩn theo tháng hiện tại của lịch
+        const year = currentMonth.getFullYear();
+        const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+        const d = String(day).padStart(2, '0');
+        const dateString = `${year}-${month}-${d}`;
+
         setSelectedDate(dateString);
         if (onSelectDate) onSelectDate(dateString, appointmentsByDate[dateString] || []);
     };
@@ -56,7 +70,10 @@ const AppointmentCalendar = ({ appointments, currentMonth, setCurrentMonth, onSe
     };
 
     const hasAppointment = (day) => {
-        const dateString = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const year = currentMonth.getFullYear();
+        const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+        const d = String(day).padStart(2, '0');
+        const dateString = `${year}-${month}-${d}`;
         return !!appointmentsByDate[dateString];
     };
 
@@ -89,7 +106,11 @@ const AppointmentCalendar = ({ appointments, currentMonth, setCurrentMonth, onSe
                 {/* Các ngày trong tháng */}
                 {Array.from({ length: daysInMonth }).map((_, index) => {
                     const day = index + 1;
-                    const dateString = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const year = currentMonth.getFullYear();
+                    const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+                    const d = String(day).padStart(2, '0');
+                    const dateString = `${year}-${month}-${d}`;
+                    
                     const isBusy = hasAppointment(day);
                     const todayClass = isToday(day) ? 'ring-2 ring-indigo-500 border-2 border-white' : '';
                     const busyClass = isBusy ? 'bg-indigo-100 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50';
@@ -110,13 +131,23 @@ const AppointmentCalendar = ({ appointments, currentMonth, setCurrentMonth, onSe
                 })}
             </div>
 
+            {/* Danh sách rút gọn bên dưới lịch */}
             {selectedDate && appointmentsByDate[selectedDate] && (
                 <div className="mt-4 border-t pt-3">
                     <h4 className="font-bold text-sm text-gray-700 mb-2">Lịch Hẹn Ngày {selectedDate.split('-').reverse().join('/')}:</h4>
                     <ul className="space-y-1 max-h-24 overflow-y-auto">
                         {appointmentsByDate[selectedDate].map(app => (
-                            <li key={app.id} className="text-xs text-gray-600 bg-gray-50 p-1 rounded">
-                                **{app.start}**: {initialMockPatients.find(p => p.id === app.patient_id)?.fullName || 'Bệnh Nhân [ID:' + app.patient_id.slice(-4) + ']'} ({app.status})
+                            <li key={app._id || app.id} className="text-xs text-gray-600 bg-gray-50 p-1 rounded border border-gray-100 flex justify-between">
+                                <span>
+                                    <span className="font-bold text-indigo-600">{app.start}</span>: {app.patient_id?.name || app.patient_id?.fullName || "N/A"}
+                                </span>
+                                <span className={`px-1 rounded text-[10px] uppercase ${
+                                    app.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                    app.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                    'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                    {app.status}
+                                </span>
                             </li>
                         ))}
                     </ul>
@@ -125,4 +156,5 @@ const AppointmentCalendar = ({ appointments, currentMonth, setCurrentMonth, onSe
         </div>
     );
 };
+
 export default AppointmentCalendar;

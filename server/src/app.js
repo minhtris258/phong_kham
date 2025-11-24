@@ -52,7 +52,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/specialties", specialtyRoutes);
 app.use("/api/patients", patientsRoutes);
-app.use("/api/doctors", TimeSlotRoutes);
+app.use("/api/timeslots", TimeSlotRoutes);
 app.use("/api/doctors", DoctorRoutes);
 app.use("/api/doctor-schedules", DoctorScheduleRoutes);
 app.use("/api/appointments", appointmentRoutes);

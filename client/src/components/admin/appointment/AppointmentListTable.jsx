@@ -1,4 +1,3 @@
-
 // src/components/admin/appointment/AppointmentListTable.jsx
 import React from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
@@ -6,8 +5,8 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 const AppointmentListTable = ({
     appointments,
     selectedDate,
-    getDoctorName,
-    getPatientName,
+    // getDoctorName, // Không cần dùng map nữa nếu API đã populate
+    // getPatientName, // Không cần dùng map nữa nếu API đã populate
     getStatusStyle,
     handleAddEdit,
     confirmDelete,
@@ -15,6 +14,19 @@ const AppointmentListTable = ({
     const title = selectedDate 
         ? `Lịch Hẹn Ngày ${selectedDate.split('-').reverse().join('/')}` 
         : 'Danh Sách Lịch Hẹn';
+
+    // Helper để lấy tên an toàn (xử lý cả trường hợp populate object và id string)
+    const getPatientDisplay = (patient) => {
+        if (!patient) return "Không rõ";
+        if (typeof patient === 'object') return patient.name || patient.fullName || "Không rõ";
+        return patient; // Trả về ID nếu chưa populate
+    };
+
+    const getDoctorDisplay = (doctor) => {
+        if (!doctor) return "Không rõ";
+        if (typeof doctor === 'object') return doctor.fullName || doctor.name || "Không rõ";
+        return doctor;
+    };
 
     return (
         <div className="bg-white p-6 rounded-xl shadow-2xl border border-gray-100">
@@ -43,11 +55,19 @@ const AppointmentListTable = ({
                     <tbody className="bg-white divide-y divide-gray-200">
                         {appointments.length > 0 ? (
                             appointments.map((app) => (
-                                <tr key={app.id} className="hover:bg-indigo-50/50 transition duration-150">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{getPatientName(app.patient_id)}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{getDoctorName(app.doctor_id)}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{app.start} - {app.date}</td>
-                                    <td className="hidden sm:table-cell px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{app.reason || 'Không rõ'}</td>
+                                <tr key={app._id || app.id} className="hover:bg-indigo-50/50 transition duration-150">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {getPatientDisplay(app.patient_id)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                        {getDoctorDisplay(app.doctor_id)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                                        {app.start} - {new Date(app.date).toLocaleDateString('vi-VN')}
+                                    </td>
+                                    <td className="hidden sm:table-cell px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                                        {app.reason || 'Không rõ'}
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                                         <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full shadow-sm ${getStatusStyle(app.status)}`}>
                                             {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
@@ -62,7 +82,7 @@ const AppointmentListTable = ({
                                             <Edit className="w-4 h-4" />
                                         </button>
                                         <button 
-                                            onClick={() => confirmDelete(app.id)}
+                                            onClick={() => confirmDelete(app._id || app.id)}
                                             className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-100 transition ml-1"
                                             title="Xóa"
                                         >
@@ -74,7 +94,7 @@ const AppointmentListTable = ({
                         ) : (
                             <tr>
                                 <td colSpan="6" className="px-6 py-10 text-center text-gray-500 font-medium bg-gray-50">
-                                    Không có lịch hẹn nào được tìm thấy {selectedDate ? `trong ngày ${selectedDate.split('-').reverse().join('/')}.` : '.'}
+                                    Không có lịch hẹn nào được tìm thấy.
                                 </td>
                             </tr>
                         )}
