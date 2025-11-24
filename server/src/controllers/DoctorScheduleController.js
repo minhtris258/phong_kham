@@ -1,5 +1,11 @@
+// controllers/DoctorScheduleController.js
 import DoctorSchedule from "../models/DoctorScheduleModel.js";
 import Doctor from "../models/DoctorModel.js";
+import Holiday from "../models/HolidayModel.js";
+
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
 
 /** helper: parse "HH:mm" -> minutes */
 const toMinutes = (hhmm) => {
@@ -7,12 +13,14 @@ const toMinutes = (hhmm) => {
   if (Number.isNaN(h) || Number.isNaN(m)) return null;
   return h * 60 + m;
 };
+
 /** helper: minutes -> "HH:mm" */
 const toHHMM = (mins) => {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 };
+
 /** cắt dải giờ thành các slot theo slot_minutes */
 const splitToSlots = (range, slotMinutes) => {
   const startM = toMinutes(range.start);
@@ -24,7 +32,8 @@ const splitToSlots = (range, slotMinutes) => {
   }
   return out;
 };
-/** hợp nhất các dải giờ (đơn giản: sort rồi merge nếu chồng) */
+
+/** hợp nhất các dải giờ */
 const mergeRanges = (ranges = []) => {
   const list = [...ranges]
     .map(r => ({ s: toMinutes(r.start), e: toMinutes(r.end) }))
@@ -40,89 +49,68 @@ const mergeRanges = (ranges = []) => {
   }
   return merged.map(x => ({ start: toHHMM(x.s), end: toHHMM(x.e) }));
 };
+
 /** áp dụng exceptions cho 1 ngày cụ thể */
 const applyException = (baseRanges, exception) => {
   if (!exception) return baseRanges;
   if (exception.isDayOff) return []; // nghỉ cả ngày
 
-  // remove: loại bỏ dải khớp start-end (so sánh theo string)
   const afterRemove = baseRanges.filter(
     br => !exception.removeSlot.some(rr => rr.start === br.start && rr.end === br.end)
   );
 
-  // add: thêm dải
   const combined = mergeRanges([...afterRemove, ...(exception.add || [])]);
   return combined;
 };
 
+/** * [MỚI] Helper: Gộp Ngày Lễ (Holiday) vào Schedule trả về 
+ * Giúp hiển thị chấm đỏ trên lịch tháng ngay cả khi bác sĩ chưa cấu hình ngày đó
+ */
+const mergeHolidaysIntoSchedule = async (schedule) => {
+    // 1. Lấy tất cả ngày lễ bắt buộc nghỉ
+    const holidays = await Holiday.find({ isMandatoryDayOff: true }).lean();
+    
+    if (!holidays || holidays.length === 0) return schedule;
+
+    // 2. Convert Holidays thành format Exception để Frontend dễ hiển thị
+    const holidayExceptions = holidays.map(h => ({
+        date: h.date,        // "YYYY-MM-DD"
+        isDayOff: true,      // Đánh dấu là ngày nghỉ
+        isHoliday: true,     // Flag nhận biết là ngày lễ
+        name: h.name,  // Tên ngày lễ (Frontend có thể hiển thị tooltip)
+        reason: h.name,      
+        add: [],
+        removeSlot: []
+    }));
+
+    // 3. Gộp vào danh sách exceptions hiện có của bác sĩ
+    // Lưu ý: Nếu ngày đó bác sĩ đã có exception riêng, ta có thể chọn ưu tiên Holiday hoặc ưu tiên Bác sĩ
+    // Ở đây ta push thêm vào, Frontend cần logic để render (thường Holiday sẽ ưu tiên hiển thị)
+    const mergedExceptions = [...(schedule.exceptions || []), ...holidayExceptions];
+
+    // Trả về object schedule mới (không sửa trực tiếp vào DB, chỉ sửa dữ liệu trả ra API)
+    return { ...schedule, exceptions: mergedExceptions };
+};
+
+// ==========================================
+// CONTROLLERS
+// ==========================================
+
 /** GET /api/doctors/:id/schedule (public/admin tuỳ bạn) */
 export const getDoctorSchedule = async (req, res, next) => {
-  try {
-    // 1. Lấy đúng tên tham số từ route
-    const { doctorId } = req.params; 
-    
-    // 2. Tìm Doctor
-    const doctor = await Doctor.findById(doctorId).lean();
-    if (!doctor) return res.status(404).json({ error: "Không tìm thấy bác sĩ." });
-
-    // 3. Tìm Schedule
-    const schedule = await DoctorSchedule.findOne({ doctor_id: doctorId }).lean();
-    // Nếu không tìm thấy lịch, trả về lỗi khác (vì đã tìm thấy bác sĩ)
-    if (!schedule) return res.status(404).json({ error: "Bác sĩ chưa cấu hình lịch." });
-
-    return res.json({ schedule });
-  } catch (e) {
-    next(e);
-  }
-};
-/** GET /api/doctors/:id/slots?date=YYYY-MM-DD
- * Trả danh sách slot trống theo template + exceptions (chưa trừ các booking).
- * Bạn có thể lọc thêm “đã đặt” bằng cách trừ các Appointment trong khoảng ngày đó.
- */
-export const getDoctorSlotsByDate = async (req, res, next) => {
   try {
-    const { id } = req.params;   // doctor id
-    const { date } = req.query;  // "YYYY-MM-DD"
+    const doctorId = req.params.id || req.params.doctorId;
+    
+    const doctor = await Doctor.findById(doctorId).lean();
+    if (!doctor) return res.status(404).json({ error: "Không tìm thấy bác sĩ." });
 
-    if (!date) return res.status(400).json({ error: "Thiếu date (YYYY-MM-DD)" });
-
-    const schedule = await DoctorSchedule.findOne({ doctor_id: id }).lean();
+    let schedule = await DoctorSchedule.findOne({ doctor_id: doctorId }).lean();
     if (!schedule) return res.status(404).json({ error: "Bác sĩ chưa cấu hình lịch." });
 
-    const day = new Date(`${date}T00:00:00Z`);
-    if (isNaN(day.getTime())) return res.status(400).json({ error: "Định dạng date không hợp lệ" });
+    // [MỚI] Gộp ngày lễ vào để hiển thị
+    schedule = await mergeHolidaysIntoSchedule(schedule);
 
-    const weekday = day.getUTCDay(); // 0..6
-    const week = schedule.weekly_schedule || [];
-    const weekdayName = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][weekday];
-    const dayDef = week.find(d => d.dayOfWeek === weekdayName);
-    const baseRanges = dayDef?.timeRanges || [];
-
-    // tìm exception của ngày này (theo string YYYY-MM-DD)
-    const exception = (schedule.exceptions || []).find(ex => ex.date === date);
-
-    // áp dụng ngoại lệ
-    const finalRanges = applyException(baseRanges, exception);
-
-    // cắt slot
-    let slots = [];
-    for (const r of finalRanges) {
-      slots = slots.concat(splitToSlots(r, schedule.slot_minutes));
-    }
-
-    // (Optional) loại slot đã qua giờ hiện tại nếu là hôm nay
-    const now = new Date();
-    const nowYMD = now.toISOString().slice(0, 10);
-    if (date === nowYMD) {
-      const curMins = now.getUTCHours() * 60 + now.getUTCMinutes();
-      slots = slots.filter(s => toMinutes(s.start) > curMins);
-    }
-
-    // TODO: trừ các booking đã có (nếu có bảng Appointments)
-    // const appointments = await Appointment.find({ doctor_id: id, date, status: { $ne: "cancelled" }})
-    // → loại trùng thời gian
-
-    return res.json({ date, slot_minutes: schedule.slot_minutes, slots });
+    return res.json({ schedule });
   } catch (e) {
     next(e);
   }
@@ -134,8 +122,11 @@ export const getMySchedule = async (req, res, next) => {
     const role = req.user?.role || req.user?.role?.name;
     if (role !== "doctor") return res.status(403).json({ error: "Chỉ bác sĩ được truy cập." });
 
-    const schedule = await DoctorSchedule.findOne({ doctor_id: req.doctor._id }).lean();
+    let schedule = await DoctorSchedule.findOne({ doctor_id: req.doctor._id }).lean();
     if (!schedule) return res.status(404).json({ error: "Bạn chưa cấu hình lịch." });
+
+    // [MỚI] Gộp ngày lễ vào để hiển thị
+    schedule = await mergeHolidaysIntoSchedule(schedule);
 
     return res.json({ schedule });
   } catch (e) {
@@ -143,122 +134,144 @@ export const getMySchedule = async (req, res, next) => {
   }
 };
 
-/** POST /api/doctors/me/schedule  (doctor tạo/cập nhật toàn bộ cấu hình)
- * body: { slot_minutes, weekly_template, exceptions }
- */
+/** GET /api/doctors/:id/slots?date=YYYY-MM-DD */
+export const getDoctorSlotsByDate = async (req, res, next) => {
+  try {
+    const doctorId = req.params.id || req.params.doctorId;
+    const { date } = req.query; 
+
+    if (!date) return res.status(400).json({ error: "Thiếu date (YYYY-MM-DD)" });
+
+    const schedule = await DoctorSchedule.findOne({ doctor_id: doctorId }).lean();
+    if (!schedule) return res.status(404).json({ error: "Bác sĩ chưa cấu hình lịch." });
+
+    // --- CHECK HOLIDAY ---
+    const globalHoliday = await Holiday.findOne({ date: date }).lean();
+    
+    if (globalHoliday && globalHoliday.isMandatoryDayOff) {
+        return res.json({
+            date,
+            slot_minutes: schedule.slot_minutes,
+            slots: [], 
+            isHoliday: true,
+            holidayName: globalHoliday.name, 
+            message: `Bác sĩ nghỉ lễ: ${globalHoliday.name}`
+        });
+    }
+    // ---------------------
+
+    const day = new Date(`${date}T00:00:00Z`);
+    if (isNaN(day.getTime())) return res.status(400).json({ error: "Định dạng date không hợp lệ" });
+
+    const weekday = day.getUTCDay();
+    const week = schedule.weekly_schedule || [];
+    const weekdayName = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][weekday];
+    const dayDef = week.find(d => d.dayOfWeek === weekdayName);
+    const baseRanges = dayDef?.timeRanges || [];
+
+    const exception = (schedule.exceptions || []).find(ex => ex.date === date);
+    const finalRanges = applyException(baseRanges, exception);
+
+    let slots = [];
+    for (const r of finalRanges) {
+      slots = slots.concat(splitToSlots(r, schedule.slot_minutes));
+    }
+
+    const now = new Date();
+    const nowYMD = now.toISOString().slice(0, 10);
+    if (date === nowYMD) {
+      const curMins = now.getUTCHours() * 60 + now.getUTCMinutes();
+      slots = slots.filter(s => toMinutes(s.start) > curMins);
+    }
+
+    return res.json({ date, slot_minutes: schedule.slot_minutes, slots });
+  } catch (e) {
+    next(e);
+  }
+};
+
+// ... (Các hàm upsertMySchedule, upsertMyException, adminUpsertDoctorException, updateDefaultSchedule giữ nguyên như phiên bản trước) ...
+// Bạn copy lại các hàm POST/PUT đó vào dưới đây là xong.
+// Chúng không cần sửa vì logic ghi (write) không nên tự động ghi đè ngày lễ vào DB riêng của bác sĩ.
+// Chỉ logic đọc (read/get) mới cần trộn ngày lễ vào để hiển thị.
+
+/** POST /api/doctors/me/schedule */
 export const upsertMySchedule = async (req, res, next) => {
   try {
     const role = req.user?.role || req.user?.role?.name;
     if (role !== "doctor") return res.status(403).json({ error: "Chỉ bác sĩ được cập nhật." });
-
     const { slot_minutes, weekly_schedule, exceptions } = req.body || {};
-
-    // validate cơ bản
     if (slot_minutes && (typeof slot_minutes !== "number" || slot_minutes < 5 || slot_minutes > 240)) {
       return res.status(400).json({ error: "slot_minutes không hợp lệ (5–240)." });
     }
-
     const updated = await DoctorSchedule.findOneAndUpdate(
       { doctor_id: req.doctor._id },
-      {
-        $set: {
-          ...(slot_minutes ? { slot_minutes } : {}),
-          ...(weekly_schedule ? { weekly_schedule } : {}),
-          ...(exceptions ? { exceptions } : {}),
-        },
-      },
+      { $set: { ...(slot_minutes ? { slot_minutes } : {}), ...(weekly_schedule ? { weekly_schedule } : {}), ...(exceptions ? { exceptions } : {}), }, },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     ).lean();
-
     return res.status(200).json({ message: "Lưu lịch khám thành công.", schedule: updated });
-  } catch (e) {
-    next(e);
-  }
+  } catch (e) { next(e); }
 };
 
-/** POST /api/doctors/me/schedule/exceptions (thêm/cập nhật 1 exception của ngày)
- * body: { date:"YYYY-MM-DD", isDayOff?:boolean, add?:[], remove?:[] }
- */
+/** POST /api/doctors/me/schedule/exceptions */
 export const upsertMyException = async (req, res, next) => {
   try {
     const role = req.user?.role || req.user?.role?.name;
     if (role !== "doctor") return res.status(403).json({ error: "Chỉ bác sĩ được cập nhật." });
-
     const { date, isDayOff = false, add = [], removeSlot = [] } = req.body || {};
     if (!date) return res.status(400).json({ error: "Thiếu date" });
-
     const schedule = await DoctorSchedule.findOne({ doctor_id: req.doctor._id });
     if (!schedule) {
-      // tạo mới nếu chưa có
-      const created = await DoctorSchedule.create({
-        doctor_id: req.doctor._id,
-        slot_minutes: 30,
-        weekly_schedule: [],
-        exceptions: [{ date, isDayOff, add, removeSlot }],
-      });
+      const created = await DoctorSchedule.create({ doctor_id: req.doctor._id, slot_minutes: 30, weekly_schedule: [], exceptions: [{ date, isDayOff, add, removeSlot }], });
       return res.status(200).json({ message: "Lưu thành công.", schedule: created });
     }
-
     const idx = schedule.exceptions.findIndex(ex => ex.date === date);
-    if (idx >= 0) {
-      schedule.exceptions[idx] = { date, isDayOff, add, removeSlot };
-    } else {
-      schedule.exceptions.push({ date, isDayOff, add, removeSlot });
-    }
+    if (idx >= 0) { schedule.exceptions[idx] = { date, isDayOff, add, removeSlot }; } 
+    else { schedule.exceptions.push({ date, isDayOff, add, removeSlot }); }
     await schedule.save();
-
     return res.status(200).json({ message: "Lưu thành công.", schedule });
-  } catch (e) {
-    next(e);
-  }
+  } catch (e) { next(e); }
 };
 
-// POST /api/doctor-schedules/:doctorId/exceptions (Admin thêm/cập nhật 1 exception của ngày)
+/** POST /api/doctor-schedules/:id/exceptions */
 export const adminUpsertDoctorException = async (req, res, next) => {
   try {
-    // 1. Kiểm tra quyền Admin (Cần có Middleware)
     const role = req.user?.role || req.user?.role?.name;
     if (role !== "admin") return res.status(403).json({ error: "Không có quyền Admin." });
-
-    const { doctorId } = req.params; // Lấy ID bác sĩ từ URL
-    const { date, isDayOff = false, add = [], removeSlot = [] } = req.body || {};
-    
+    const doctorId = req.params.id || req.params.doctorId; 
+    const { date, isDayOff = false, add = [], removeSlot = [], reason = "" ,} = req.body || {};
     if (!date || !doctorId) return res.status(400).json({ error: "Thiếu date hoặc doctorId." });
-
-    // 2. Tìm hoặc tạo mới DoctorSchedule
     const schedule = await DoctorSchedule.findOne({ doctor_id: doctorId });
-
     if (!schedule) {
-      // Nếu chưa có lịch khám, tạo mới với ngoại lệ này
-      const created = await DoctorSchedule.create({
-        doctor_id: doctorId,
-        slot_minutes: 30,
-        weekly_schedule: [],
-        exceptions: [{ date, isDayOff, add, removeSlot }],
-      });
+      const created = await DoctorSchedule.create({ doctor_id: doctorId, slot_minutes: 30, weekly_schedule: [], exceptions: [{ date, isDayOff, add, removeSlot }], });
       return res.status(200).json({ message: "Admin: Lưu lịch nghỉ thành công (tạo mới).", schedule: created });
     }
-
-    // 3. Cập nhật hoặc thêm exception vào mảng
     const idx = schedule.exceptions.findIndex(ex => ex.date === date);
-
-    if (idx > -1) {
-      // Cập nhật exception đã tồn tại
-      schedule.exceptions[idx] = { date, isDayOff, add, removeSlot };
-    } else {
-      // Thêm exception mới
-      schedule.exceptions.push({ date, isDayOff, add, removeSlot });
-    }
-
+   if (idx > -1) {
+  schedule.exceptions[idx] = { date, isDayOff, add, removeSlot, reason }; // <--- Thêm reason
+} else {
+  schedule.exceptions.push({ date, isDayOff, add, removeSlot, reason }); // <--- Thêm reason
+}
     const updated = await schedule.save();
-
-    // 4. CHÚ Ý QUAN TRỌNG: Cần thêm logic kiểm tra các lịch hẹn đã đặt
-    // Nếu Admin cho nghỉ cả ngày (`isDayOff: true`), hệ thống cần:
-    // a) Thông báo cho Admin biết có bao nhiêu lịch hẹn bị ảnh hưởng.
-    // b) Yêu cầu Admin xác nhận để hủy/chuyển các lịch hẹn đó (tùy theo logic nghiệp vụ).
-
     return res.status(200).json({ message: "Admin: Cập nhật ngoại lệ lịch khám thành công.", schedule: updated });
-  } catch (e) {
-    next(e);
+  } catch (e) { next(e); }
+};
+
+/** PUT /api/doctor-schedules/:id/default */
+export const updateDefaultSchedule = async (req, res, next) => {
+  try {
+    const doctorId = req.params.id || req.params.doctorId; 
+    const { slot_minutes, weekly_schedule } = req.body;
+    if (!doctorId) return res.status(400).json({ error: "Không tìm thấy ID bác sĩ trên URL" });
+    if (!weekly_schedule || !Array.isArray(weekly_schedule)) return res.status(400).json({ error: "Dữ liệu weekly_schedule không hợp lệ." });
+    const updatedSchedule = await DoctorSchedule.findOneAndUpdate(
+      { doctor_id: doctorId },
+      { $set: { slot_minutes: slot_minutes || 30, weekly_schedule: weekly_schedule } },
+      { new: true, upsert: true, runValidators: true }
+    );
+    res.json({ message: "Cập nhật lịch mặc định thành công", data: updatedSchedule });
+  } catch (error) {
+    console.error("Lỗi cập nhật lịch mặc định:", error);
+    res.status(500).json({ error: error.message });
   }
 };

@@ -8,12 +8,14 @@ import {
   upsertMySchedule,
   upsertMyException,
   adminUpsertDoctorException,
+  updateDefaultSchedule,
 } from "../controllers/DoctorScheduleController.js";
 
 const router = Router();
 
 //admin
 router.post("/:doctorId/exceptions", verifyToken, requireRole(["admin"]), adminUpsertDoctorException);
+router.put("/:doctorId/default", verifyToken, requireRole(["admin"]), updateDefaultSchedule);
 
 router.get("/me/schedule",  verifyToken, requireRole(["doctor"]),attachDoctor, getMySchedule);
 router.post("/me/schedule",  verifyToken, requireRole(["doctor"]),attachDoctor, upsertMySchedule);

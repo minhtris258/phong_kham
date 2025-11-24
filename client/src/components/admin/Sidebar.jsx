@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom"; // Thay thế <a> bằng NavLink
-import { Menu, LayoutDashboard, Calendar, Stethoscope, Users, BarChart, Settings, Lock } from "lucide-react";
+import { Menu, LayoutDashboard, Calendar,CalendarDays , Stethoscope, Users, BarChart, Settings, Lock ,UserRoundPen} from "lucide-react";
 
 
 // Component này không cần các props currentView và setView nữa
@@ -8,16 +8,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     
     // Lưu ý: Các đường dẫn ở đây là RELATIVE PATH (tương đối) so với /admin
     const navItems = [
-        // to="/" sẽ dẫn đến /admin (vì đây là Index Route của /admin)
         { name: 'Dashboard', icon: LayoutDashboard, to: '/admin' }, 
-        
-        // to="appointments" sẽ dẫn đến /admin/appointments
         { name: 'Quản lý Lịch Hẹn', icon: Calendar, to: 'appointments' },
         { name: 'Quản lý Bác Sĩ', icon: Stethoscope, to: 'doctors' }, 
         { name: 'Quản lý Bệnh Nhân', icon: Users, to: 'patients' },
-        { name: 'Quản Lý Khoa', icon: Stethoscope, to: 'specialty' },
-        { name: 'Báo Cáo', icon: BarChart, to: 'reports' },
-        { name: 'Profile', icon: Users, to: 'profile' }, 
+        { name: 'Quản Lý Khoa', icon: BarChart, to: 'specialty' },
+        { name: 'Lịch Nghỉ', icon: CalendarDays, to: 'holidays' },
+        { name: 'Profile', icon: UserRoundPen, to: 'profile' }, 
         { name: 'Cài Đặt', icon: Settings, to: 'settings' },
     ];
 

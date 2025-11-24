@@ -32,6 +32,7 @@ import PatientProfileContent from "./pages/patient/dashboard-sections/PatientPro
 import AppointmentListContent from "./pages/patient/dashboard-sections/AppointmentList";
 import PaymentHistoryContent from "./pages/patient/dashboard-sections/PaymentHistory";
 import AccountSettingsContent from "./pages/patient/dashboard-sections/AccountSettings";
+import HolidayManagement from "./pages/admin/HolidayManagement";
 
 
 
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="patients" element={<PatientManagement />} />
           <Route path="doctors" element={<DoctorManagement />} />
           <Route path="specialty" element={<SpecialtyManagement />} />
+          <Route path="holidays" element={<HolidayManagement />} />
           <Route path="profile" element={<ProfileSettings />} />
         </Route>
          

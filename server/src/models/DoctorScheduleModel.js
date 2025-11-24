@@ -19,6 +19,7 @@ const ExceptionSchema = new mongoose.Schema(
     {
         date: { type: String, required: true },
         isDayOff: { type: Boolean, default: false },
+        reason: { type: String, default: "" },
         add: { type: [TimeRangeSchema], default: [] },
         removeSlot: { type: [TimeRangeSchema], default: [] },
     },

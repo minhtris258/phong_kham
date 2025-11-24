@@ -6,6 +6,7 @@ import User from "../models/UserModel.js";
 import Role from "../models/RoleModel.js";
 import Doctor from "../models/DoctorModel.js";
 import Specialty from "../models/SpecialtyModel.js";
+import DoctorSchedule from "../models/DoctorScheduleModel.js";
 
 /** POST /api/doctors  (ADMIN tạo tài khoản bác sĩ) */
 export const createDoctor = async (req, res, next) => {
@@ -58,7 +59,21 @@ export const createDoctor = async (req, res, next) => {
       status: "inactive", // chưa kích hoạt
       // Các trường khác để trống → bác sĩ tự điền
     });
-
+    const defaultSchedule = [
+        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
+    ].map(day => ({
+        dayOfWeek: day,
+        timeRanges: [
+            { start: "08:00", end: "11:00" },
+            { start: "13:00", end: "17:00" }
+        ]
+    }));
+    await DoctorSchedule.create({
+      doctor_id: doctor._id,  // Liên kết với bác sĩ vừa tạo
+      slot_minutes: 30,          // Mặc định 30 phút/ca (hoặc tùy chỉnh)
+      weekly_schedule: defaultSchedule,
+      exceptions: []             // Chưa có ngày nghỉ phép nào
+    });
     // Tạo token onboarding
     const token = jwt.sign(
       {
