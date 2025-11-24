@@ -240,3 +240,17 @@ export async function relatedPosts(req, res) {
     return res.status(400).json({ message: e.message });
   }
 }
+/** GET /api/posts/:id (Dùng cho Admin Edit hoặc xem chi tiết theo ID) */
+export const getPostById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const post = await Post.findById(id).populate("author", "fullName email");
+
+    if (!post) {
+      return res.status(404).json({ message: "Không tìm thấy bài viết" });
+    }
+    return res.json({ post });
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+};

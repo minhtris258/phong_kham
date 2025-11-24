@@ -1,9 +1,8 @@
 import React from "react";
 import "./index.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import AdminLayout from "./layouts/AdminLayout";
 import UserLayout from "./layouts/UserLayout";
@@ -35,14 +34,13 @@ import AccountSettingsContent from "./pages/patient/dashboard-sections/AccountSe
 import HolidayManagement from "./pages/admin/HolidayManagement";
 import NotificationPage from "./pages/NotificationPage";
 import PartnersManagement from "./pages/admin/PartnersManagement";
-
-
+import PostManagement from "./pages/admin/PostManagement";
+import PostEditor from "./pages/admin/PostEditor";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* ==================== USER LAYOUT (CÓ HEADER + FOOTER) ==================== */}
         <Route path="/" element={<UserLayout />}>
           <Route index element={<HomePage />} />
@@ -53,7 +51,10 @@ export default function App() {
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
             <Route path="lich-kham" element={<AppointmentListContent />} />
-            <Route path="lich-su-thanh-toan" element={<PaymentHistoryContent />} />
+            <Route
+              path="lich-su-thanh-toan"
+              element={<PaymentHistoryContent />}
+            />
             <Route path="tai-khoan" element={<AccountSettingsContent />} />
           </Route>
           {/* Có thể thêm các trang public khác ở đây */}
@@ -64,6 +65,9 @@ export default function App() {
         {/* ==================== ADMIN LAYOUT ==================== */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<DashboardContent />} />
+          <Route path="posts" element={<PostManagement />} />
+          <Route path="posts/new" element={<PostEditor />} />
+          <Route path="posts/edit/:id" element={<PostEditor />} />
           <Route path="appointments" element={<AppointmentManagement />} />
           <Route path="patients" element={<PatientManagement />} />
           <Route path="doctors" element={<DoctorManagement />} />
@@ -72,9 +76,8 @@ export default function App() {
           <Route path="partners" element={<PartnersManagement />} />
           <Route path="profile" element={<ProfileSettings />} />
         </Route>
-         
 
-          {/* ... các routes khác */}
+        {/* ... các routes khác */}
 
         {/* ==================== DOCTOR LAYOUT ==================== */}
         <Route path="/doctor" element={<DoctorLayout />}>
@@ -84,14 +87,16 @@ export default function App() {
         </Route>
 
         {/* ==================== 404 ==================== */}
-        <Route path="*" element={
-          <UserLayout>
-            <div className="flex items-center justify-center min-h-screen text-3xl font-bold text-gray-500 bg-gray-50">
-              404 - Không tìm thấy trang
-            </div>
-          </UserLayout>
-        } />
-
+        <Route
+          path="*"
+          element={
+            <UserLayout>
+              <div className="flex items-center justify-center min-h-screen text-3xl font-bold text-gray-500 bg-gray-50">
+                404 - Không tìm thấy trang
+              </div>
+            </UserLayout>
+          }
+        />
       </Routes>
       <ToastContainer />
     </BrowserRouter>
