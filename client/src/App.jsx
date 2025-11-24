@@ -34,6 +34,7 @@ import PaymentHistoryContent from "./pages/patient/dashboard-sections/PaymentHis
 import AccountSettingsContent from "./pages/patient/dashboard-sections/AccountSettings";
 import HolidayManagement from "./pages/admin/HolidayManagement";
 import NotificationPage from "./pages/NotificationPage";
+import PartnersManagement from "./pages/admin/PartnersManagement";
 
 
 
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="doctors" element={<DoctorManagement />} />
           <Route path="specialty" element={<SpecialtyManagement />} />
           <Route path="holidays" element={<HolidayManagement />} />
+          <Route path="partners" element={<PartnersManagement />} />
           <Route path="profile" element={<ProfileSettings />} />
         </Route>
          

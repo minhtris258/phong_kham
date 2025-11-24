@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom"; // Thay thế <a> bằng NavLink
-import { Menu, LayoutDashboard, Calendar,CalendarDays , Stethoscope, Users, BarChart, Settings, Lock ,UserRoundPen} from "lucide-react";
+import { Menu, LayoutDashboard, Calendar,CalendarDays , Stethoscope, Users, BarChart, Settings, Lock ,UserRoundPen, Handshake} from "lucide-react";
 
 
 // Component này không cần các props currentView và setView nữa
@@ -14,6 +14,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { name: 'Quản lý Bệnh Nhân', icon: Users, to: 'patients' },
         { name: 'Quản Lý Khoa', icon: BarChart, to: 'specialty' },
         { name: 'Lịch Nghỉ', icon: CalendarDays, to: 'holidays' },
+        { name: 'Đối Tác', icon: Handshake, to: 'partners' },
         { name: 'Profile', icon: UserRoundPen, to: 'profile' }, 
         { name: 'Cài Đặt', icon: Settings, to: 'settings' },
     ];
