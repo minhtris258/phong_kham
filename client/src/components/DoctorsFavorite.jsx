@@ -5,8 +5,7 @@ import axios from "axios";
 import "../index.css";
 import Title from "./Title";
 
-// 👈 KHAI BÁO URL BACKEND 1 LẦN Ở ĐÂY
-// Đổi 5000 thành đúng port server của bạn
+// API endpoint để lấy danh sách bác sĩ
 const API_URL = "http://localhost:3000/api/doctors";
 
 // ====================== UTIL ======================
@@ -18,8 +17,7 @@ const formatVND = (n) =>
     : "—";
 
 const resolveDoctorImage = (thumbnail) =>
-  thumbnail ||
-  "https://via.placeholder.com/300x300.png?text=Doctor";
+  thumbnail || "https://via.placeholder.com/300x300.png?text=Doctor";
 
 // =================== 1 CARD BÁC SĨ ===================
 function DoctorCard({ doc }) {
@@ -28,19 +26,18 @@ function DoctorCard({ doc }) {
     fullName,
     thumbnail,
     consultation_fee,
-    specialty_name,
+    specialty_id,
     specialty,
   } = doc || {};
 
-  const specText = specialty_name || specialty?.name || "Bác Sĩ Chuyên Khoa";
+  const specText = specialty_id?.name || specialty?.name ;
   const imgSrc = resolveDoctorImage(thumbnail);
 
   return (
     <Link to={`/doctors/${_id || ""}`} className="block">
       <div className="relative items-center justify-center shadow-xl/20  bg-white h-[485px] box-shadow rounded-lg p-4  border-color-hover">
-        
         <img
-          className="h-40 w-auto mx-auto object-cover"
+          className="h-40 w-40 rounded-full mx-auto object-cover"
           src={imgSrc}
           alt={fullName || "doctor"}
           loading="lazy"
@@ -87,9 +84,11 @@ function DoctorCard({ doc }) {
 
         {/* Chức danh */}
         <div className="flex pt-4">
-          <span className="font-roboto lg:text-2xl text-xl color-title">BS</span>
           <span className="font-roboto lg:text-2xl text-xl color-title">
-            .CKI
+            BSCK
+          </span>
+          <span className="font-roboto lg:text-2xl text-xl color-title">
+            .{specText}
           </span>
         </div>
 
@@ -99,51 +98,32 @@ function DoctorCard({ doc }) {
         </h3>
 
         {/* Chuyên khoa */}
-        <div className="flex gap-1">
+        <div className="flex gap-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            height="13"
-            width="15"
+            height="14"
+            width="15.75"
             viewBox="0 0 576 512"
-            className="self-center color-title"
+            className="self-center"
           >
-            <path d="M32 48C32 21.5 53.5 0 80 0l48 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-32 0 0 128c0 53 43 96 96 96s96-43 96-96l0-128-32 0c-17.7 0-32-14.3-32-32S238.3 0 256 0l48 0c26.5 0 48 21.5 48 48l0 144c0 77.4-55 142-128 156.8l0 19.2C87 334 32 269.4 32 192L32 48zM480 224a32 32 0 1 0 0-64 32 32 0 1 0 0 64z" />
+            <path d="M32 48C32 21.5 53.5 0 80 0l48 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-32 0 0 128c0 53 43 96 96 96s96-43 96-96l0-128-32 0c-17.7 0-32-14.3-32-32S238.3 0 256 0l48 0c26.5 0 48 21.5 48 48l0 144c0 77.4-55 142-128 156.8l0 19.2c0 61.9 50.1 112 112 112s112-50.1 112-112l0-85.5c-37.3-13.2-64-48.7-64-90.5 0-53 43-96 96-96s96 43 96 96c0 41.8-26.7 77.4-64 90.5l0 85.5c0 97.2-78.8 176-176 176S160 465.2 160 368l0-19.2C87 334 32 269.4 32 192L32 48zM480 224a32 32 0 1 0 0-64 32 32 0 1 0 0 64z" />
           </svg>
           <p className="text-base font-roboto color-title">{specText}</p>
         </div>
 
         {/* Giá tư vấn */}
-        <div className="flex gap-1">
+        <div className="flex gap-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            height="12"
-            width="12"
+            height="16"
+            width="16"
             viewBox="0 0 512 512"
-            className="self-center color-title"
+            className="self-center"
           >
-            <path d="M328 112l-144 0-37.3-74.5c-1.8-3.6-2.7-7.6-2.7-11.6 0-14.3 11.6-25.9 25.9-25.9L342.1 0c14.3 0 25.9 11.6 25.9 25.9 0 4-.9 8-2.7 11.6L328 112zM169.6 160l172.8 0 48.7 40.6C457.6 256 496 338 496 424.5 496 472.8 456.8 512 408.5 512l-305.1 0C55.2 512 16 472.8 16 424.5 16 338 54.4 256 120.9 200.6L169.6 160z" />
+            <path d="M328 112l-144 0-37.3-74.5c-1.8-3.6-2.7-7.6-2.7-11.6 0-14.3 11.6-25.9 25.9-25.9L342.1 0c14.3 0 25.9 11.6 25.9 25.9 0 4-.9 8-2.7 11.6L328 112zM169.6 160l172.8 0 48.7 40.6C457.6 256 496 338 496 424.5 496 472.8 456.8 512 408.5 512l-305.1 0C55.2 512 16 472.8 16 424.5 16 338 54.4 256 120.9 200.6L169.6 160zM260 224c-11 0-20 9-20 20l0 4c-28.8 .3-52 23.7-52 52.5 0 25.7 18.5 47.6 43.9 51.8l41.7 7c6 1 10.4 6.2 10.4 12.3 0 6.9-5.6 12.5-12.5 12.5L216 384c-11 0-20 9-20 20s9 20 20 20l24 0 0 4c0 11 9 20 20 20s20-9 20-20l0-4.7c25-4.1 44-25.7 44-51.8 0-25.7-18.5-47.6-43.9-51.8l-41.7-7c-6-1-10.4-6.2-10.4-12.3 0-6.9 5.6-12.5 12.5-12.5l47.5 0c11 0 20-9 20-20s-9-20-20-20l-8 0 0-4c0-11-9-20-20-20z" />
           </svg>
           <p className="text-base font-roboto color-title">
             {formatVND(doc?.consultation_fee)}
-          </p>
-        </div>
-
-        {/* Nhãn chuyên khoa */}
-        <div className="flex gap-1 pb-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="12"
-            width="13.5"
-            viewBox="0 0 576 512"
-            className="self-center color-title"
-          >
-            <path
-              fill="#264f6d"
-              d="M176 0c-35.3 0-64 28.7-64 64l0 48-48 0c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l448 0c35.3 0 64-28.7 64-64l0-272c0-35.3-28.7-64-64-64l-48 0 0-48c0-35.3-28.7-64-64-64L176 0z"
-            />
-          </svg>
-          <p className="text-base font-roboto color-title">
-            Bác Sĩ Chuyên Khoa
           </p>
         </div>
 
@@ -161,6 +141,7 @@ export default function DoctorsFavorite({
   doctors: doctorsProp,
 }) {
   const [doctors, setDoctors] = useState(doctorsProp || []);
+  const [showAll, setShowAll] = useState(false); // 👉 trạng thái xem thêm
   const shouldFetch = !doctorsProp;
 
   useEffect(() => {
@@ -192,6 +173,9 @@ export default function DoctorsFavorite({
     };
   }, [shouldFetch]);
 
+  // 👉 chỉ hiển thị 4 bác sĩ nếu chưa bấm "Xem thêm"
+  const visibleDoctors = showAll ? doctors : doctors.slice(0, 4);
+
   return (
     <section
       className="bg-[#e8f4fd] py-12 lg:h-[850px]
@@ -209,9 +193,23 @@ export default function DoctorsFavorite({
               Chưa có dữ liệu bác sĩ.
             </p>
           ) : (
-            doctors.map((d) => <DoctorCard key={d._id || d.email} doc={d} />)
+            visibleDoctors.map((d) => (
+              <DoctorCard key={d._id || d.email} doc={d} />
+            ))
           )}
         </div>
+
+        {/* Nút Xem thêm / Thu gọn */}
+        {doctors.length > 4 && (
+          <div className="flex justify-center mt-4">
+            <button
+              href="#"
+              className="px-6 py-2 rounded font-roboto text-base text-[#00b5f1] hover:border border-[#00b5f1] transition-all"
+            >
+              Xem Thêm 
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
