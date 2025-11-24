@@ -10,27 +10,21 @@ import SpecialtyDeleteModal from './../../components/admin/specialty/SpecialtyDe
 
 
 const SpecialtyManagement = () => {
-    // --- State Dữ liệu và Loading ---
+    // ... (Giữ nguyên các State cũ) ...
     const [specialtys, setSpecialtys] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // --- State Modal Form ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSpecialty, setEditingSpecialty] = useState(null); 
     const [formData, setFormData] = useState({});
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-    // --- State View Doctors ---
     const [isViewDoctorsModalOpen, setIsViewDoctorsModalOpen] = useState(false);
-    const [currentSpecialtyDoctors, setCurrentSpecialtyDoctors] = useState({
-        specialtyName: '',
-        doctors: [],
-    });
+    const [currentSpecialtyDoctors, setCurrentSpecialtyDoctors] = useState({ specialtyName: '', doctors: [] });
     const [isViewDoctorsLoading, setIsViewDoctorsLoading] = useState(false);
 
-
-    // === LOGIC FETCH & CRUD API (đã được định nghĩa ở context trước) ===
+    // === LOGIC FETCH (Giữ nguyên) ===
     const fetchSpecialties = async () => {
         setLoading(true);
         try {
@@ -46,24 +40,45 @@ const SpecialtyManagement = () => {
         }
     };
 
-    // Gọi API khi component mount
     useEffect(() => { 
         fetchSpecialties(); 
     }, []);
 
 
-    // === 2. HÀM INPUT & ADD/EDIT (Đã khôi phục) ===
+    // === 2. HÀM INPUT & ADD/EDIT (CÓ SỬA ĐỔI) ===
+    
+    // 1. Xử lý Input Text thông thường
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
 
+    // 2. [MỚI] Xử lý Input File (Chuyển sang Base64)
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file); // Đọc file dưới dạng chuỗi Base64
+            reader.onloadend = () => {
+                // Khi đọc xong, set vào formData.thumbnail
+                setFormData(prev => ({
+                    ...prev,
+                    thumbnail: reader.result
+                }));
+            };
+        }
+    };
+
     const handleAddEdit = (specialty) => {
         setEditingSpecialty(specialty);
-        // Khởi tạo formData với các trường cần thiết
+        // Khởi tạo formData (thêm trường thumbnail)
         setFormData(specialty ? 
-            { _id: specialty._id || specialty.id, name: specialty.name, code: specialty.code || '' } : 
-            { name: '', code: '' }
+            { 
+                _id: specialty._id || specialty.id, 
+                name: specialty.name, 
+                thumbnail: specialty.thumbnail || '' // Load ảnh cũ nếu có
+            } : 
+            { name: '', thumbnail: '' }
         );
         setIsModalOpen(true);
     };
@@ -78,7 +93,7 @@ const SpecialtyManagement = () => {
         
         try {
             if (editingSpecialty) {
-                // SỬA
+                // SỬA: formData bây giờ chứa cả name và thumbnail (nếu có thay đổi)
                 await specialtyService.updateSpecialty(editingSpecialty._id || editingSpecialty.id, formData);
                 alert("Cập nhật chuyên khoa thành công!");
             } else {
@@ -87,16 +102,16 @@ const SpecialtyManagement = () => {
                 alert("Thêm chuyên khoa thành công!");
             }
         } catch (err) {
-            alert("Lỗi lưu: " + (err.response?.data?.error || "Lỗi không xác định"));
+            alert("Lỗi lưu: " + (err.response?.data?.message || err.message || "Lỗi không xác định"));
             console.error("Lỗi lưu chuyên khoa:", err);
         } finally {
             setIsModalOpen(false);
             setEditingSpecialty(null);
-            fetchSpecialties(); // Refresh danh sách
+            fetchSpecialties(); 
         }
     };
 
-    // === 3. DELETE LOGIC (Đã khôi phục) ===
+    // === 3. DELETE LOGIC (Giữ nguyên) ===
     const confirmDelete = (id) => setConfirmDeleteId(id);
 
     const handleDelete = async () => {
@@ -107,7 +122,7 @@ const SpecialtyManagement = () => {
         } catch (err) {
             alert("Xóa thất bại: " + (err.response?.data?.error || "Lỗi không xác định"));
         } finally {
-            fetchSpecialties(); // Refresh danh sách
+            fetchSpecialties();
         }
     };
     
@@ -115,15 +130,10 @@ const SpecialtyManagement = () => {
     const handleViewDoctors = async (specialty) => {
         setIsViewDoctorsLoading(true);
         setIsViewDoctorsModalOpen(true);
-        setCurrentSpecialtyDoctors({
-            specialtyName: specialty.name,
-            doctors: [],
-        });
-        
+        setCurrentSpecialtyDoctors({ specialtyName: specialty.name, doctors: [] });
         try {
             const response = await specialtyService.getSpecialtyWithDoctors(specialty._id || specialty.id);
             const doctorsList = response.data?.doctors || [];
-            
             setCurrentSpecialtyDoctors({
                 specialtyName: response.data?.name || specialty.name,
                 doctors: doctorsList,
@@ -135,19 +145,11 @@ const SpecialtyManagement = () => {
             setIsViewDoctorsLoading(false);
         }
     };
-    // =================================================================
 
-    // --- Hiển thị Loading/Error ---
-    if (loading)
-        return (
-            <main className="text-center p-8 text-xl">Đang tải danh sách chuyên khoa...</main>
-        );
-    if (error)
-        return (
-            <main className="text-center p-8 text-red-600 text-xl">Lỗi: {error}</main>
-        );
-    // =================================================================
+    // ... (Phần Loading/Error giữ nguyên) ...
 
+    if (loading) return <main className="text-center p-8 text-xl">Đang tải danh sách chuyên khoa...</main>;
+    if (error) return <main className="text-center p-8 text-red-600 text-xl">Lỗi: {error}</main>;
 
     return (
         <main className="flex-1 p-4 sm:p-8 bg-gray-50 min-h-[calc(100vh-64px)]">
@@ -160,17 +162,17 @@ const SpecialtyManagement = () => {
                 handleViewDoctors={handleViewDoctors}
             />
 
-            {/* Modal Form Thêm/Sửa */}
+            {/* Truyền thêm prop handleFileChange */}
             <SpecialtyFormModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 formData={formData}
                 handleInputChange={handleInputChange}
+                handleFileChange={handleFileChange} // <-- Mới
                 handleSave={handleSave}
                 editingSpecialty={editingSpecialty}
             />
 
-            {/* Modal Xem Danh Sách Bác Sĩ */}
             <SpecialtyDoctorsModal
                 isOpen={isViewDoctorsModalOpen}
                 onClose={() => setIsViewDoctorsModalOpen(false)}
@@ -179,7 +181,6 @@ const SpecialtyManagement = () => {
                 doctorCount={currentSpecialtyDoctors.doctors.length}
             />
             
-            {/* Modal Xác nhận Xóa */}
             <SpecialtyDeleteModal
                 confirmDeleteId={confirmDeleteId}
                 onClose={() => setConfirmDeleteId(null)}

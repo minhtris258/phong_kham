@@ -1,8 +1,16 @@
+import { v2 as cloudinary } from "cloudinary";
 import specialties from "../models/SpecialtyModel.js";
 import Doctor from "../models/DoctorModel.js";
+// Không cần import 'fs' nữa vì không xử lý file tạm
 
-// GET /api/specialties
-// GET /api/specialties
+// --- Helper: Hàm kiểm tra chuỗi có phải là Base64 image hợp lệ không (Tùy chọn nhưng nên dùng) ---
+const isBase64Image = (str) => {
+  if (typeof str !== 'string') return false;
+  // Kiểm tra xem chuỗi có bắt đầu bằng định dạng data URI ảnh không
+  return str.startsWith('data:image');
+};
+
+// GET /api/specialties (Giữ nguyên)
 export const listSpecialties = async (req, res, next) => {
   try {
     const items = await specialties.aggregate([
@@ -23,6 +31,7 @@ export const listSpecialties = async (req, res, next) => {
         $project: {
           _id: 1,
           name: 1,
+          thumbnail: 1, 
           code: 1,
           doctor_count: 1,
         },
@@ -36,68 +45,108 @@ export const listSpecialties = async (req, res, next) => {
   }
 };
 
-// GET /api/specialties/:id
+// GET /api/specialties/:id (Giữ nguyên)
 export const getSpecialtyById = async (req, res, next) => {
-  try {
-    const specialtyId = req.params.id; 
-
-    // 1. Tìm thông tin Chuyên khoa
-    const specialtyItem = await specialties.findById(specialtyId).lean();
-    if (!specialtyItem) {
-      return res.status(404).json({ message: "Specialty not found" });
-    } 
-
-    // 2. Truy vấn tất cả Doctors có specialty_id khớp
-    const doctors = await Doctor.find({ specialty_id: specialtyId })
-      .select("fullName thumbnail introduction consultation_fee phone") // Chọn các trường hiển thị trong modal
-      .lean(); 
-
-    // 3. Tính toán số lượng bác sĩ (doctorCount)
+  try {
+    const specialtyId = req.params.id; 
+    const specialtyItem = await specialties.findById(specialtyId).lean();
+    if (!specialtyItem) {
+      return res.status(404).json({ message: "Specialty not found" });
+    } 
+    const doctors = await Doctor.find({ specialty_id: specialtyId })
+      .select("fullName thumbnail introduction consultation_fee phone")
+      .lean(); 
     const doctorCount = doctors.length;
-
-    // 4. Trả về thông tin chuyên khoa CÙNG VỚI danh sách và số lượng bác sĩ
-    res.json({
-      ...specialtyItem,
-      // Thêm trường doctorCount (sử dụng tên doctorCount cho nhất quán với frontend)
+    res.json({
+      ...specialtyItem,
       doctorCount: doctorCount,
-      doctors: doctors,
-    });
-  } catch (e) {
-    next(e);
-  }
+      doctors: doctors,
+    });
+  } catch (e) {
+    next(e);
+  }
 };
-// POST /api/specialties
+
+// ==========================================
+// POST /api/specialties (XỬ LÝ BASE64)
+// ==========================================
 export const createSpecialty = async (req, res) => {
   try {
-    const { name } = req.body;
-    const newSpecialty = await specialties.create({ name });
+    // Lấy name và chuỗi thumbnail từ body request (dạng JSON)
+    const { name, thumbnail } = req.body;
+    let thumbnailUrl = ""; // Mặc định là rỗng nếu không gửi ảnh
+
+    // Kiểm tra nếu client có gửi trường thumbnail và nó là chuỗi Base64 hợp lệ
+    if (thumbnail && isBase64Image(thumbnail)) {
+      // Cloudinary tự động nhận diện chuỗi base64
+      const result = await cloudinary.uploader.upload(thumbnail, {
+        folder: "specialties", // Thư mục trên Cloudinary
+        resource_type: "image"
+      });
+      // Lấy đường dẫn ảnh sau khi upload thành công
+      thumbnailUrl = result.secure_url;
+    }
+
+    // Tạo mới trong DB với đường dẫn ảnh (hoặc chuỗi rỗng)
+    const newSpecialty = await specialties.create({ 
+        name, 
+        thumbnail: thumbnailUrl 
+    });
+    
     res.status(201).json(newSpecialty);
   } catch (error) {
+    console.error("Create Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
-// PUT /api/specialties/:id
+
+// ==========================================
+// PUT /api/specialties/:id (XỬ LÝ BASE64 KHI UPDATE)
+// ==========================================
 export const updateSpecialty = async (req, res, next) => {
-  // Thêm 'next' cho đồng bộ
   const { id } = req.params;
   try {
-    // Sử dụng findByIdAndUpdate để thực hiện cập nhật
-    const updatedSpecialty = await specialties.findByIdAndUpdate(id, req.body, {
-      new: true, // Yêu cầu Mongoose trả về document SAU khi cập nhật
-      runValidators: true, // Đảm bảo các quy tắc validation (Schema) được chạy
+    // 1. Tìm specialty cũ để đảm bảo nó tồn tại
+    const oldSpecialty = await specialties.findById(id);
+    if (!oldSpecialty) {
+        return res.status(404).json({ message: "Specialty not found" });
+    }
+
+    // Sao chép dữ liệu gửi lên vào biến updateData
+    let updateData = { ...req.body };
+
+    // 2. Kiểm tra xem người dùng có gửi ảnh mới dạng Base64 không.
+    // Nếu họ không đổi ảnh, frontend thường sẽ gửi lại URL cũ (https://...), 
+    // hoặc không gửi trường thumbnail. Hàm isBase64Image sẽ bỏ qua các trường hợp đó.
+    if (updateData.thumbnail && isBase64Image(updateData.thumbnail)) {
+      
+      // Upload ảnh mới từ chuỗi Base64
+      const result = await cloudinary.uploader.upload(updateData.thumbnail, {
+        folder: "specialties",
+      });
+      
+      // QUAN TRỌNG: Thay thế chuỗi Base64 dài ngoằng trong updateData 
+      // bằng URL ngắn gọn vừa nhận được từ Cloudinary
+      updateData.thumbnail = result.secure_url;
+
+      // (Tùy chọn nâng cao) Xóa ảnh cũ trên Cloudinary nếu muốn tiết kiệm dung lượng
+      // handleDeleteOldImage(oldSpecialty.thumbnail); 
+    }
+
+    // 3. Cập nhật vào DB
+    const updatedSpecialty = await specialties.findByIdAndUpdate(id, updateData, {
+      new: true, // Trả về document mới sau khi update
+      runValidators: true, // Chạy validate của Mongoose
     });
 
-    if (!updatedSpecialty) {
-      return res.status(404).json({ message: "Specialty not found" });
-    }
     res.json(updatedSpecialty);
   } catch (error) {
-    // Chuyển lỗi tới middleware xử lý lỗi chung (nếu có)
-    // Hoặc trả về lỗi 400 nếu lỗi liên quan đến validation (ví dụ: tên bị thiếu)
+    console.error("Update Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
-// DELETE /api/specialties/:id
+
+// DELETE /api/specialties/:id (Giữ nguyên)
 export const deleteSpecialty = async (req, res) => {
   const { id } = req.params;
   try {
@@ -105,6 +154,8 @@ export const deleteSpecialty = async (req, res) => {
     if (!deletedSpecialty) {
       return res.status(404).json({ message: "Specialty not found" });
     }
+    // (Tùy chọn) Xóa ảnh trên Cloudinary khi xóa data trong DB
+    // handleDeleteOldImage(deletedSpecialty.thumbnail);
     res.json({ message: "Specialty deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
