@@ -6,9 +6,11 @@ import "../index.css";
 import "../assets/assets.js";
 import hero from "../assets/slider-03-b.jpg";
 import logo from "../assets/logo.png";
+import { useAppContext } from "../context/AppContext.jsx";
 
 export default function LoginSection() {
-  // ✅ Đặt state lên trên, không dùng 'form' trước dòng này
+  const { login } = useAppContext();
+
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -30,28 +32,12 @@ export default function LoginSection() {
     setSuccess("");
 
     try {
-      const res = await axios.post(
-        "http://localhost:3000/api/auth/login",
-        form,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // Thành công
-      console.log("Login success:", res.data);
-      localStorage.setItem("token", res.data.token);
+      const res = await login(form.email, form.password);
       setSuccess("Đăng nhập thành công!");
-      // ví dụ: điều hướng theo backend gợi ý
-      window.location.href = res.data.next || "/";
+      window.location.href = res.next || "/";
     } catch (err) {
       console.error(err);
-      const message =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        "Có lỗi xảy ra, vui lòng thử lại.";
+      const message = err.response?.data?.error || err.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại.";
       setError(message);
     } finally {
       setLoading(false);

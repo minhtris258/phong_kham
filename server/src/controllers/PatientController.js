@@ -305,7 +305,7 @@ export const getMyPatientProfile = async (req, res, next) => {
     const role = req.user?.role || req.user?.role?.name;
     if (!userId)
       return res.status(401).json({ error: "Thiếu hoặc sai token." });
-    if (role !== "doctor") {
+    if (role !== "patient") {
       return res
         .status(403)
         .json({ error: "Chỉ tài khoản bệnh nhân mới được truy cập." });

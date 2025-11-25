@@ -79,8 +79,8 @@ export const AppProvider = ({ children }) => {
       setAuthToken(currentToken); // Cài đặt token vào header
 
       try {
-        // 1. Lấy thông tin cơ bản từ JWT (/api/users/auth/me)
-        const authResponse = await apiClient.get("/users/auth/me");
+        // 1. Lấy thông tin cơ bản từ JWT (/api/auth/me)
+        const authResponse = await apiClient.get("/auth/me");
         const basicUser = authResponse.data.user;
 
         let fullProfile = null;

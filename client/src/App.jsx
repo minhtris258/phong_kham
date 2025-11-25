@@ -8,6 +8,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import UserLayout from "./layouts/UserLayout";
 import DoctorLayout from "./layouts/DoctorLayout";
 
+import Chatbox from "./components/Chatbox";
 
 // Admin Pages
 import DashboardContent from "./pages/admin/Dashboard";
@@ -100,6 +101,7 @@ export default function App() {
         />
       </Routes>
       <ToastContainer />
+      <Chatbox />
     </BrowserRouter>
   );
 }
