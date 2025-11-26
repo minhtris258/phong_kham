@@ -3,7 +3,7 @@ import Hero from '../components/Hero';
 import PartnersSection from '../components/PartnersSection';
 import DoctorsFavorite from '../components/DoctorsFavorite';
 import SpecialtySection from '../components/SpecialtySection';
-import RatingSection from '../components/RatingSection';
+import DownloadAppSection from '../components/DownloadAppSection';
 
 
 const Home = () => {
@@ -13,7 +13,7 @@ const Home = () => {
         <PartnersSection />
         <DoctorsFavorite />
         <SpecialtySection />
-        <RatingSection />
+        <DownloadAppSection />
     </>
   );
 };

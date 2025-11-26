@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import "../index.css";
 import "../assets/assets.js";
 
+
 export default function Header() {
   const [open, setOpen] = useState(false);
   const mainbarRef = useRef(null);
@@ -13,6 +14,7 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
+
 
   // Đọc token + user từ localStorage
   useEffect(() => {
@@ -33,7 +35,7 @@ export default function Header() {
     }
   }, []);
 
-  // 👉 HÀM LOGOUT – cái này đang bị thiếu
+  // HÀM LOGOUT
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
