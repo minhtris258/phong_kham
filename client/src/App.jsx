@@ -49,7 +49,7 @@ export default function App() {
           <Route path="Login" element={<LoginPage />} />
           <Route path="Register" element={<RegisterPage />} />
           <Route path="Notification" element={<NotificationPage />} />
-          <Route path="bac-si/:id" element={<DoctorDetailPage />} />
+          <Route path="doctors/:id" element={<DoctorDetailPage />} />
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
             <Route path="lich-kham" element={<AppointmentListContent />} />

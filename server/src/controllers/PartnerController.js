@@ -13,11 +13,11 @@ export const listPartners = async (req, res, next) => {
 // POST /api/partners
 export const createPartner = async (req, res, next) => {
     try {
-        const { name, thumbnailBase64 } = req.body;
+        const { name, thumbnail } = req.body;
 
         let thumbnailUrl = "";
-        if (thumbnailBase64) {
-            const uploadResponse = await cloudinary.uploader.upload(thumbnailBase64, {
+        if (thumbnail) {
+            const uploadResponse = await cloudinary.uploader.upload(thumbnail, {
                 folder: "partners",
             });
             thumbnailUrl = uploadResponse.secure_url;
@@ -36,15 +36,15 @@ export const createPartner = async (req, res, next) => {
 export const updatePartner = async (req, res, next) => {
     try {
         const partnerId = req.params.id;
-        const { name, thumbnailBase64 } = req.body;
+        const { name, thumbnail } = req.body;
         const partner = await Partner.findById(partnerId);
         if (!partner) {
             return res.status(404).json({ message: "Partner not found" });
         }
         partner.name = name || partner.name;
 
-        if (thumbnailBase64) {
-            const uploadResponse = await cloudinary.uploader.upload(thumbnailBase64, {
+        if (thumbnail) {
+            const uploadResponse = await cloudinary.uploader.upload(thumbnail, {
                 folder: "partners",
             });
             partner.thumbnail = uploadResponse.secure_url;
