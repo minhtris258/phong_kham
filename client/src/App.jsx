@@ -38,6 +38,7 @@ import NotificationPage from "./pages/NotificationPage";
 import PartnersManagement from "./pages/admin/PartnersManagement";
 import PostManagement from "./pages/admin/PostManagement";
 import PostEditor from "./pages/admin/PostEditor";
+import ProfileCompletion from "./pages/patient/ProfileCompletion.jsx";
 
 export default function App() {
   return (
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="doctors/:id" element={<DoctorDetailPage />} />
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
+            
             <Route path="lich-kham" element={<AppointmentListContent />} />
             <Route
               path="lich-su-thanh-toan"
@@ -59,6 +61,7 @@ export default function App() {
             />
             <Route path="tai-khoan" element={<AccountSettingsContent />} />
           </Route>
+          <Route path="ProfileCompletion" element={<ProfileCompletion />} />
           {/* Có thể thêm các trang public khác ở đây */}
           {/* <Route path="tim-kiem" element={<SearchPage />} /> */}
           {/* <Route path="chuyen-khoa/:slug" element={<SpecialtyPage />} /> */}
@@ -77,6 +80,7 @@ export default function App() {
           <Route path="holidays" element={<HolidayManagement />} />
           <Route path="partners" element={<PartnersManagement />} />
           <Route path="profile" element={<ProfileSettings />} />
+          
         </Route>
 
         {/* ... các routes khác */}
@@ -86,6 +90,7 @@ export default function App() {
           <Route index element={<DoctorProfile />} />
           <Route path="schedule" element={<DoctorSchedule />} />
           <Route path="settings" element={<DoctorSettings />} />
+          
         </Route>
 
         {/* ==================== 404 ==================== */}

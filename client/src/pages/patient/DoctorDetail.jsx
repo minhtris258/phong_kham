@@ -58,7 +58,7 @@ export default function DoctorDetailPage() {
     const specialty = doctor.specialty_id || { name: "Chuyên khoa" };
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-8 bg-gray-50">
+        <div className="max-w-5xl mx-auto px-4 py-8 bg-gray-50 mt-15">
             <div className="space-y-8">
                 {/* 1. Thông tin bác sĩ */}
                 <DoctorInfoCard 

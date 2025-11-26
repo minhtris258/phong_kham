@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import "../index.css";
 import "../assets/assets.js";
-
+import { useAppContext } from "../context/AppContext.jsx";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -14,7 +14,7 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
-
+  const { handleLogout } = useAppContext();
 
   // Đọc token + user từ localStorage
   useEffect(() => {
@@ -34,15 +34,6 @@ export default function Header() {
       console.error("Cannot parse user from localStorage", e);
     }
   }, []);
-
-  // HÀM LOGOUT
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setIsLoggedIn(false);
-    setUser(null);
-    window.location.href = "/";
-  };
 
   // Đặt vị trí mainbar: khi chưa scroll, mainbar nằm ngay dưới topbar; scroll qua thì dính top-0
   useEffect(() => {
@@ -207,7 +198,7 @@ export default function Header() {
               {isLoggedIn ? (
                 <div className="md:flex block  ">
                   {/* Icon chuông / thông báo */}
-                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-[#0a0f1f]">
+                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-[#0a0f1f] lg:mr-2 ">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       height="24"
@@ -222,12 +213,12 @@ export default function Header() {
                   <button
                     type="button"
                     onClick={() => setAccountOpen((prev) => !prev)}
-                    className="inline-flex items-center gap-2"
+                    className=" inline-flex items-center gap-2"
                     aria-haspopup="true"
                     aria-expanded={accountOpen}
                   >
                     {/* Icon user */}
-                    <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-[#0a0f1f]">
+                    <div className="hidden md:flex w-10 h-10 rounded-full bg-white/90 items-center justify-center text-[#0a0f1f]">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 448 512"
@@ -243,15 +234,6 @@ export default function Header() {
                         {user.name}
                       </span>
                     )}
-
-                    {/* Mũi tên xuống */}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-4 h-4 text-white"
-                      viewBox="0 0 320 512"
-                    >
-                      <path d="M143 352.3L7 216.3C-2.3 207-2.3 192 7 182.6l14.1-14.1c9.4-9.4 24.6-9.4 33.9 0L160 273.5l105-105c9.4-9.4 24.6-9.4 33.9 0L313 182.6c9.4 9.4 9.4 24.6 0 33.9L177 352.3c-9.4 9.4-24.6 9.4-34 0z" />
-                    </svg>
                   </button>
 
                   {/* Dropdown: Profile + Đăng xuất */}

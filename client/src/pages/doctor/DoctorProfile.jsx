@@ -35,7 +35,7 @@ export default function DoctorProfile() {
     const experience = new Date().getFullYear() - new Date(doctorData.dob).getFullYear();
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto px-4 py-8 mt-10">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">Hồ sơ cá nhân</h1>
 
             <ProfileHeaderCard 

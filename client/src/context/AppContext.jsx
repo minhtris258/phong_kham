@@ -133,9 +133,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const handleLogout = () => {
-    // Xóa token + user khỏi localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    setAuthToken(null);
     setIsLoggedIn(false);
     setUser(null);
     window.location.href = "/";

@@ -1,6 +1,5 @@
-
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // 👈 THÊM DÒNG NÀY
 import axios from "axios";
 import "../index.css";
 import "../assets/assets.js";
@@ -19,6 +18,8 @@ export default function RegisterSection() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const navigate = useNavigate(); // 👈 KHỞI TẠO NAVIGATE
+
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm((s) => ({ ...s, [name]: value }));
@@ -35,6 +36,7 @@ export default function RegisterSection() {
         name: form.name,
         email: form.email,
         password: form.password,
+        
       };
 
       const res = await axios.post(
@@ -50,12 +52,20 @@ export default function RegisterSection() {
       console.log("Register success:", res.data);
 
       // Lưu token nếu muốn auto login sau khi đăng ký
-      localStorage.setItem("token", res.data.token);
+      if (res.data?.token) {
+        localStorage.setItem("token", res.data.token);
+      }
 
       setSuccess(res.data.message || "Đăng ký thành công!");
 
       // Xoá mật khẩu cho an toàn
       setForm((s) => ({ ...s, password: "" }));
+
+      // 👇 SAU KHI ĐĂNG KÝ THÀNH CÔNG → CHUYỂN SANG TRANG HOÀN THIỆN PROFILE
+
+      navigate("/ProfileCompletion", { state: { email: form.email } });
+
+
     } catch (err) {
       console.error(err);
       const message =
@@ -162,13 +172,18 @@ export default function RegisterSection() {
               >
                 {loading ? "Đang đăng ký..." : "Đăng Ký"}
               </button>
-              <a href="/login" className="font-semibold text-white underline mt-4 block text-right px-2">Đăng nhập ?</a>
+              <a
+                href="/login"
+                className="font-semibold text-white underline mt-4 block text-right px-2"
+              >
+                Đăng nhập ?
+              </a>
             </form>
 
             <p className="mb-4 text-center">------------ OR ------------</p>
 
             <div className="flex justify-center gap-4">
-              {/* Các nút social giữ nguyên nếu bạn muốn */}
+              {/* Social buttons giữ nguyên */}
               <button className="bg-white rounded-lg p-3 shadow-md transition">
                 {/* Facebook */}
                 <svg

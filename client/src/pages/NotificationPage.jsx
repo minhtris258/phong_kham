@@ -65,7 +65,7 @@ const NotificationPage = () => {
   const unreadCount = notifications.filter(n => n.status === "unread").length;
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 mt-">
+    <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 mt-15">
       <div className="max-w-2xl mx-auto"> {/* Thu hẹp chiều rộng lại cho giống list mobile */}
         
         {/* Header & Tabs (Giữ nguyên như cũ) */}
