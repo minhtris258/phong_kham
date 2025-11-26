@@ -84,7 +84,7 @@ export default function DoctorProfile() {
         : 0;
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto px-4 py-8 mt-10">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">Hồ sơ cá nhân</h1>
 
             {/* SỬA LỖI Ở ĐÂY: Chỉ dùng doctorData.image (đã được xử lý ở trên) */}
