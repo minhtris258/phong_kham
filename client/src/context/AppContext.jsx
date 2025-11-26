@@ -31,7 +31,7 @@ const AppContext = createContext({
   user: null,
   token: null,
   login: () => Promise.reject("Not initialized"),
-  logout: () => {},
+  handleLogout: () => {},
   loadCurrentUser: () => Promise.resolve(),
   apiClient: apiClient,
 });
@@ -112,6 +112,7 @@ export const AppProvider = ({ children }) => {
   );
 
   // --- Đăng nhập ---
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const login = async (email, password) => {
     try {
       // POST /api/users/auth/login
@@ -135,13 +136,9 @@ export const AppProvider = ({ children }) => {
     // Xóa token + user khỏi localStorage
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-
-    // Cập nhật state trong Header
     setIsLoggedIn(false);
     setUser(null);
-
-    // Điều hướng về trang login (hoặc /)
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   // --- Khởi tạo (Chạy một lần khi app load) ---
