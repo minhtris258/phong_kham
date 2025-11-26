@@ -1,25 +1,24 @@
 // src/components/patient/BookingSection.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // <--- 1. Import useNavigate
 import BookingModal from './BookingModal.jsx'; 
-// --- THAY ĐỔI 1: Import TimeslotService mới ---
 import timeslotService from '../../services/TimeslotService.js'; 
 
 export default function BookingSection({ doctor, scheduleConfig }) {
+    const navigate = useNavigate(); // <--- 2. Khởi tạo navigate
     const [openBooking, setOpenBooking] = useState(false);
     const [selectedDateIndex, setSelectedDateIndex] = useState(0);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [availableSlots, setAvailableSlots] = useState([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
 
-    // 1. Tạo danh sách 10 ngày (Logic chuẩn YYYY-MM-DD)
+    // ... (Giữ nguyên logic tạo weekDays)
     const weekDays = useMemo(() => {
         const days = [];
         for (let i = 0; i < 10; i++) {
             const date = new Date();
             date.setDate(date.getDate() + i);
-            
-            // Format YYYY-MM-DD local thủ công để tránh lỗi múi giờ
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const dayNum = String(date.getDate()).padStart(2, '0');
@@ -37,10 +36,9 @@ export default function BookingSection({ doctor, scheduleConfig }) {
 
     const selectedDay = weekDays[selectedDateIndex];
 
-    // 2. FETCH SLOTS (Đã cập nhật dùng TimeslotService)
+    // ... (Giữ nguyên logic fetchSlots)
     useEffect(() => {
         const fetchSlots = async () => {
-            // Lấy ID bác sĩ: Kiểm tra kỹ các trường có thể có
             const doctorId = doctor?._id || doctor?.id || doctor?.doctor_id;
             
             if (!doctorId || !selectedDay?.fullDate) return;
@@ -50,16 +48,9 @@ export default function BookingSection({ doctor, scheduleConfig }) {
             setSelectedSlot(null);
 
             try {
-                console.log(`Calling API: /timeslots/${doctorId}/slots/${selectedDay.fullDate}`);
-                
-                // --- THAY ĐỔI 2: Gọi hàm từ timeslotService ---
                 const res = await timeslotService.getSlotsByDate(doctorId, selectedDay.fullDate);
-                
-                console.log("API Response:", res); // Debug response
-
                 let slotsData = [];
                 
-                // Xử lý response linh hoạt (cho cả Axios Response object và Data trực tiếp)
                 if (Array.isArray(res)) {
                     slotsData = res;
                 } else if (res.data && Array.isArray(res.data)) {
@@ -70,10 +61,7 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                     slotsData = res.slots;
                 }
 
-                // Lọc bỏ các slot đã có người đặt (nếu API trả về mixed status)
-                // Giả định API trả về status: "free" hoặc "booked"
                 const activeSlots = slotsData.filter(slot => {
-                    // Nếu có field status, phải là 'free'. Nếu có isBooked, phải là false.
                     const isFree = slot.status ? slot.status === 'free' : true;
                     const notBooked = !slot.isBooked;
                     return isFree && notBooked;
@@ -91,25 +79,48 @@ export default function BookingSection({ doctor, scheduleConfig }) {
         fetchSlots();
     }, [doctor, selectedDay]);
 
-    // UI helper
     const isDayOffUI = (dateStr) => scheduleConfig?.exceptions?.some(e => e.date === dateStr && e.isDayOff);
 
+    // --- 3. HÀM KIỂM TRA ĐĂNG NHẬP ---
+    const checkAuth = () => {
+        // Kiểm tra token trong localStorage (hoặc cookie/context tùy dự án của bạn)
+        const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+        if (!token) {
+            // Nếu chưa đăng nhập:
+            const confirmLogin = window.confirm("Bạn cần đăng nhập để đặt lịch khám. Đi đến trang đăng nhập ngay?");
+            if (confirmLogin) {
+                // Lưu lại đường dẫn hiện tại để sau khi login thì quay lại (nếu logic login hỗ trợ)
+                navigate('/login', { state: { from: window.location.pathname } });
+            }
+            return false;
+        }
+        return true;
+    };
+
+    // --- 4. CẬP NHẬT HANDLE CLICK SLOT ---
     const handleSlotClick = (slot) => {
-        // Double check tránh click slot đã đặt
         if (slot.isBooked || slot.status === 'booked') return;
         
-        // Tạo display string nếu chưa có
+        // Kiểm tra đăng nhập TRƯỚC khi mở modal
+        if (!checkAuth()) return; 
+
         const displayTime = slot.display || `${slot.start} - ${slot.end}`;
-        
-        // Quan trọng: Truyền toàn bộ object slot (chứa _id) vào state
         setSelectedSlot({ ...slot, display: displayTime });
         setOpenBooking(true);
     };
 
+    // --- 5. CẬP NHẬT HANDLE OPEN BOOKING (Nút lớn) ---
     const handleOpenBooking = () => {
-         if (!selectedSlot && availableSlots.length > 0) {
-            // Tự động chọn slot đầu tiên nếu user bấm "Đặt khám ngay" mà chưa chọn giờ
-            handleSlotClick(availableSlots[0]);
+        // Kiểm tra đăng nhập
+        if (!checkAuth()) return;
+
+        // Logic chọn slot
+        if (!selectedSlot && availableSlots.length > 0) {
+            // Nếu chưa chọn slot nào thì lấy slot đầu tiên
+            const firstAvailable = availableSlots[0];
+            const displayTime = firstAvailable.display || `${firstAvailable.start} - ${firstAvailable.end}`;
+            setSelectedSlot({ ...firstAvailable, display: displayTime });
+            setOpenBooking(true);
         } else if (selectedSlot) {
              setOpenBooking(true);
         }
@@ -166,7 +177,6 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                     {availableSlots.map((slot, i) => {
                         const display = slot.display || `${slot.start} - ${slot.end}`;
                         // Logic kiểm tra selected
-                        // Cần so sánh _id nếu có, hoặc so sánh start time
                         const isSelected = selectedSlot && (
                             (selectedSlot._id && selectedSlot._id === slot._id) || 
                             (selectedSlot.start === slot.start)
@@ -196,8 +206,11 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                         1900-2805
                     </a>
                 </div>
+                 {/* --- 6. CẬP NHẬT NÚT ĐẶT KHÁM --- */}
                  <button
                     onClick={handleOpenBooking}
+                    // Disable nếu đang load HOẶC không có slot nào để chọn
+                    // Lưu ý: KHÔNG disable nếu chưa đăng nhập, để người dùng bấm vào mới nhắc đăng nhập
                     disabled={loadingSlots || availableSlots.length === 0}
                     className={`px-20 py-6 rounded-2xl font-bold text-2xl transition-all shadow-xl ${
                          loadingSlots || availableSlots.length === 0

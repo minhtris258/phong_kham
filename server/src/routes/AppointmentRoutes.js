@@ -6,7 +6,10 @@ import {
   getAppointments,
   getAppointmentById,
   updateAppointment,
-  deleteAppointment
+  deleteAppointment,
+  getDoctorAppointments,
+  cancelAppointmentByDoctor,
+  rescheduleAppointmentByDoctor
 } from "../controllers/AppointmentController.js";
 import { verifyToken, requireRole } from "../middlewares/authMiddleware.js";
 
@@ -16,6 +19,11 @@ const router = express.Router();
 router.post("/book", verifyToken, bookAppointment);
 router.post("/cancel/:id", verifyToken, cancelAppointment);
 router.get("/my-appointments", verifyToken, myAppointments);
+
+// Doctor Routes
+router.get("/doctor-appointments", verifyToken, requireRole("doctor"), getDoctorAppointments);
+router.put("/doctor-appointments/:id/cancel", verifyToken, requireRole("doctor"), cancelAppointmentByDoctor);
+router.put("/doctor-appointments/:id/reschedule", verifyToken, requireRole("doctor"), rescheduleAppointmentByDoctor);
 
 // Admin Routes
 router.get("/", verifyToken, requireRole("admin"), getAppointments); // Lấy danh sách

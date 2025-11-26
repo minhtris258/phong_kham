@@ -22,6 +22,7 @@ import SpecialtyManagement from "./pages/admin/SpecialtyManagement";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorSchedule from "./pages/doctor/DoctorSchedule";
 import DoctorSettings from "./pages/doctor/DoctorSettings";
+import DoctorAppointment from "./pages/doctor/DoctorAppointment";
 
 // User Pages
 import HomePage from "./pages/Home";
@@ -84,6 +85,7 @@ export default function App() {
         {/* ==================== DOCTOR LAYOUT ==================== */}
         <Route path="/doctor" element={<DoctorLayout />}>
           <Route index element={<DoctorProfile />} />
+          <Route path="appointments" element={<DoctorAppointment />} />
           <Route path="schedule" element={<DoctorSchedule />} />
           <Route path="settings" element={<DoctorSettings />} />
         </Route>
