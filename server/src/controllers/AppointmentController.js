@@ -381,3 +381,269 @@ export const deleteAppointment = async (req, res, next) => {
     session.endSession();
   }
 };
+//lấy danh sách lịch hẹn của bác sĩ
+
+export const getDoctorAppointments = async (req, res, next) => {
+  try {
+    const { _id } = req.user;
+    const { 
+      status, 
+      page = 1, 
+      limit = 50,        // Tăng limit mặc định vì trong 1 tuần ít khi quá 50 cuộc
+      startDate,         // YYYY-MM-DD
+      endDate            // YYYY-MM-DD
+    } = req.query;
+
+    // 1. Kiểm tra quyền bác sĩ
+    const userRole = req.user.role?.name || req.user.role;
+    if (userRole !== "doctor") {
+      return res.status(403).json({ success: false, message: "Chỉ bác sĩ mới có quyền." });
+    }
+
+    // 2. Lấy doctor_id thực sự từ user_id
+    const doctorProfile = await Doctor.findOne({ user_id: _id });
+    if (!doctorProfile) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Không tìm thấy hồ sơ bác sĩ liên kết với tài khoản này." 
+      });
+    }
+
+    const doctorId = doctorProfile._id;
+
+    // 3. Xây dựng query
+    const query = { doctor_id: doctorId };
+
+    // Lọc theo trạng thái (nếu có)
+    if (status) {
+      // Hỗ trợ cả dạng "confirmed" và "confirmed,pending"
+      const statusArray = status.includes(',') ? status.split(',') : [status];
+      query.status = { $in: statusArray };
+    }
+
+    // QUAN TRỌNG: Lọc theo khoảng ngày (chỉ lấy trong tuần hiện tại)
+    if (startDate && endDate) {
+      query.date = {
+        $gte: new Date(startDate),                    // >= startDate 00:00:00
+        $lte: new Date(`${endDate}T23:59:59.999Z`)    // <= endDate 23:59:59
+      };
+    }
+
+    const skip = (page - 1) * parseInt(limit);
+
+    const [total, appointments] = await Promise.all([
+      Appointment.countDocuments(query),
+      Appointment.find(query)
+        .populate("patient_id", "fullName email phone avatar")
+        .sort({ date: 1, start: 1 })  // Sắp xếp theo ngày + giờ để dễ map
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean()
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: appointments,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+/** PUT /api/appointments/doctor/cancel/:id - Bác sĩ hủy lịch */
+export const cancelAppointmentByDoctor = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  try {
+    const { id } = req.params;
+    const { reason } = req.body; // Lý do hủy
+    const userId = req.user._id;
+
+    // 1. Tìm Profile Bác sĩ
+    const doctor = await Doctor.findOne({ user_id: userId });
+    if (!doctor) return res.status(403).json({ error: "Bạn không phải là bác sĩ." });
+
+    await session.withTransaction(async () => {
+      const appt = await Appointment.findById(id).session(session);
+      if (!appt) throw new Error("NOT_FOUND");
+
+      // 2. Check quyền sở hữu (Chỉ hủy lịch của chính mình)
+      if (appt.doctor_id.toString() !== doctor._id.toString()) {
+        throw new Error("FORBIDDEN");
+      }
+
+      // 3. Kiểm tra trạng thái hiện tại
+      if (appt.status === "cancelled") {
+        return res.json({ message: "Lịch hẹn này đã bị hủy trước đó." });
+      }
+      if (appt.status === "completed") {
+        throw new Error("COMPLETED_ERROR"); // Đã khám xong thì không hủy được
+      }
+
+      // 4. Cập nhật trạng thái -> Cancelled
+      appt.status = "cancelled";
+      // Lưu lý do hủy (nếu DB có trường này, hoặc ghi vào note)
+      if (reason) {
+          appt.reason = (appt.reason || "") + ` [Đã hủy: ${reason}]`;
+      }
+      await appt.save({ session });
+
+      // 5. Giải phóng Slot (để trống cho người khác đặt, hoặc bác sĩ tự khóa sau)
+      await TimeSlot.updateOne(
+        { _id: appt.timeslot_id },
+        { $set: { status: "free", appointment_id: null } },
+        { session }
+      );
+
+      // 6. Gửi thông báo cho Bệnh nhân
+      const patient = await Patient.findById(appt.patient_id).session(session);
+      if (patient) {
+          const notifBody = `Bác sĩ ${doctor.fullName} đã hủy lịch hẹn lúc ${appt.start} ngày ${new Date(appt.date).toLocaleDateString('vi-VN')}.\nLý do: ${reason || "Bận đột xuất"}`;
+          
+          await Notification.create([{
+            user_id: patient.user_id, // Gửi về account user của bệnh nhân
+            type: "appointment",
+            title: "⚠️ Lịch Hẹn Bị Hủy",
+            body: notifBody,
+            appointment_id: appt._id,
+            channels: ["in-app"],
+            status: "unread",
+            sent_at: new Date()
+          }], { session });
+
+          // Socket (nếu có)
+          const io = req.app.get('io');
+          if (io) {
+             io.to(patient.user_id.toString()).emit('new_notification', {
+                message: "⚠️ Lịch Hẹn Bị Hủy",
+                data: { body: notifBody, appointment_id: appt._id }
+             });
+          }
+      }
+    });
+
+    res.json({ message: "Hủy lịch thành công. Lịch hẹn đã được lưu vào danh sách hủy." });
+
+  } catch (e) {
+    if (e.message === "NOT_FOUND") return res.status(404).json({ error: "Không tìm thấy lịch hẹn." });
+    if (e.message === "FORBIDDEN") return res.status(403).json({ error: "Lịch hẹn này không thuộc về bạn." });
+    if (e.message === "COMPLETED_ERROR") return res.status(400).json({ error: "Lịch hẹn đã hoàn thành, không thể hủy." });
+    next(e);
+  } finally {
+    session.endSession();
+  }
+};
+
+/** PUT /api/appointments/doctor/update/:id - Bác sĩ cập nhật (Khám xong / Ghi chú) */
+export const rescheduleAppointmentByDoctor = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  try {
+    const { id } = req.params; // ID lịch hẹn cũ
+    const { new_timeslot_id, reason } = req.body; // ID slot mới và lý do dời
+    const userId = req.user._id;
+
+    // 1. Kiểm tra bác sĩ
+    const doctor = await Doctor.findOne({ user_id: userId });
+    if (!doctor) return res.status(403).json({ error: "Quyền truy cập bị từ chối." });
+
+    if (!new_timeslot_id) return res.status(400).json({ error: "Thiếu thông tin slot mới." });
+
+    await session.withTransaction(async () => {
+      // 2. Lấy lịch hẹn cũ
+      const appt = await Appointment.findById(id).session(session);
+      if (!appt) throw new Error("NOT_FOUND");
+
+      // Check quyền
+      if (appt.doctor_id.toString() !== doctor._id.toString()) {
+        throw new Error("FORBIDDEN");
+      }
+
+      // Chỉ cho phép dời khi lịch đang "confirmed" hoặc "pending"
+      if (["cancelled", "completed"].includes(appt.status)) {
+        throw new Error("INVALID_STATUS");
+      }
+
+      // 3. Kiểm tra Slot mới có trống không
+      const newSlot = await TimeSlot.findOne({ 
+        _id: new_timeslot_id, 
+        status: "free" 
+      }).session(session);
+
+      if (!newSlot) throw new Error("SLOT_BUSY"); // Slot mới đã bị đặt hoặc không tồn tại
+
+      // === THỰC HIỆN HOÁN ĐỔI ===
+
+      // A. Giải phóng Slot cũ
+      await TimeSlot.updateOne(
+        { _id: appt.timeslot_id },
+        { $set: { status: "free", appointment_id: null } },
+        { session }
+      );
+
+      // B. Cập nhật Slot mới (Đặt chỗ)
+      await TimeSlot.updateOne(
+        { _id: new_timeslot_id },
+        { $set: { status: "booked", appointment_id: appt._id } },
+        { session }
+      );
+
+      // C. Cập nhật thông tin Lịch hẹn
+      const oldDateStr = new Date(appt.date).toLocaleDateString('vi-VN');
+      const oldTime = appt.start;
+
+      appt.timeslot_id = new_timeslot_id;
+      appt.date = newSlot.date;
+      appt.start = newSlot.start;
+      // Ghi chú lý do dời lịch
+      if (reason) {
+        appt.reason = (appt.reason || "") + ` [Dời từ ${oldTime} ${oldDateStr}: ${reason}]`;
+      }
+      await appt.save({ session });
+
+      // D. Thông báo cho bệnh nhân
+      const patient = await Patient.findById(appt.patient_id);
+      if (patient) {
+         const newDateStr = new Date(newSlot.date).toLocaleDateString('vi-VN');
+         const notifBody = `Bác sĩ ${doctor.fullName} đã đổi lịch khám của bạn.\nLịch cũ: ${oldTime} ${oldDateStr}\nLịch mới: ${newSlot.start} ${newDateStr}\nLý do: ${reason || "Thay đổi kế hoạch làm việc"}`;
+
+         await Notification.create([{
+            user_id: patient.user_id,
+            type: "appointment",
+            title: "📅 Thay Đổi Lịch Khám",
+            body: notifBody,
+            appointment_id: appt._id,
+            channels: ["in-app"],
+            status: "unread",
+            sent_at: new Date()
+         }], { session });
+
+         // Socket
+         const io = req.app.get('io');
+         if (io) {
+            io.to(patient.user_id.toString()).emit('new_notification', {
+               message: "📅 Thay Đổi Lịch Khám",
+               data: { body: notifBody }
+            });
+            // Emit sự kiện để reload lịch phía client nếu cần
+            io.to(patient.user_id.toString()).emit('appointment_updated', appt);
+         }
+      }
+    });
+
+    res.json({ message: "Dời lịch thành công." });
+
+  } catch (e) {
+    if (e.message === "NOT_FOUND") return res.status(404).json({ error: "Không tìm thấy lịch hẹn." });
+    if (e.message === "FORBIDDEN") return res.status(403).json({ error: "Đây không phải lịch hẹn của bạn." });
+    if (e.message === "INVALID_STATUS") return res.status(400).json({ error: "Lịch hẹn đã hủy hoặc hoàn thành không thể dời." });
+    if (e.message === "SLOT_BUSY") return res.status(409).json({ error: "Khung giờ mới đã có người đặt, vui lòng chọn giờ khác." });
+    next(e);
+  } finally {
+    session.endSession();
+  }
+};

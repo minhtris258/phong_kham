@@ -30,6 +30,7 @@ const VisitSchema = new mongoose.Schema(
     diagnosis: { type: String, default: "" },
     notes: { type: String, default: "" },
     next_visit_date: { type: Date },
+    next_visit_timeslot_id: { type: mongoose.Schema.Types.ObjectId, ref: "Timeslot", default: null },
 
     prescriptions: { type: [PrescriptionSchema], default: [] },
     consultation_fee_snapshot: { type: Number, required: true, min: 0 },

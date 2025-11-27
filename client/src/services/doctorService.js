@@ -7,7 +7,16 @@ const doctorService = {
         const response = await api.get('/doctors');
         return response; // { data: { doctors: [...] } } hoặc { data: [...] }
     },
-
+    // LẤY THÔNG TIN BÁC SĨ THEO ID
+    getDoctorById: async (id) => {
+        const response = await api.get(`/doctors/${id}`);
+        return response.data;
+    },
+    // LẤY HỒ SƠ BÁC SĨ CỦA CHÍNH MÌNH
+    getMe: async () => {
+        const response = await api.get('/doctors/me');
+        return response.data; // Trả về { profile: { ... } }
+    },
     // TẠO MỚI BÁC SĨ (chỉ gửi name, email, password)
     createDoctor: async (doctorData) => {
     // ÉP CHẮC CHẮN CHỈ GỬI 3 TRƯỜNG – LOẠI BỎ TẤT CẢ DỮ LIỆU THỪA

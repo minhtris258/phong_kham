@@ -31,7 +31,7 @@ const AppContext = createContext({
   user: null,
   token: null,
   login: () => Promise.reject("Not initialized"),
-  logout: () => {},
+  handleLogout: () => {},
   loadCurrentUser: () => Promise.resolve(),
   apiClient: apiClient,
 });
@@ -79,8 +79,8 @@ export const AppProvider = ({ children }) => {
       setAuthToken(currentToken); // Cài đặt token vào header
 
       try {
-        // 1. Lấy thông tin cơ bản từ JWT (/api/users/auth/me)
-        const authResponse = await apiClient.get("/users/auth/me");
+        // 1. Lấy thông tin cơ bản từ JWT (/api/auth/me)
+        const authResponse = await apiClient.get("/auth/me");
         const basicUser = authResponse.data.user;
 
         let fullProfile = null;
@@ -112,6 +112,7 @@ export const AppProvider = ({ children }) => {
   );
 
   // --- Đăng nhập ---
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const login = async (email, password) => {
     try {
       // POST /api/users/auth/login
@@ -132,16 +133,10 @@ export const AppProvider = ({ children }) => {
   };
 
   const handleLogout = () => {
-    // Xóa token + user khỏi localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    // Cập nhật state trong Header
+    setAuthToken(null);
     setIsLoggedIn(false);
     setUser(null);
-
-    // Điều hướng về trang login (hoặc /)
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   // --- Khởi tạo (Chạy một lần khi app load) ---

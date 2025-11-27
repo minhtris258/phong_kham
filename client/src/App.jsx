@@ -8,6 +8,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import UserLayout from "./layouts/UserLayout";
 import DoctorLayout from "./layouts/DoctorLayout";
 
+import Chatbox from "./components/Chatbox";
 
 // Admin Pages
 import DashboardContent from "./pages/admin/Dashboard";
@@ -21,6 +22,7 @@ import SpecialtyManagement from "./pages/admin/SpecialtyManagement";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorSchedule from "./pages/doctor/DoctorSchedule";
 import DoctorSettings from "./pages/doctor/DoctorSettings";
+import DoctorAppointment from "./pages/doctor/DoctorAppointment";
 
 // User Pages
 import HomePage from "./pages/Home";
@@ -37,6 +39,7 @@ import NotificationPage from "./pages/NotificationPage";
 import PartnersManagement from "./pages/admin/PartnersManagement";
 import PostManagement from "./pages/admin/PostManagement";
 import PostEditor from "./pages/admin/PostEditor";
+import ProfileCompletion from "./pages/patient/ProfileCompletion.jsx";
 
 export default function App() {
   return (
@@ -48,9 +51,10 @@ export default function App() {
           <Route path="Login" element={<LoginPage />} />
           <Route path="Register" element={<RegisterPage />} />
           <Route path="Notification" element={<NotificationPage />} />
-          <Route path="bac-si/:id" element={<DoctorDetailPage />} />
+          <Route path="doctors/:id" element={<DoctorDetailPage />} />
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
+            
             <Route path="lich-kham" element={<AppointmentListContent />} />
             <Route
               path="lich-su-thanh-toan"
@@ -58,6 +62,7 @@ export default function App() {
             />
             <Route path="tai-khoan" element={<AccountSettingsContent />} />
           </Route>
+          <Route path="ProfileCompletion" element={<ProfileCompletion />} />
           {/* Có thể thêm các trang public khác ở đây */}
           {/* <Route path="tim-kiem" element={<SearchPage />} /> */}
           {/* <Route path="chuyen-khoa/:slug" element={<SpecialtyPage />} /> */}
@@ -76,6 +81,7 @@ export default function App() {
           <Route path="holidays" element={<HolidayManagement />} />
           <Route path="partners" element={<PartnersManagement />} />
           <Route path="profile" element={<ProfileSettings />} />
+          
         </Route>
 
         {/* ... các routes khác */}
@@ -83,8 +89,10 @@ export default function App() {
         {/* ==================== DOCTOR LAYOUT ==================== */}
         <Route path="/doctor" element={<DoctorLayout />}>
           <Route index element={<DoctorProfile />} />
+          <Route path="appointments" element={<DoctorAppointment />} />
           <Route path="schedule" element={<DoctorSchedule />} />
           <Route path="settings" element={<DoctorSettings />} />
+          
         </Route>
 
         {/* ==================== 404 ==================== */}
@@ -100,6 +108,7 @@ export default function App() {
         />
       </Routes>
       <ToastContainer />
+      <Chatbox />
     </BrowserRouter>
   );
 }

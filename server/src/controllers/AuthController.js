@@ -136,7 +136,7 @@ export async function registerPublic(req, res, next) {
         status: "pending_profile",
         profile_completed: false
       },
-      next: "/onboarding/profile" // 👈 gợi ý điều hướng
+      next: "/ProfileCompletion " // 👈 gợi ý điều hướng
     });
   } catch (e) { next(e); }
 };

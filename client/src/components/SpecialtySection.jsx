@@ -56,10 +56,7 @@ export default function SpecialtySection({
           },
         });
 
-        // Tùy backend:
-        // - nếu trả { specialties: [...] } -> res.data.specialties
-        // - nếu trả { data: [...] }       -> res.data.data
-        // - nếu trả mảng trực tiếp       -> res.data
+
         const list =
           res.data?.specialties ||
           res.data?.data ||

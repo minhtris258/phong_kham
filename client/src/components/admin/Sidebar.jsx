@@ -1,5 +1,6 @@
 import React from "react";
-import { NavLink } from "react-router-dom"; // Thay thế <a> bằng NavLink
+import { NavLink } from "react-router-dom";
+import { useAppContext } from "../../context/AppContext.jsx";
 import {
   Menu,
   LayoutDashboard,
@@ -30,7 +31,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: "Profile", icon: UserRoundPen, to: "profile" },
     { name: "Cài Đặt", icon: Settings, to: "settings" },
   ];
-
+  // logout
+  const { handleLogout, setAccountOpen } = useAppContext();
   // Định nghĩa class cho link không active và active
   const linkClasses =
     "flex items-center px-4 py-2 rounded-lg transition duration-150 text-indigo-200 hover:bg-indigo-700 hover:text-white";
@@ -80,14 +82,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
       {/* Footer/Logout */}
       <div className="p-4 border-t border-indigo-700">
-        {/* Dùng NavLink hoặc <Link> nếu logout là một trang Router, hoặc <a> nếu là hàm logout */}
-        <a
-          href="/logout"
-          className="flex items-center px-4 py-2 rounded-lg text-red-300 hover:bg-indigo-700 hover:text-red-100 transition duration-150"
+        <button
+          type="button"
+          onClick={() => {
+            handleLogout();
+          }}
+          className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-100"
         >
-          <Lock className="h-5 w-5 mr-3" />
-          Đăng Xuất
-        </a>
+          Đăng xuất
+        </button>
       </div>
     </aside>
   );
