@@ -1,7 +1,12 @@
-// src/components/Header.jsx
 import { useEffect, useRef, useState } from "react";
 import "../index.css";
-import "../assets/assets.js";
+// import "../assets/assets.js"; // Bỏ comment nếu bạn có file này
+import {
+  CircleUserRound,
+  Bell,
+  LogOut,
+  LayoutDashboard,
+} from "lucide-react";
 import { useAppContext } from "../context/AppContext.jsx";
 
 export default function Header() {
@@ -10,13 +15,12 @@ export default function Header() {
   const topbarRef = useRef(null);
   const drawerRef = useRef(null);
 
-  // 👇 trạng thái đăng nhập
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const { handleLogout } = useAppContext();
 
-  // Đọc token + user từ localStorage
+  // --- 1. Logic lấy thông tin User & Role ---
   useEffect(() => {
     try {
       const token = localStorage.getItem("token");
@@ -24,7 +28,10 @@ export default function Header() {
       if (token) {
         setIsLoggedIn(true);
         if (userRaw) {
-          setUser(JSON.parse(userRaw));
+          const parsedUser = JSON.parse(userRaw);
+          setUser(parsedUser);
+          // Debug role để kiểm tra
+          // console.log("User Role:", parsedUser.role);
         }
       } else {
         setIsLoggedIn(false);
@@ -35,7 +42,24 @@ export default function Header() {
     }
   }, []);
 
-  // Đặt vị trí mainbar: khi chưa scroll, mainbar nằm ngay dưới topbar; scroll qua thì dính top-0
+  // --- 2. Hàm xác định đường dẫn Dashboard ---
+  const getDashboardPath = () => {
+    if (!user?.role) return null;
+    
+    // Logic theo yêu cầu: admin -> /admin, doctor -> /doctor
+    switch (user.role) {
+      case 'admin':
+        return '/admin';
+      case 'doctor':
+        return '/doctor'; // Hoặc '/doctor/visits' tùy route bạn định nghĩa
+      default:
+        return null;
+    }
+  };
+
+  const dashboardPath = getDashboardPath();
+
+  // --- 3. Logic Scroll Header ---
   useEffect(() => {
     const mainbar = mainbarRef.current;
     const topbar = topbarRef.current;
@@ -64,7 +88,7 @@ export default function Header() {
     };
   }, []);
 
-  // Đóng bằng ESC & click ngoài
+  // --- 4. Logic đóng/mở Drawer ---
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setOpen(false);
     const onClick = (e) => {
@@ -82,7 +106,7 @@ export default function Header() {
 
   return (
     <header className="w-full">
-      {/* TOP BAR: cuộn là mất (không fixed) */}
+      {/* TOP BAR */}
       <div
         id="topbar"
         ref={topbarRef}
@@ -90,59 +114,19 @@ export default function Header() {
       >
         <div className="container mx-auto px-4 flex items-center">
           <ul className="flex gap-3 text-white pl-3">
-            <li>
-              <a href="#">FaceBook</a>
-            </li>
-            <li>
-              <a href="#" className="border-l pl-3">
-                Zalo
-              </a>
-            </li>
-            <li>
-              <a href="#" className="border-l pl-3">
-                YouTube
-              </a>
-            </li>
-            <li>
-              <a href="#" className="border-l pl-3">
-                TikTok
-              </a>
-            </li>
+            <li><a href="#">FaceBook</a></li>
+            <li><a href="#" className="border-l pl-3">Zalo</a></li>
+            <li><a href="#" className="border-l pl-3">YouTube</a></li>
+            <li><a href="#" className="border-l pl-3">TikTok</a></li>
           </ul>
           <div className="ml-auto flex gap-6 text-white">
-            <a href="mailto:medpro@example.com" className="flex gap-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                height="26"
-                width="16"
-                viewBox="0 0 512 512"
-              >
-                <path
-                  fill="#ffffff"
-                  d="M61.4 64C27.5 64 0 91.5 0 125.4 0 126.3 0 127.1 .1 128L0 128 0 384c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-256-.1 0c0-.9 .1-1.7 .1-2.6 0-33.9-27.5-61.4-61.4-61.4L61.4 64zM464 192.3L464 384c0 8.8-7.2 16-16 16L64 400c-8.8 0-16-7.2-16-16l0-191.7 154.8 117.4c31.4 23.9 74.9 23.9 106.4 0L464 192.3zM48 125.4C48 118 54 112 61.4 112l389.2 0c7.4 0 13.4 6 13.4 13.4 0 4.2-2 8.2-5.3 10.7L280.2 271.5c-14.3 10.8-34.1 10.8-48.4 0L53.3 136.1c-3.3-2.5-5.3-6.5-5.3-10.7z"
-                />
-              </svg>
-              Email: medpro@example.com
-            </a>
-            <a href="tel:19006868" className="flex gap-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                height="26"
-                width="16"
-                viewBox="0 0 576 512"
-              >
-                <path
-                  fill="#ffffff"
-                  d="M344-32c128.1 0 232 103.9 232 232 0 13.3-10.7 24-24 24s-24-10.7-24-24c0-101.6-82.4-184-184-184-13.3 0-24-10.7-24-24s10.7-24 24-24zm8 192a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM320 88c0-13.3 10.7-24 24-24 75.1 0 136 60.9 136 136 0 13.3-10.7 24-24 24s-24-10.7-24-24c0-48.6-39.4-88-88-88-13.3 0-24-10.7-24-24zM144.1 1.4c19.7-5.4 40.3 4.7 48.1 23.5l40.5 97.3c6.9 16.5 2.1 35.6-11.8 47l-44.1 36.1c32.5 71.6 89 130 159.3 164.9L374.7 323c11.3-13.9 30.4-18.6 47-11.8L519 351.8c18.8 7.8 28.9 28.4 23.5 48.1l-1.5 5.5C523.4 470.1 460.9 525.3 384.6 509.2 209.6 472.1 71.9 334.4 34.8 159.4 18.7 83.1 73.9 20.6 138.5 2.9l5.5-1.5z"
-                />
-              </svg>
-              Hotline: 1900 6868
-            </a>
+            <a href="mailto:medpro@example.com" className="flex gap-2">Email: medpro@example.com</a>
+            <a href="tel:19006868" className="flex gap-2">Hotline: 1900 6868</a>
           </div>
         </div>
       </div>
 
-      {/* MAIN BAR: luôn fixed, luôn màu nhạt (đè lên banner) */}
+      {/* MAIN BAR */}
       <div
         id="mainbar"
         ref={mainbarRef}
@@ -164,105 +148,92 @@ export default function Header() {
             {/* Nav desktop */}
             <nav className="col-span-6 md:col-span-6 hidden md:flex items-center justify-center">
               <ul className="flex gap-6 text-white font-raleway font-semibold">
-                <li>
-                  <a className="hover:text-cyan-300" href="/">
-                    Trang Chủ
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-cyan-300" href="#">
-                    Giới Thiệu
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-cyan-300" href="#">
-                    Dịch Vụ
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-cyan-300" href="#">
-                    Bác Sĩ
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-cyan-300" href="#">
-                    Liên Hệ
-                  </a>
-                </li>
+                <li><a className="hover:text-cyan-300" href="/">Trang Chủ</a></li>
+                <li><a className="hover:text-cyan-300" href="#">Giới Thiệu</a></li>
+                <li><a className="hover:text-cyan-300" href="#">Dịch Vụ</a></li>
+                <li><a className="hover:text-cyan-300" href="#">Bác Sĩ</a></li>
+                <li><a className="hover:text-cyan-300" href="#">Liên Hệ</a></li>
               </ul>
             </nav>
 
             {/* CTA + hamburger */}
             <div className="col-span-6 md:col-span-3 flex items-center justify-end gap-3 ">
-              {/* 👇 Nếu đã đăng nhập: hiện icon user + tên + nút Đăng xuất, nếu chưa: nút Đăng Nhập */}
               {isLoggedIn ? (
-                <div className="md:flex block  ">
-                  {/* Icon chuông / thông báo */}
-                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center text-[#0a0f1f] lg:mr-2 ">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      height="24"
-                      width="21"
-                      viewBox="0 0 448 512"
-                    >
-                      <path d="M224 0c-17.7 0-32 14.3-32 32l0 3.2C119 50 64 114.6 64 192l0 21.7c0 48.1-16.4 94.8-46.4 132.4L7.8 358.3C2.7 364.6 0 372.4 0 380.5 0 400.1 15.9 416 35.5 416l376.9 0c19.6 0 35.5-15.9 35.5-35.5 0-8.1-2.7-15.9-7.8-22.2l-9.8-12.2C400.4 308.5 384 261.8 384 213.7l0-21.7c0-77.4-55-142-128-156.8l0-3.2c0-17.7-14.3-32-32-32zM162 464c7.1 27.6 32.2 48 62 48s54.9-20.4 62-48l-124 0z" />
-                    </svg>
-                  </div>
-
-                  {/* Nút chính: avatar + tên, click để mở/đóng menu */}
-                  <button
-                    type="button"
-                    onClick={() => setAccountOpen((prev) => !prev)}
-                    className=" inline-flex items-center gap-2"
-                    aria-haspopup="true"
-                    aria-expanded={accountOpen}
+                <div className="flex items-center gap-3">
+                  {/* ICON CHUÔNG (Desktop) */}
+                  <a
+                    href="/notifications"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition text-white"
+                    onClick={() => setOpen(false)}
                   >
-                    {/* Icon user */}
-                    <div className="hidden md:flex w-10 h-10 rounded-full bg-white/90 items-center justify-center text-[#0a0f1f]">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 448 512"
-                        className="w-5 h-5"
-                      >
-                        <path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z" />
-                      </svg>
+                    <div className="hidden md:flex w-10 h-10 rounded-full bg-white/90 items-center justify-center text-[#0a0f1f] hover:bg-white transition cursor-pointer">
+                      <Bell size={20} />
                     </div>
+                  </a>
+                  
+                  {/* Dropdown User */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setAccountOpen((prev) => !prev)}
+                      className="inline-flex items-center gap-2"
+                    >
+                      <div className="hidden md:flex w-10 h-10 rounded-full bg-white/90 items-center justify-center text-[#0a0f1f]">
+                        <CircleUserRound size={24} />
+                      </div>
+                      {user?.name && (
+                        <span className="text-sm font-semibold text-white truncate max-w-[120px] hidden md:block">
+                          {user.name}
+                        </span>
+                      )}
+                    </button>
 
-                    {/* Tên user */}
-                    {user?.name && (
-                      <span className="text-sm font-semibold text-white truncate max-w-[120px]">
-                        {user.name}
-                      </span>
+                    {/* --- DESKTOP DROPDOWN --- */}
+                    {accountOpen && (
+                      <div className="hidden md:block absolute right-0 mt-2 w-56 rounded-md bg-white shadow-xl py-1 z-50 ring-1 ring-black ring-opacity-5">
+                        <a
+                          href="/profile"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setAccountOpen(false)}
+                        >
+                          <CircleUserRound size={16} className="mr-2" />
+                          Hồ sơ cá nhân
+                        </a>
+
+                        {/* --- [NEW] Dashboard Link cho Admin/Doctor --- */}
+                        {dashboardPath && (
+                          <a
+                            href={dashboardPath}
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-100"
+                            onClick={() => setAccountOpen(false)}
+                          >
+                            <LayoutDashboard
+                              size={16}
+                              className="mr-2 text-indigo-600"
+                            />
+                            {user.role === 'admin' ? 'Trang quản trị' : 'Trang bác sĩ'}
+                          </a>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAccountOpen(false);
+                            handleLogout();
+                          }}
+                          className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 border-t border-gray-100"
+                        >
+                          <LogOut size={16} className="mr-2" />
+                          Đăng xuất
+                        </button>
+                      </div>
                     )}
-                  </button>
-
-                  {/* Dropdown: Profile + Đăng xuất */}
-                  {accountOpen && (
-                    <div className="absolute right-0 mt-2 w-40 rounded-md bg-white shadow-lg py-1 z-50">
-                      <a
-                        href="/profile" // hoặc /dashboard tùy bạn
-                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setAccountOpen(false)}
-                      >
-                        Profile
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAccountOpen(false);
-                          handleLogout();
-                        }}
-                        className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-100"
-                      >
-                        Đăng xuất
-                      </button>
-                    </div>
-                  )}
+                  </div>
                 </div>
               ) : (
                 <a
                   href="/login"
-                  className="hidden md:inline-flex items-center justify-center h-10 px-5 rounded btn-color transition"
+                  className="hidden md:inline-flex items-center justify-center h-10 px-5 rounded btn-color transition font-medium"
                 >
                   Đăng Nhập
                 </a>
@@ -292,92 +263,85 @@ export default function Header() {
         id="mobile-drawer"
         ref={drawerRef}
         className={[
-          "fixed inset-y-0 right-0 w-[88%] max-w-sm z-[60] p-6 text-white transition-all duration-300 ease-out",
-          "bg-gradient-to-b from-[#0a0f1f]/90 via-[#0a0f1f]/60 to-transparent",
+          "fixed inset-y-0 right-0 w-[85%] max-w-sm z-[60] p-6 text-white transition-all duration-300 ease-out",
+          "bg-gradient-to-b from-[#0a0f1f]/95 via-[#0a0f1f]/90 to-[#0a0f1f]/80 backdrop-blur-sm",
           open
             ? "translate-x-0 opacity-100 visible"
             : "translate-x-full opacity-0 invisible",
         ].join(" ")}
         aria-hidden={!open}
       >
-        <div className="flex items-center justify-between mb-6">
-          <span className="font-extrabold tracking-wide">MEDPRO</span>
+        <div className="flex items-center justify-between mb-8">
+          <span className="font-extrabold tracking-wide text-xl">MEDPRO</span>
           <button
             id="close-menu"
             onClick={() => setOpen(false)}
-            className="w-10 h-10"
+            className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition"
             aria-label="Đóng"
           >
             ✕
           </button>
         </div>
 
-        <nav className="space-y-4 font-raleway text-lg">
-          <a
-            href="/"
-            className="block hover:text-cyan-300"
-            onClick={() => setOpen(false)}
-          >
-            Trang Chủ
-          </a>
-          <a
-            href="#"
-            className="block hover:text-cyan-300"
-            onClick={() => setOpen(false)}
-          >
-            Giới Thiệu
-          </a>
-          <a
-            href="#"
-            className="block hover:text-cyan-300"
-            onClick={() => setOpen(false)}
-          >
-            Dịch Vụ
-          </a>
-          <a
-            href="#"
-            className="block hover:text-cyan-300"
-            onClick={() => setOpen(false)}
-          >
-            Bác Sĩ
-          </a>
-          <a
-            href="#"
-            className="block hover:text-cyan-300"
-            onClick={() => setOpen(false)}
-          >
-            Liên Hệ
-          </a>
+        <nav className="space-y-6 font-raleway text-lg border-b border-white/10 pb-6 mb-6">
+          <a href="/" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Trang Chủ</a>
+          <a href="#" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Giới Thiệu</a>
+          <a href="#" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Dịch Vụ</a>
+          <a href="#" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Bác Sĩ</a>
+          <a href="#" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Liên Hệ</a>
         </nav>
 
-        {/* 👇 Nút bên dưới drawer: nếu login thì hiện user, nếu không thì Đăng Nhập */}
-        {/* Ở trong MOBILE DRAWER */}
         {isLoggedIn ? (
-          <>
-            {/* Mục Profile */}
+          <div className="space-y-2">
+            {/* Mục Thông báo */}
             <a
-              href="/profile" // hoặc /dashboard tùy bạn
-              className="mt-8 inline-flex items-center justify-start h-11 px-3 rounded bg-white/90 text-[#0a0f1f] font-semibold hover:bg-white transition w-full gap-3"
+              href="/notifications"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition text-white"
               onClick={() => setOpen(false)}
             >
-              <div className="w-9 h-9 rounded-full bg-[#0a0f1f]/10 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 448 512"
-                  className="w-4 h-4"
-                >
-                  <path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z" />
-                </svg>
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+                <Bell size={22} />
               </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm leading-tight">
+              <span className="font-medium">Thông báo</span>
+            </a>
+
+            {/* Mục Profile */}
+            <a
+              href="/profile"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition text-white"
+              onClick={() => setOpen(false)}
+            >
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+                <CircleUserRound size={24} />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-semibold text-base leading-tight">
                   {user?.name || "Tài khoản của tôi"}
                 </span>
-                <span className="text-xs text-slate-600">
-                  Xem thông tin tài khoản
-                </span>
+                <span className="text-xs text-gray-300">Xem hồ sơ cá nhân</span>
               </div>
             </a>
+
+            {/* --- [NEW] Dashboard Link cho Admin/Doctor (Mobile) --- */}
+            {dashboardPath && (
+              <a
+                href={dashboardPath}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition text-indigo-300"
+                onClick={() => setOpen(false)}
+              >
+                <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-300">
+                  <LayoutDashboard size={24} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-base leading-tight">
+                    {user.role === 'admin' ? 'Dashboard Admin' : 'Trang Bác Sĩ'}
+                  </span>
+                  <span className="text-xs text-white/60">
+                    {user.role === 'admin' ? 'Trang quản trị viên' : 'Quản lý lịch khám'}
+                  </span>
+                </div>
+              </a>
+            )}
 
             {/* Mục Đăng xuất */}
             <button
@@ -386,30 +350,18 @@ export default function Header() {
                 setOpen(false);
                 handleLogout();
               }}
-              className="mt-3 inline-flex items-center justify-start h-11 px-3 rounded bg-white/90 text-red-600 font-semibold hover:bg-white transition w-full gap-3"
+              className="flex w-full items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition text-red-400 font-medium"
             >
-              <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 512 512"
-                  className="w-4 h-4"
-                >
-                  <path d="M502.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-128-128c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L402.7 224H192c-17.7 0-32 14.3-32 32s14.3 32 32 32h210.7L329.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l128-128zM160 96c17.7 0 32-14.3 32-32s-14.3-32-32-32L96 32C60.7 32 32 60.7 32 96l0 320c0 35.3 28.7 64 64 64l64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-320 64 0z" />
-                </svg>
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <LogOut size={20} />
               </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm leading-tight">Đăng xuất</span>
-                <span className="text-xs text-slate-600">
-                  Thoát khỏi tài khoản hiện tại
-                </span>
-              </div>
+              <span>Đăng xuất</span>
             </button>
-          </>
+          </div>
         ) : (
-          // Trường hợp chưa đăng nhập: nút Đăng nhập cũ
           <a
             href="/login"
-            className="mt-8 inline-flex items-center justify-center h-11 px-5 rounded bg-white text-black font-semibold hover:bg-[#003553] hover:text-white transition w-full"
+            className="flex items-center justify-center h-12 w-full rounded-lg bg-white text-[#0a0f1f] font-bold hover:bg-gray-100 transition"
             onClick={() => setOpen(false)}
           >
             Đăng Nhập

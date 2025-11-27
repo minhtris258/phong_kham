@@ -1,19 +1,19 @@
 // src/components/patient/BookingSection.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Clock, AlertCircle, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // <--- 1. Import useNavigate
+import { useNavigate } from 'react-router-dom'; 
 import BookingModal from './BookingModal.jsx'; 
 import timeslotService from '../../services/TimeslotService.js'; 
 
 export default function BookingSection({ doctor, scheduleConfig }) {
-    const navigate = useNavigate(); // <--- 2. Khởi tạo navigate
+    const navigate = useNavigate();
     const [openBooking, setOpenBooking] = useState(false);
     const [selectedDateIndex, setSelectedDateIndex] = useState(0);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [availableSlots, setAvailableSlots] = useState([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
 
-    // ... (Giữ nguyên logic tạo weekDays)
+    // 1. Tạo danh sách 10 ngày tiếp theo
     const weekDays = useMemo(() => {
         const days = [];
         for (let i = 0; i < 10; i++) {
@@ -36,7 +36,7 @@ export default function BookingSection({ doctor, scheduleConfig }) {
 
     const selectedDay = weekDays[selectedDateIndex];
 
-    // ... (Giữ nguyên logic fetchSlots)
+    // 2. Fetch Slots khi đổi ngày hoặc đổi bác sĩ
     useEffect(() => {
         const fetchSlots = async () => {
             const doctorId = doctor?._id || doctor?.id || doctor?.doctor_id;
@@ -48,9 +48,11 @@ export default function BookingSection({ doctor, scheduleConfig }) {
             setSelectedSlot(null);
 
             try {
+                // Gọi API lấy lịch
                 const res = await timeslotService.getSlotsByDate(doctorId, selectedDay.fullDate);
                 let slotsData = [];
                 
+                // Xử lý các trường hợp response khác nhau
                 if (Array.isArray(res)) {
                     slotsData = res;
                 } else if (res.data && Array.isArray(res.data)) {
@@ -61,6 +63,7 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                     slotsData = res.slots;
                 }
 
+                // Lọc các slot: status='free' và chưa bị booked
                 const activeSlots = slotsData.filter(slot => {
                     const isFree = slot.status ? slot.status === 'free' : true;
                     const notBooked = !slot.isBooked;
@@ -79,17 +82,15 @@ export default function BookingSection({ doctor, scheduleConfig }) {
         fetchSlots();
     }, [doctor, selectedDay]);
 
+    // Helper: Check ngày nghỉ từ config
     const isDayOffUI = (dateStr) => scheduleConfig?.exceptions?.some(e => e.date === dateStr && e.isDayOff);
 
-    // --- 3. HÀM KIỂM TRA ĐĂNG NHẬP ---
+    // 3. Hàm kiểm tra đăng nhập
     const checkAuth = () => {
-        // Kiểm tra token trong localStorage (hoặc cookie/context tùy dự án của bạn)
         const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
         if (!token) {
-            // Nếu chưa đăng nhập:
             const confirmLogin = window.confirm("Bạn cần đăng nhập để đặt lịch khám. Đi đến trang đăng nhập ngay?");
             if (confirmLogin) {
-                // Lưu lại đường dẫn hiện tại để sau khi login thì quay lại (nếu logic login hỗ trợ)
                 navigate('/login', { state: { from: window.location.pathname } });
             }
             return false;
@@ -97,11 +98,10 @@ export default function BookingSection({ doctor, scheduleConfig }) {
         return true;
     };
 
-    // --- 4. CẬP NHẬT HANDLE CLICK SLOT ---
+    // 4. Handle Click Slot
     const handleSlotClick = (slot) => {
         if (slot.isBooked || slot.status === 'booked') return;
         
-        // Kiểm tra đăng nhập TRƯỚC khi mở modal
         if (!checkAuth()) return; 
 
         const displayTime = slot.display || `${slot.start} - ${slot.end}`;
@@ -109,14 +109,12 @@ export default function BookingSection({ doctor, scheduleConfig }) {
         setOpenBooking(true);
     };
 
-    // --- 5. CẬP NHẬT HANDLE OPEN BOOKING (Nút lớn) ---
+    // 5. Handle Nút "ĐẶT KHÁM NGAY"
     const handleOpenBooking = () => {
-        // Kiểm tra đăng nhập
         if (!checkAuth()) return;
 
-        // Logic chọn slot
+        // Nếu chưa chọn slot nào thì auto chọn slot đầu tiên
         if (!selectedSlot && availableSlots.length > 0) {
-            // Nếu chưa chọn slot nào thì lấy slot đầu tiên
             const firstAvailable = availableSlots[0];
             const displayTime = firstAvailable.display || `${firstAvailable.start} - ${firstAvailable.end}`;
             setSelectedSlot({ ...firstAvailable, display: displayTime });
@@ -176,7 +174,6 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                     {availableSlots.map((slot, i) => {
                         const display = slot.display || `${slot.start} - ${slot.end}`;
-                        // Logic kiểm tra selected
                         const isSelected = selectedSlot && (
                             (selectedSlot._id && selectedSlot._id === slot._id) || 
                             (selectedSlot.start === slot.start)
@@ -206,11 +203,10 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                         1900-2805
                     </a>
                 </div>
-                 {/* --- 6. CẬP NHẬT NÚT ĐẶT KHÁM --- */}
+
+                 {/* Nút Đặt Khám */}
                  <button
                     onClick={handleOpenBooking}
-                    // Disable nếu đang load HOẶC không có slot nào để chọn
-                    // Lưu ý: KHÔNG disable nếu chưa đăng nhập, để người dùng bấm vào mới nhắc đăng nhập
                     disabled={loadingSlots || availableSlots.length === 0}
                     className={`px-20 py-6 rounded-2xl font-bold text-2xl transition-all shadow-xl ${
                          loadingSlots || availableSlots.length === 0
@@ -222,8 +218,11 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                 </button>
              </div>
 
+            {/* --- MODAL --- */}
+            {/* QUAN TRỌNG: Truyền isOpen={true} hoặc isOpen={openBooking} */}
             {openBooking && selectedSlot && (
                 <BookingModal 
+                    isOpen={openBooking} // <--- Đã thêm dòng này
                     doctor={doctor} 
                     selectedDate={selectedDay.fullDate}
                     selectedSlot={selectedSlot}

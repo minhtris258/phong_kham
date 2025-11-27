@@ -1,7 +1,7 @@
 // src/components/doctor/appointment/AppointmentDayModal.jsx
 import React from 'react';
 import Modal from '../../Modal';
-import { Plus, CalendarSync, CalendarX } from 'lucide-react'; // Import thêm icon
+import { Plus, CalendarSync, CalendarX, ClipboardPen } from 'lucide-react'; // Import thêm icon
 
 const AppointmentDayModal = ({
     isOpen, onClose, date, dayAppointments, 
