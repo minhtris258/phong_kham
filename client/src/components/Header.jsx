@@ -153,6 +153,7 @@ export default function Header() {
                 <li><a className="hover:text-cyan-300" href="#">Dịch Vụ</a></li>
                 <li><a className="hover:text-cyan-300" href="#">Bác Sĩ</a></li>
                 <li><a className="hover:text-cyan-300" href="#">Liên Hệ</a></li>
+
               </ul>
             </nav>
 
@@ -282,6 +283,7 @@ export default function Header() {
             ✕
           </button>
         </div>
+
 
         <nav className="space-y-6 font-raleway text-lg border-b border-white/10 pb-6 mb-6">
           <a href="/" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Trang Chủ</a>

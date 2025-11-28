@@ -3,10 +3,11 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import "../index.css";
-import Title from "./Title";
+
 
 // API endpoint để lấy danh sách bác sĩ
 const API_URL = "http://localhost:3000/api/doctors";
+
 
 // ====================== UTIL ======================
 const formatVND = (n) =>
@@ -203,10 +204,10 @@ export default function DoctorsFavorite({
         {doctors.length > 4 && (
           <div className="flex justify-center mt-4">
             <button
-              href="#"
+              href="/doctorList"
               className="px-6 py-2 rounded font-roboto text-base text-[#00b5f1] hover:border border-[#00b5f1] transition-all"
             >
-              Xem Thêm 
+              <a href="/doctorList">Xem Thêm</a>
             </button>
           </div>
         )}

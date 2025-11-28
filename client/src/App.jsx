@@ -24,7 +24,11 @@ import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorSchedule from "./pages/doctor/DoctorSchedule";
 import DoctorSettings from "./pages/doctor/DoctorSettings";
 import DoctorAppointment from "./pages/doctor/DoctorAppointment";
+
+import DoctorList from "./pages/doctor/DoctorList";
+
 import DoctorRoute from "./components/DoctorRoute.jsx";
+
 
 // User Pages
 import HomePage from "./pages/Home";
@@ -61,6 +65,7 @@ export default function App() {
           <Route path="Register" element={<RegisterPage />} />
           <Route path="notifications" element={<NotificationPage />} />
           <Route path="doctors/:id" element={<DoctorDetailPage />} />
+          <Route path="doctorList" element={<DoctorList />} />
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
 
