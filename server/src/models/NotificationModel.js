@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const notificationSchema = new mongoose.Schema(
     {
         user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
-        type: { type: String, enum: ["appointment", "reminder", "general"], required: true },
+        type: { type: String, enum: ["appointment", "reminder", "general", "rating_request"], required: true },
         title: { type: String, required: true },
         body: { type: String, required: true },
         data: { type: mongoose.Schema.Types.Mixed },

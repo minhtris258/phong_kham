@@ -67,7 +67,7 @@ export default function App() {
           <Route path="notifications" element={<NotificationPage />} />
           <Route path="doctors/:id" element={<DoctorDetailPage />} />
           <Route path="doctorList" element={<DoctorList />} />
-          <Route path="postList" element={<PostList />} />
+          <Route path="post" element={<PostList />} />
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
 

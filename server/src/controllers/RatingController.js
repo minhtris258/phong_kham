@@ -1,70 +1,103 @@
 import Rating from "../models/RatingModel.js";
 import Appointment from "../models/AppointmentModel.js";
 import Doctor from "../models/DoctorModel.js";
+import Patient from "../models/PatientModel.js"; // Nhớ import Patient
 
-/** POST /api/ratings
- *  - bệnh nhân đánh giá sau khi hoàn tất khám
- */
 export const createRating = async (req, res, next) => {
   try {
-    const role = req.user?.role || req.user?.role?.name;
-    if (role !== "patient")
-      return res.status(403).json({ error: "Chỉ bệnh nhân mới được đánh giá." });
+    console.log("--- BẮT ĐẦU CREATE RATING (DEBUG) ---");
+    
+    // 1. Kiểm tra User & Role
+    const user = req.user;
+    console.log("1. User đang login:", user._id, "| Role:", user.role?.name || user.role);
+
+    const role = user.role?.name || user.role;
+    if (role !== "patient") {
+        console.error("❌ Lỗi: Role không phải patient");
+        return res.status(403).json({ error: "Chỉ bệnh nhân mới được đánh giá." });
+    }
 
     const { appointment_id, star, comment = "" } = req.body || {};
-    if (!appointment_id || !star)
-      return res.status(400).json({ error: "Thiếu appointment_id hoặc star." });
+    console.log("2. Payload nhận được:", { appointment_id, star });
 
-    // Lấy thông tin appointment
+    if (!appointment_id || !star) {
+        return res.status(400).json({ error: "Thiếu thông tin appointment_id hoặc số sao." });
+    }
+
+    // 2. Lấy thông tin Appointment
     const appt = await Appointment.findById(appointment_id).lean();
-    if (!appt) return res.status(404).json({ error: "Không tìm thấy lịch hẹn." });
+    if (!appt) {
+        console.error("❌ Lỗi: Không tìm thấy Appointment");
+        return res.status(404).json({ error: "Không tìm thấy lịch hẹn." });
+    }
+    console.log("3. Tìm thấy Appointment. Patient ID trong Appt:", appt.patient_id);
 
-    if (String(appt.patient_id) !== String(req.user._id))
-      return res.status(403).json({ error: "Không thể đánh giá lịch hẹn của người khác." });
+    // 3. Tìm Profile Bệnh nhân của User đang login
+    const currentPatientProfile = await Patient.findOne({ user_id: user._id });
+    if (!currentPatientProfile) {
+        console.error("❌ Lỗi: User này chưa có hồ sơ Patient trong bảng Patients");
+        return res.status(403).json({ error: "Tài khoản của bạn chưa có hồ sơ bệnh nhân." });
+    }
+    console.log("4. Tìm thấy Profile Patient của User:", currentPatientProfile._id);
 
-    if (appt.status !== "completed")
-      return res.status(400).json({ error: "Chỉ được đánh giá sau khi khám hoàn tất." });
+    // 4. SO SÁNH QUAN TRỌNG
+    // So sánh ID trong lịch hẹn vs ID của người đang login
+    const apptPatientId = String(appt.patient_id);
+    const userPatientId = String(currentPatientProfile._id);
 
-    // Kiểm tra trùng
+    console.log(`>> So sánh: Appt(${apptPatientId}) === User(${userPatientId}) ?`);
+
+    if (apptPatientId !== userPatientId) {
+        console.error("❌ Lỗi: ID không khớp! Bạn đang cố đánh giá lịch của người khác.");
+        return res.status(403).json({ 
+            error: "Bạn không phải là chủ sở hữu của lịch hẹn này.",
+            debug: `Appt: ${apptPatientId} vs You: ${userPatientId}` 
+        });
+    }
+
+    // 5. Kiểm tra trạng thái
+    if (appt.status !== "completed") {
+         console.error("❌ Lỗi: Lịch hẹn chưa completed. Status hiện tại:", appt.status);
+         return res.status(400).json({ error: "Chỉ được đánh giá sau khi khám hoàn tất." });
+    }
+
+    // 6. Kiểm tra trùng lặp
     const existed = await Rating.findOne({ appointment_id });
-    if (existed)
-      return res.status(409).json({ error: "Bạn đã đánh giá lịch hẹn này." });
+    if (existed) {
+        console.error("❌ Lỗi: Đã đánh giá rồi");
+        return res.status(409).json({ error: "Bạn đã đánh giá lịch hẹn này rồi." });
+    }
 
-    // Tạo rating
+    // 7. Tạo Rating
     const rating = await Rating.create({
       appointment_id,
-      patient_id: appt.patient_id,
+      patient_id: appt.patient_id, 
       doctor_id: appt.doctor_id,
       star,
       comment,
     });
+    console.log("✅ Tạo Rating thành công!");
 
+    // 8. Cập nhật điểm bác sĩ
     try {
       const stats = await Rating.aggregate([
         { $match: { doctor_id: appt.doctor_id } },
-        { 
-          $group: { 
-            _id: null, 
-            avg: { $avg: "$star" } // Chỉ cần tính trung bình
-          } 
-        }
+        { $group: { _id: null, avg: { $avg: "$star" } } }
       ]);
 
       if (stats.length > 0) {
-        // Làm tròn 1 chữ số thập phân (ví dụ: 4.6666 -> 4.7)
         const avgRating = Math.round(stats[0].avg * 10) / 10;
-        
-        await Doctor.findByIdAndUpdate(appt.doctor_id, {
-          averageRating: avgRating
-        });
+        await Doctor.findByIdAndUpdate(appt.doctor_id, { averageRating: avgRating });
+        console.log("✅ Đã cập nhật điểm bác sĩ:", avgRating);
       }
     } catch (err) {
-      console.error("Lỗi cập nhật averageRating:", err);
+      console.error("Lỗi cập nhật điểm:", err);
     }
-    // ============================================
 
     return res.status(201).json({ message: "Đánh giá thành công.", rating });
+
   } catch (e) {
+    console.error("❌ CRITICAL ERROR:", e);
     next(e);
   }
 };

@@ -4,10 +4,10 @@ import Appointment from "../models/AppointmentModel.js";
 import Doctor from "../models/DoctorModel.js";
 import Timeslot from "../models/TimeslotModel.js";
 import Notification from "../models/NotificationModel.js"; 
-import Patient from "../models/PatientModel.js"; // <--- [MỚI] Import để lấy user_id
+import Patient from "../models/PatientModel.js"; 
 import { getDoctorIdFromUser } from "../utils/getDoctorIdFromUser.js";
 
-// Helper: Tính tiền tổng
+// Helper: Tính tổng chi phí
 function calcTotals(visitLike) {
   const fee = Math.max(Number(visitLike.consultation_fee_snapshot || 0), 0);
   const items = Array.isArray(visitLike.bill_items) ? visitLike.bill_items : [];
@@ -22,7 +22,7 @@ function calcTotals(visitLike) {
 /** POST /api/visits */
 export const createVisit = async (req, res, next) => {
   try {
-    // [MỚI] Lấy IO để bắn socket
+    // Lấy Socket IO
     const io = req.app.get('io'); 
 
     const {
@@ -38,7 +38,7 @@ export const createVisit = async (req, res, next) => {
 
     // 1. Validate cơ bản
     if (!appointment_id || !symptoms) {
-      return res.status(400).json({ error: "Thiếu appointment_id hoặc symptoms." });
+      return res.status(400).json({ error: "Thiếu thông tin lịch hẹn hoặc triệu chứng." });
     }
 
     const myDoctorId = await getDoctorIdFromUser(req.user._id);
@@ -48,7 +48,7 @@ export const createVisit = async (req, res, next) => {
     const appt = await Appointment.findById(appointment_id);
     if (!appt) return res.status(404).json({ error: "Không tìm thấy lịch hẹn gốc." });
     if (String(appt.doctor_id) !== String(myDoctorId)) return res.status(403).json({ error: "Bạn không phụ trách lịch hẹn này." });
-    if (appt.status === "cancelled") return res.status(400).json({ error: "Lịch hẹn đã bị hủy trước đó." });
+    if (appt.status === "cancelled") return res.status(400).json({ error: "Lịch hẹn này đã bị hủy trước đó." });
 
     // 3. Kiểm tra trùng lặp Visit
     const existed = await Visit.findOne({ appointment_id: appt._id });
@@ -58,7 +58,7 @@ export const createVisit = async (req, res, next) => {
     const doc = await Doctor.findById(myDoctorId).lean();
     const consultation_fee_snapshot = Math.max(Number(doc?.consultation_fee || 0), 0);
 
-    // 5. Chuẩn bị dữ liệu Visit (Draft)
+    // 5. Chuẩn bị dữ liệu Visit (Bản nháp)
     const draft = {
       appointment_id: appt._id,
       patient_id: appt.patient_id,
@@ -79,7 +79,7 @@ export const createVisit = async (req, res, next) => {
     // 6. XỬ LÝ TÁI KHÁM (Nếu có ID Timeslot)
     if (next_visit_timeslot_id) {
       if (!mongoose.Types.ObjectId.isValid(next_visit_timeslot_id)) {
-         console.warn("Invalid Timeslot ID:", next_visit_timeslot_id);
+         // ID không hợp lệ thì bỏ qua, không crash app
       } else {
         const targetSlot = await Timeslot.findOne({
           _id: next_visit_timeslot_id,
@@ -132,14 +132,14 @@ export const createVisit = async (req, res, next) => {
     await appt.save();
 
     // ============================================================
-    // 9. GỬI THÔNG BÁO (NOTIFICATION) [ĐÃ SỬA LẠI LOGIC]
+    // 9. GỬI THÔNG BÁO (NOTIFICATION)
     // ============================================================
     try {
-        // [QUAN TRỌNG] Lấy User ID từ bảng Patient để gửi đúng người
+        // Tìm Patient Profile để lấy đúng User ID
         const patientProfile = await Patient.findById(appt.patient_id);
-        const targetUserId = patientProfile ? patientProfile.user_id : null;
-
-        if (targetUserId) {
+        
+        if (patientProfile && patientProfile.user_id) {
+            const targetUserId = patientProfile.user_id;
             const notificationsToSend = [];
 
             // --- THÔNG BÁO 1: KẾT QUẢ KHÁM & TÁI KHÁM ---
@@ -153,8 +153,8 @@ export const createVisit = async (req, res, next) => {
                  visitBody += " Đơn thuốc điện tử đã được cập nhật vào hồ sơ.";
             }
 
-            const notifResult = {
-                user_id: targetUserId, // Gửi vào User ID (Account)
+            notificationsToSend.push({
+                user_id: targetUserId,
                 type: "appointment",
                 title: visitTitle,
                 body: visitBody,
@@ -162,12 +162,11 @@ export const createVisit = async (req, res, next) => {
                 channels: ["in-app"],
                 status: "unread",
                 sent_at: new Date()
-            };
-            notificationsToSend.push(notifResult);
+            });
 
             // --- THÔNG BÁO 2: YÊU CẦU ĐÁNH GIÁ ---
-            const notifRating = {
-                user_id: targetUserId, // Gửi vào User ID (Account)
+            notificationsToSend.push({
+                user_id: targetUserId,
                 type: "rating_request",
                 title: "Đánh giá bác sĩ",
                 body: "Bạn cảm thấy buổi khám hôm nay thế nào? Hãy dành 1 phút để đánh giá bác sĩ nhé!",
@@ -175,13 +174,12 @@ export const createVisit = async (req, res, next) => {
                 channels: ["in-app"],
                 status: "unread",
                 sent_at: new Date()
-            };
-            notificationsToSend.push(notifRating);
+            });
 
-            // Gửi vào Database
+            // Lưu vào Database
             const savedNotifs = await Notification.insertMany(notificationsToSend);
 
-            // [MỚI] Bắn Socket Realtime để App hiện ngay
+            // Gửi Realtime Socket
             if (io) {
                 savedNotifs.forEach(notif => {
                     io.to(targetUserId.toString()).emit('new_notification', {
@@ -190,11 +188,9 @@ export const createVisit = async (req, res, next) => {
                     });
                 });
             }
-        } else {
-            console.warn("Không tìm thấy User ID liên kết với bệnh nhân này, không thể gửi thông báo.");
         }
-
     } catch (notifyError) {
+        // Lỗi gửi thông báo không làm ảnh hưởng quy trình chính
         console.error("Lỗi gửi thông báo:", notifyError);
     }
 
@@ -213,13 +209,13 @@ export const createVisit = async (req, res, next) => {
   }
 };
 
-// ... (GIỮ NGUYÊN TẤT CẢ CÁC HÀM GET/PUT/DELETE BÊN DƯỚI) ...
+// ... (CÁC HÀM GET/PUT/DELETE KHÁC GIỮ NGUYÊN) ...
 
 export const getVisitById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const v = await Visit.findById(id).lean();
-    if (!v) return res.status(404).json({ error: "Không tìm thấy visit." });
+    if (!v) return res.status(404).json({ error: "Không tìm thấy hồ sơ khám." });
     return res.json({ visit: v });
   } catch (e) { next(e); }
 };
@@ -228,7 +224,7 @@ export const getVisitByAppointment = async (req, res, next) => {
   try {
     const { appointmentId } = req.params;
     const v = await Visit.findOne({ appointment_id: appointmentId }).lean();
-    if (!v) return res.status(404).json({ error: "Visit chưa tồn tại." });
+    if (!v) return res.status(404).json({ error: "Hồ sơ khám chưa tồn tại." });
     res.json({ visit: v });
   } catch (e) { next(e); }
 };
@@ -258,11 +254,11 @@ export const updateVisit = async (req, res, next) => {
   try {
     const { id } = req.params;
     const v = await Visit.findById(id);
-    if (!v) return res.status(404).json({ error: "Không tìm thấy visit." });
+    if (!v) return res.status(404).json({ error: "Không tìm thấy hồ sơ khám." });
 
     const myDoctorId = await getDoctorIdFromUser(req.user._id);
     if (myDoctorId && String(v.doctor_id) !== String(myDoctorId) && req.user.role !== "admin") {
-      return res.status(403).json({ error: "Không đủ quyền." });
+      return res.status(403).json({ error: "Không đủ quyền truy cập." });
     }
 
     const allowed = [
@@ -281,6 +277,7 @@ export const updateVisit = async (req, res, next) => {
     res.json({ message: "Cập nhật hồ sơ khám thành công.", visit: v });
   } catch (e) { next(e); }
 };
+
 export const getVisitByPatient  = async (req, res, next) => {
   try {
     const { patientId } = req.params;
@@ -289,7 +286,7 @@ export const getVisitByPatient  = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-// ... (Phần Admin & Report giữ nguyên) ...
+// ... (Phần Admin & Report) ...
 export const getAllVisitsAdmin = async (req, res, next) => {
   try {
     if (req.user.role !== 'admin') {
@@ -315,7 +312,7 @@ export const getAllVisitsAdmin = async (req, res, next) => {
 
 export const deleteVisitAdmin = async (req, res, next) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: "Chỉ Admin mới có quyền xóa hồ sơ khám." });
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Chỉ Admin mới có quyền xóa hồ sơ." });
     const { id } = req.params;
     const deletedVisit = await Visit.findByIdAndDelete(id);
     if (!deletedVisit) return res.status(404).json({ error: "Không tìm thấy hồ sơ để xóa." });
@@ -325,7 +322,7 @@ export const deleteVisitAdmin = async (req, res, next) => {
 
 export const getRevenueReportAdmin = async (req, res, next) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Không đủ quyền." });
     const { fromDate, toDate } = req.query;
     const start = fromDate ? new Date(fromDate) : new Date(0);
     const end = toDate ? new Date(toDate) : new Date();
@@ -338,7 +335,7 @@ export const getRevenueReportAdmin = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-// ... (Phần Dashboard giữ nguyên) ...
+// ... (Phần Dashboard) ...
 export const getDoctorDashboardStats = async (req, res, next) => {
   try {
     const doctorId = await getDoctorIdFromUser(req.user._id);
@@ -360,7 +357,7 @@ export const getDoctorDashboardStats = async (req, res, next) => {
 export const searchDoctorVisits = async (req, res, next) => {
   try {
     const doctorId = await getDoctorIdFromUser(req.user._id);
-    if (!doctorId) return res.status(403).json({ error: "Access denied." });
+    if (!doctorId) return res.status(403).json({ error: "Quyền truy cập bị từ chối." });
     const { diagnosis, fromDate, toDate } = req.query;
     let filter = { doctor_id: doctorId };
     if (diagnosis) filter.diagnosis = { $regex: diagnosis, $options: "i" };

@@ -149,7 +149,7 @@ export default function Header() {
             <nav className="col-span-6 md:col-span-6 hidden md:flex items-center justify-center">
               <ul className="flex gap-6 text-white font-raleway font-semibold">
                 <li><a className="hover:text-cyan-300" href="/">Trang Chủ</a></li>
-                <li><a className="hover:text-cyan-300" href="/postList">Bài Viết</a></li>
+                <li><a className="hover:text-cyan-300" href="/post">Bài Viết</a></li>
                 <li><a className="hover:text-cyan-300" href="#">Dịch Vụ</a></li>
                 <li><a className="hover:text-cyan-300" href="/DoctorList">Bác Sĩ</a></li>
                 <li><a className="hover:text-cyan-300" href="#">Liên Hệ</a></li>

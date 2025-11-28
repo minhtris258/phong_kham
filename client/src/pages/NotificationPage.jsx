@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { Bell, CheckCheck, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import notificationService from "../services/notificationService";
-import NotificationItem from "../components/notification/NotificationItem"; // Nhớ import đúng đường dẫn
-import NotificationDetailModal from "../components/notification/NotificationDetailModal"; // Nhớ import đúng đường dẫn
+import NotificationItem from "../components/notification/NotificationItem"; 
+import NotificationDetailModal from "../components/notification/NotificationDetailModal";
+import RatingModal from "../components/notification/RatingModal"; // Import RatingModal
 
 const NotificationPage = () => {
+  const navigate = useNavigate(); // Hook điều hướng
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   
-  // State quản lý Modal
+  // State quản lý Modal Chi tiết
   const [selectedNotification, setSelectedNotification] = useState(null);
+  
+  // State quản lý Modal Đánh giá
+  const [ratingNotification, setRatingNotification] = useState(null);
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -28,16 +34,11 @@ const NotificationPage = () => {
     fetchNotifications();
   }, []);
 
-  // Xử lý khi Click vào Item
   const handleItemClick = async (notification) => {
-    // 1. Mở Modal xem chi tiết
     setSelectedNotification(notification);
-
-    // 2. Nếu chưa đọc -> Đánh dấu đã đọc
     if (notification.status === "unread") {
       try {
         await notificationService.markAsRead(notification._id);
-        // Cập nhật UI list bên dưới (bỏ chấm đỏ)
         setNotifications(prev => prev.map(n => n._id === notification._id ? { ...n, status: "read" } : n));
       } catch (error) { console.error(error); }
     }
@@ -58,7 +59,28 @@ const NotificationPage = () => {
     } catch (error) { console.error(error); }
   };
 
-  // Filter
+  // --- HÀM XỬ LÝ HÀNH ĐỘNG MỚI ---
+
+  // 1. Khi nhấn nút "Đánh giá ngay" trong modal chi tiết
+  const handleOpenRating = (notification) => {
+    setSelectedNotification(null); // Đóng modal chi tiết
+    setRatingNotification(notification); // Mở modal đánh giá
+  };
+
+  // 2. Khi nhấn nút "Xem bệnh án" trong modal chi tiết
+  const handleViewResult = (notification) => {
+    // Điều hướng đến trang bệnh án (Giả sử route là /medical-records/:appointmentId)
+    // Bạn sửa lại đường dẫn này cho khớp với router của bạn
+    navigate(`/medical-records/${notification.appointment_id}`);
+  };
+
+  // 3. Khi đánh giá thành công
+  const handleRatingSuccess = (notificationId) => {
+    // Tùy chọn: Xóa thông báo đánh giá đi sau khi đã đánh giá xong để tránh spam
+    handleDelete(notificationId);
+  };
+
+  // Filter Logic
   const filteredNotifications = notifications.filter(n => 
     filter === "all" ? true : n.status === "unread"
   );
@@ -66,9 +88,9 @@ const NotificationPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 mt-15">
-      <div className="max-w-lvh mx-auto"> {/* Thu hẹp chiều rộng lại cho giống list mobile */}
+      <div className="max-w-lvh mx-auto">
         
-        {/* Header & Tabs (Giữ nguyên như cũ) */}
+        {/* Header & Tabs */}
         <div className="flex items-center justify-between mb-6">
             <div>
                 <h1 className="text-2xl font-bold text-gray-800">Thông báo ({unreadCount})</h1>
@@ -78,7 +100,6 @@ const NotificationPage = () => {
             </button>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2 mb-4 border-b">
             <button onClick={() => setFilter("all")} className={`pb-2 px-4 text-sm font-medium ${filter === "all" ? "border-b-2 border-[#00B5F1] text-[#00B5F1]" : "text-gray-500"}`}>Tất cả</button>
             <button onClick={() => setFilter("unread")} className={`pb-2 px-4 text-sm font-medium ${filter === "unread" ? "border-b-2 border-[#00B5F1] text-[#00B5F1]" : "text-gray-500"}`}>Chưa đọc</button>
@@ -95,7 +116,7 @@ const NotificationPage = () => {
               <NotificationItem 
                 key={notif._id} 
                 notification={notif} 
-                onClick={() => handleItemClick(notif)} // <-- Sự kiện click mở modal
+                onClick={() => handleItemClick(notif)} 
                 onDelete={() => handleDelete(notif._id)}
               />
             ))
@@ -107,7 +128,19 @@ const NotificationPage = () => {
       {selectedNotification && (
         <NotificationDetailModal 
           notification={selectedNotification} 
-          onClose={() => setSelectedNotification(null)} 
+          onClose={() => setSelectedNotification(null)}
+          onRate={handleOpenRating}       // Truyền hàm mở Rating
+          onViewResult={handleViewResult} // Truyền hàm xem kết quả
+        />
+      )}
+
+      {/* MODAL ĐÁNH GIÁ (Mới) */}
+      {ratingNotification && (
+        <RatingModal
+            isOpen={!!ratingNotification}
+            notification={ratingNotification}
+            onClose={() => setRatingNotification(null)}
+            onSuccess={handleRatingSuccess}
         />
       )}
     </div>

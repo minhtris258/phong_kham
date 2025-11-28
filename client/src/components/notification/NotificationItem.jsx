@@ -1,7 +1,7 @@
 import React from "react";
-import { Bell, Calendar, Clock, Trash2 } from "lucide-react";
+import { Bell, Calendar, Clock, Trash2, Star, FileText } from "lucide-react"; // Thêm Star, FileText
 import { formatDistanceToNow } from "date-fns";
-import { ca, vi } from "date-fns/locale";
+import { vi } from "date-fns/locale";
 
 const NotificationItem = ({ notification, onClick, onDelete }) => {
   const { title, body, status, type, createdAt } = notification;
@@ -10,7 +10,11 @@ const NotificationItem = ({ notification, onClick, onDelete }) => {
   // Icon theo loại
   const getIcon = () => {
     switch (type) {
-      case "appointment": return <Calendar className="w-5 h-5 text-blue-600" />;
+      case "appointment": 
+        // Nếu tiêu đề chứa "Kết quả", hiển thị icon File
+        if (title.toLowerCase().includes("kết quả")) return <FileText className="w-5 h-5 text-indigo-600" />;
+        return <Calendar className="w-5 h-5 text-blue-600" />;
+      case "rating_request": return <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />; // Icon đánh giá
       case "reminder": return <Clock className="w-5 h-5 text-orange-600" />;
       case "general": return <Bell className="w-5 h-5 text-green-600" />;
       default: return <Bell className="w-5 h-5 text-gray-600" />;
@@ -30,17 +34,12 @@ const NotificationItem = ({ notification, onClick, onDelete }) => {
         {getIcon()}
       </div>
 
-      {/* Nội dung Rút gọn 
-          - pr-2: Mặc định padding phải nhỏ để Giờ nằm sát lề phải (nơi thùng rác sẽ hiện).
-          - group-hover:pr-10: Khi hover, tăng padding để đẩy nội dung (Giờ) sang trái.
-      */}
       <div className="flex-1 min-w-0 pr-2 transition-all duration-300 ease-in-out group-hover:pr-10"> 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline mb-0.5 gap-1">
           <h4 className={`text-sm font-bold truncate pr-2 ${isUnread ? "text-gray-900" : "text-gray-700"}`}>
             {title}
           </h4>
           
-          {/* Container Giờ + Chấm đỏ: Gom lại để cùng bị đẩy sang trái khi hover */}
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-[11px] text-gray-400 whitespace-nowrap transition-transform duration-300">
                 {formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: vi })}
@@ -51,17 +50,11 @@ const NotificationItem = ({ notification, onClick, onDelete }) => {
           </div>
         </div>
         
-        {/* Line clamp 1 dòng */}
         <p className="text-xs text-gray-500 truncate">
           {body}
         </p>
       </div>
 
-      {/* Nút xóa:
-          - absolute right-2: Nằm đè lên vị trí của giờ lúc chưa hover.
-          - opacity-0: Ẩn mặc định.
-          - group-hover:opacity-100: Hiện khi hover.
-      */}
       <button 
         onClick={(e) => {
           e.stopPropagation();

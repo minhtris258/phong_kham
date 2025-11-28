@@ -131,7 +131,7 @@ export default function PostsDirectory() {
                 <div className="p-4 lg:p-5 flex flex-col flex-1">
                   <h3 className="text-base lg:text-lg font-semibold text-[#081839] mb-2 line-clamp-2">
                     <Link
-                      to={`/bai-viet/${slug}`}
+                      to={`/post/${slug}`}
                       className="hover:text-sky-600 transition-colors"
                     >
                       {title}
@@ -149,7 +149,7 @@ export default function PostsDirectory() {
                       {formatDate(publishedAt || createdAt)}{/* ngày đăng */}
                     </span>
                     <Link
-                      to={`/bai-viet/${slug}`}
+                      to={`/post/${slug}`}
                       className="text-sky-600 font-semibold text-sm hover:text-sky-500"
                     >
                       Đọc tiếp →
