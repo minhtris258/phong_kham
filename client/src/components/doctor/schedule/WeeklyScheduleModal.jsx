@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Save } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toastSuccess, toastError,toastWarning,toastInfo } from "../../../utils/toast";
 import doctorSchedulesService from '../../../services/DoctorScheduleService';
 
 const DAYS = [
@@ -79,12 +79,12 @@ export default function WeeklyScheduleModal({ isOpen, onClose, currentSchedule, 
             };
 
             await doctorSchedulesService.upsertMySchedule(payload);
-            toast.success("Đã lưu lịch cố định!");
+            toastSuccess("Đã lưu lịch cố định!");
             onSaveSuccess(); // Refresh data ngoài
             onClose();
         } catch (error) {
             console.error(error);
-            toast.error("Lỗi khi lưu lịch");
+            toastError("Lỗi khi lưu lịch");
         }
     };
 

@@ -19,6 +19,7 @@ import {
   X
 } from "lucide-react";
 import postService from "../../services/PostService";
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 
 // Chuyển file thành base64
 const fileToBase64 = (file) =>
@@ -41,7 +42,7 @@ const BlockItem = ({ block, index, onUpdate, onRemove }) => {
       const base64 = await fileToBase64(file);
       onUpdate(index, "url", base64);
     } catch (err) {
-      alert("Upload ảnh thất bại");
+      toastError("Upload ảnh thất bại");
     } finally {
       setUploading(false);
     }
@@ -185,7 +186,7 @@ const PostEditor = () => {
       const base64 = await fileToBase64(file);
       setFormData((prev) => ({ ...prev, thumbnail: base64 }));
     } catch {
-      alert("Upload thất bại");
+      toastError("Upload thất bại");
     } finally {
       setUploadingThumb(false);
     }
@@ -193,7 +194,7 @@ const PostEditor = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) return alert("Vui lòng nhập tiêu đề");
+    if (!formData.name.trim()) return toastWarning("Vui lòng nhập tiêu đề");
 
     setSaving(true);
     try {
@@ -207,14 +208,14 @@ const PostEditor = () => {
 
       if (isEditMode) {
         await postService.updatePost(id, payload);
-        alert("Cập nhật bài viết thành công!");
+        toastSuccess("Cập nhật bài viết thành công!");
       } else {
         await postService.createPost(payload);
-        alert("Tạo bài viết thành công!");
+        toastSuccess("Tạo bài viết thành công!");
       }
       navigate("/admin/posts");
     } catch (err) {
-      alert("Lỗi: " + (err.response?.data?.message || err.message));
+      toastError("Lỗi: " + (err.response?.data?.message || err.message));
     } finally {
       setSaving(false);
     }

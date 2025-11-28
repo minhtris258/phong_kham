@@ -93,6 +93,7 @@ export const bookAppointment = async (req, res, next) => {
     // Lấy thông tin bác sĩ
     const doctor = await Doctor.findById(createdAppt.doctor_id).lean();
     const doctorName = doctor?.fullName || "Bác sĩ";
+    const doctorUserId = doctor?.user_id;
     const formattedDate = new Date(createdAppt.date).toLocaleDateString('vi-VN');
 
     // Tạo QR Data
@@ -139,6 +140,20 @@ export const bookAppointment = async (req, res, next) => {
       });
       
       // (Tùy chọn) Nếu Admin đặt, có thể gửi socket phản hồi cho Admin biết (nếu cần)
+      if (doctorUserId) {
+          // Lấy đầy đủ thông tin patient để frontend bác sĩ hiển thị ngay mà không cần F5
+          const apptWithPatient = await Appointment.findById(createdAppt._id)
+              .populate("patient_id", "fullName name email phone") 
+              .lean();
+
+          io.to(doctorUserId.toString()).emit('new_appointment', apptWithPatient);
+          console.log(`Socket sent to Doctor (User: ${doctorUserId})`);
+      }
+    io.emit('slot_booked', {
+            timeslotId: timeslot_id,
+            doctorId: createdAppt.doctor_id, // Gửi kèm doctorId để client lọc cho chính xác
+            bookedByUserId: notificationUserId.toString()
+        });
     }
 
     return res.status(201).json({
@@ -227,15 +242,26 @@ export const cancelAppointment = async (req, res, next) => {
 export const myAppointments = async (req, res, next) => {
   try {
     const role = req.user?.role || req.user?.role?.name;
-    if (role !== "patient") return res.status(403).json({ error: "Chỉ bệnh nhân." });
+    // (Tùy chọn) Kiểm tra role nếu cần, hoặc bỏ qua nếu middleware đã lo
+    // if (role !== "patient") return res.status(403).json({ error: "Chỉ bệnh nhân." });
 
-    const items = await Appointment.find({ patient_id: req.user._id })
-      .populate("doctor_id", "name email") // Populate thông tin User của bác sĩ (nếu cần)
+    // BƯỚC 1: Tìm hồ sơ bệnh nhân dựa trên User ID đang đăng nhập
+    const patientProfile = await Patient.findOne({ user_id: req.user._id });
+
+    if (!patientProfile) {
+      return res.status(404).json({ error: "Chưa tìm thấy hồ sơ bệnh nhân." });
+    }
+
+    // BƯỚC 2: Dùng ID của hồ sơ bệnh nhân để tìm lịch hẹn
+    const items = await Appointment.find({ patient_id: patientProfile._id })
+      .populate({
+        path: "doctor_id",
+        select: "fullName email phone avatar specialty", // Chọn các trường cần hiển thị từ bảng Doctor
+        model: "Doctor" // Đảm bảo populate từ model Doctor nếu doctor_id ref sang Doctor
+      }) 
       .sort({ createdAt: -1 })
       .lean();
 
-    // Nếu muốn lấy tên đầy đủ từ bảng Doctor, bạn cần populate phức tạp hơn hoặc xử lý thủ công
-    // Tạm thời populate user cơ bản
     return res.json({ data: items });
   } catch (e) {
     next(e);

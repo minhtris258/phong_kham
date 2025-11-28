@@ -22,6 +22,10 @@ const patientService = {
     const response = await api.post('/patients', payload);
     return response;
 },
+completePatientProfile: async (profileData) => {
+    const response = await api.post('/patients/complete-profile', profileData);
+    return response;
+},
 
     // CẬP NHẬT BỆNH NHÂN
     updatePatient: async (id, patientData) => {
@@ -40,7 +44,14 @@ const patientService = {
         const response = await api.put(`/patients/${id}/password`, { newPassword });
         return response;
     },
-
+getMyProfile: () => {
+        return api.get('/patients/me').then(res => res.data);
+    },
+    
+    // Cập nhật hồ sơ
+    updateProfile: (data) => {
+        return api.put('/patients/me', data).then(res => res.data);
+    },
     // ĐỔI MẬT KHẨU BỆNH NHÂN (DÀNH CHO PATIENT)
     changeMyPassword: async (oldPassword, newPassword) => {
         const response = await api.put(`/patients/me/password`, { oldPassword, newPassword });

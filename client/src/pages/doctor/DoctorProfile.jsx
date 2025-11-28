@@ -1,7 +1,7 @@
 // src/pages/doctor/DoctorProfile.jsx
 import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 import doctorService from '../../services/DoctorService';
 import EditDoctorProfileModal from '../../components/doctor/EditDoctorProfileModal';
 import ProfileHeaderCard from '../../components/doctor/profile/ProfileHeaderCard';
@@ -53,8 +53,8 @@ export default function DoctorProfile() {
 
         } catch (error) {
             console.error("Lỗi tải hồ sơ:", error);
-            if (typeof toast !== 'undefined' && toast.error) {
-                toast.error("Không thể tải thông tin hồ sơ");
+            if (typeof toastError !== 'undefined') {
+                toastError("Không thể tải thông tin hồ sơ");
             }
         } finally {
             setLoading(false);

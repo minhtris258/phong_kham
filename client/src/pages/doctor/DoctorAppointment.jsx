@@ -1,12 +1,15 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { Calendar, List, Plus, Loader2 } from "lucide-react"; 
-import { toast } from "react-toastify"; 
+import React, { useState, useCallback, useEffect } from "react";
+import { Plus, Loader2 } from "lucide-react"; 
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 
-// Components
+// Import Hook Socket
+import { useSocket } from "../../context/SocketContext"; 
+
+// Components (Giữ nguyên)
 import AppointmentCalendar from "../../components/doctor/appointment/AppointmentCalendar";
 import AppointmentListTable from "../../components/doctor/appointment/AppointmentListTable";
 import AppointmentFormModal from "../../components/doctor/appointment/AppointmentFormModal";
-import AppointmentDeleteModal from "../../components/doctor/appointment/AppointmentDeleteModal"; // Tái sử dụng modal này cho việc Hủy
+import AppointmentDeleteModal from "../../components/doctor/appointment/AppointmentDeleteModal"; 
 import AppointmentDayModal from "../../components/doctor/appointment/AppointmentDayModal";
 import VisitCreateModal from "../../components/doctor/visit/VisitCreateModal";
 
@@ -22,17 +25,16 @@ const DoctorAppointment = () => {
   const [loading, setLoading] = useState(true);
   const [currentDoctor, setCurrentDoctor] = useState(null);
 
-  // View Mode & Modals
+  // Lấy socket từ Context
+  const { socket, isConnected } = useSocket();
+
+  // ... (Giữ nguyên các state ViewMode, Modal...)
   const [viewMode, setViewMode] = useState("calendar");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
-
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
   const [selectedAppointmentForVisit, setSelectedAppointmentForVisit] = useState(null);
-  
-  // Đổi tên state cho rõ nghĩa: cancelId thay vì deleteId
   const [confirmCancelId, setConfirmCancelId] = useState(null);
-
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [formData, setFormData] = useState({});
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -40,33 +42,35 @@ const DoctorAppointment = () => {
 
   // === 2. Fetch API ===
   const fetchData = async () => {
-    setLoading(true);
     try {
-      // B1: Lấy thông tin bác sĩ
-      const meRes = await doctorService.getMe();
-      const me = meRes.profile || meRes;
-      if (!me || !me._id) throw new Error("Không xác định được danh tính bác sĩ.");
-      
-      setCurrentDoctor(me);
-      setDoctors([me]); 
+      let me = currentDoctor;
+      if (!me) {
+          const meRes = await doctorService.getMe();
+          me = meRes.profile || meRes;
+          setCurrentDoctor(me);
+          setDoctors([me]);
+      }
 
-      // B2: Lấy lịch hẹn
       const apptRes = await appointmentsService.getDoctorAppointments({ limit: 1000 });
       const apptData = apptRes.data?.data || apptRes.data || [];
       setAppointments(apptData);
 
-      // B3: Trích xuất danh sách bệnh nhân
+      // Map patients
       const uniquePatients = new Map();
       apptData.forEach(app => {
           if (app.patient_id && typeof app.patient_id === 'object') {
               uniquePatients.set(app.patient_id._id, app.patient_id);
           }
       });
-      setPatients(Array.from(uniquePatients.values()));
+      
+      setPatients(prev => {
+        const newMap = new Map(prev.map(p => [p._id, p]));
+        uniquePatients.forEach((val, key) => newMap.set(key, val));
+        return Array.from(newMap.values());
+      });
 
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
-      toast.error("Không thể tải dữ liệu. " + (error.message || ""));
     } finally {
       setLoading(false);
     }
@@ -76,16 +80,89 @@ const DoctorAppointment = () => {
     fetchData();
   }, []);
 
-  // === 3. Helpers ===
-  const getDoctorName = useCallback(() => currentDoctor?.fullName || "Tôi", [currentDoctor]);
+  // === [QUAN TRỌNG] 3. LOGIC SOCKET REALTIME (ĐÃ SỬA) ===
+  useEffect(() => {
+    // Chỉ chạy khi socket đã kết nối và đã có thông tin bác sĩ
+    if (!socket || !isConnected || !currentDoctor) return;
 
+    // 1. Join Room (Quan trọng: Phải join đúng User ID của bác sĩ)
+    socket.emit("join_room", currentDoctor.user_id); 
+    console.log("Socket joining room:", currentDoctor.user_id);
+
+    // 2. Lắng nghe: Có bệnh nhân đặt lịch mới
+    const handleNewAppointment = (newAppt) => {
+        // newAppt từ server gửi về đã có populate patient_id
+        console.log("Nhận lịch hẹn mới:", newAppt);
+        
+        if (newAppt.doctor_id === currentDoctor._id) {
+            toastSuccess(`📅 Có lịch hẹn mới lúc ${newAppt.start}`);
+            
+            // Cập nhật State trực tiếp (Không cần gọi lại API fetchData -> Giảm tải server)
+            setAppointments(prev => [newAppt, ...prev]);
+            
+            // Cập nhật list Patients nếu bệnh nhân này chưa có trong list
+            if (newAppt.patient_id && typeof newAppt.patient_id === 'object') {
+                setPatients(prev => {
+                    const exists = prev.find(p => p._id === newAppt.patient_id._id);
+                    return exists ? prev : [...prev, newAppt.patient_id];
+                });
+            }
+        }
+    };
+
+    // 3. Lắng nghe: Lịch bị hủy (Từ phía bệnh nhân hoặc Admin)
+    const handleAppointmentCancelled = (data) => {
+        // data = { appointmentId, ... }
+        console.log("Lịch bị hủy:", data);
+        setAppointments(prev => prev.map(app => 
+            app._id === data.appointmentId ? { ...app, status: 'cancelled' } : app
+        ));
+        toastWarning("⚠️ Một lịch hẹn vừa bị hủy.");
+    };
+
+    // 4. Lắng nghe: Cập nhật (nếu có)
+    const handleAppointmentUpdated = (updatedAppt) => {
+        if (updatedAppt.doctor_id === currentDoctor._id) {
+             setAppointments(prev => prev.map(app => 
+                 app._id === updatedAppt._id ? { ...app, ...updatedAppt } : app
+             ));
+        }
+    };
+
+    // Đăng ký sự kiện
+    socket.on('new_appointment', handleNewAppointment);
+    socket.on('appointment_cancelled', handleAppointmentCancelled);
+    socket.on('appointment_updated', handleAppointmentUpdated);
+
+    // Cleanup khi unmount
+    return () => {
+        socket.off('new_appointment', handleNewAppointment);
+        socket.off('appointment_cancelled', handleAppointmentCancelled);
+        socket.off('appointment_updated', handleAppointmentUpdated);
+    };
+
+  }, [socket, isConnected, currentDoctor]); 
+
+  // === 4. Sync State Modal Ngày (Giữ nguyên) ===
+  useEffect(() => {
+    if (currentDayDetails.date) {
+        const updatedApps = appointments.filter(app => 
+            app.date && String(app.date).substring(0, 10) === currentDayDetails.date
+        );
+        setCurrentDayDetails(prev => ({ ...prev, apps: updatedApps }));
+    }
+  }, [appointments, currentDayDetails.date]);
+
+  // === 5. Helpers & Handlers (GIỮ NGUYÊN CODE CŨ CỦA BẠN TỪ ĐÂY TRỞ XUỐNG) ===
+  // ... (Copy y nguyên phần còn lại từ file cũ của bạn) ...
+  const getDoctorName = useCallback(() => currentDoctor?.fullName || "Tôi", [currentDoctor]);
   const getPatientName = useCallback((patient) => {
     if (!patient) return "Khách vãng lai";
     if (typeof patient === 'object') return patient.fullName || patient.name || "Không rõ";
     const found = patients.find(p => p._id === patient);
-    return found ? (found.fullName || found.name) : `ID: ${patient}`;
+    return found ? (found.fullName || found.name) : "Đang tải...";
   }, [patients]);
-
+  
   const getStatusStyle = useCallback((status) => {
     switch (status) {
       case "confirmed": return "bg-green-100 text-green-800";
@@ -95,14 +172,11 @@ const DoctorAppointment = () => {
     }
   }, []);
 
-  // === 4. Handlers ===
   const handleAddEdit = useCallback((appointment) => {
     setEditingAppointment(appointment);
     const defaultDate = currentDayDetails.date || new Date().toISOString().split("T")[0];
     const myId = currentDoctor?._id;
-
     if (appointment) {
-      // Khi Edit: Lưu lại timeslot_id cũ để so sánh xem có dời lịch không
       setFormData({
         _id: appointment._id,
         patient_id: appointment.patient_id?._id || appointment.patient_id,
@@ -111,11 +185,10 @@ const DoctorAppointment = () => {
         start: appointment.start,
         status: appointment.status,
         reason: appointment.reason,
-        timeslot_id: appointment.timeslot_id, // ID slot hiện tại
-        original_timeslot_id: appointment.timeslot_id // ID slot gốc (để so sánh)
+        timeslot_id: appointment.timeslot_id, 
+        original_timeslot_id: appointment.timeslot_id 
       });
     } else {
-      // Khi Add mới
       setFormData({
         patient_id: patients[0]?._id || "",
         doctor_id: myId,
@@ -128,93 +201,68 @@ const DoctorAppointment = () => {
     }
     setIsModalOpen(true);
   }, [currentDayDetails, currentDoctor, patients]);
-const handleOpenVisitModal = (appointment) => {
-    // Chỉ mở được khi lịch hẹn đã Confirm hoặc đang xử lý, chưa hoàn thành
+
+  const handleOpenVisitModal = (appointment) => {
     if (appointment.status === 'completed') {
-        toast.info("Lịch hẹn này đã hoàn thành khám.");
+        toastSuccess("Lịch hẹn này đã hoàn thành khám.");
         return;
     }
     if (appointment.status === 'cancelled') {
-        toast.error("Lịch hẹn đã bị hủy.");
+        toastError("Lịch hẹn đã bị hủy.");
         return;
     }
-    
     setSelectedAppointmentForVisit(appointment);
     setIsVisitModalOpen(true);
   };
-  // --- LOGIC LƯU QUAN TRỌNG: PHÂN BIỆT BOOK / UPDATE / RESCHEDULE ---
+
   const handleSave = async (submitData) => {
     try {
       const payload = { ...submitData, doctor_id: currentDoctor._id };
-      
       if (editingAppointment) {
-        // LOGIC SỬA LỊCH
-        
-        // 1. Kiểm tra xem bác sĩ có thay đổi giờ khám (timeslot) không?
         if (submitData.timeslot_id !== submitData.original_timeslot_id) {
-            // -> Gọi API DỜI LỊCH (Reschedule)
             await appointmentsService.rescheduleAppointmentByDoctor(submitData._id, {
                 new_timeslot_id: submitData.timeslot_id,
                 reason: submitData.reason || "Bác sĩ dời lịch"
             });
-            toast.success("Đã dời lịch khám thành công!");
+            toastSuccess("Đã dời lịch khám thành công!");
         } else {
-            // -> Gọi API CẬP NHẬT THÔNG TIN (Update Note/Status)
             await appointmentsService.updateAppointmentByDoctor(submitData._id, {
                 status: submitData.status,
                 note: submitData.reason
             });
-            toast.success("Cập nhật thông tin thành công!");
+            toastSuccess("Cập nhật thông tin thành công!");
         }
-
       } else {
-        // LOGIC TẠO MỚI (Book)
         await appointmentsService.bookAppointment(payload);
-        toast.success("Tạo lịch hẹn thành công!");
+        toastSuccess("Tạo lịch hẹn thành công!");
       }
-      
       setIsModalOpen(false);
       fetchData(); 
     } catch (error) {
       console.error(error);
       const errMsg = error.response?.data?.error || error.message;
-      toast.error("Lỗi: " + errMsg);
+      toastError("Lỗi: " + errMsg);
     }
   };
 
   const confirmCancel = (id) => setConfirmCancelId(id);
   
-  // --- LOGIC HỦY LỊCH (Thay thế cho Delete) ---
   const handleCancel = async () => {
     try {
-      // Gọi API hủy lịch dành cho bác sĩ
       await appointmentsService.cancelAppointmentByDoctor(confirmCancelId, {
           reason: "Bác sĩ hủy lịch"
       });
-      
-      // Cập nhật state local để phản ánh thay đổi ngay lập tức
+      // Cập nhật Optimistic UI
       setAppointments(prev => prev.map(app => 
           app._id === confirmCancelId ? { ...app, status: 'cancelled' } : app
       ));
-
-      if (isDayModalOpen) {
-          setCurrentDayDetails(prev => ({
-              ...prev,
-              apps: prev.apps.map(app => 
-                  app._id === confirmCancelId ? { ...app, status: 'cancelled' } : app
-              )
-          }));
-      }
-      
       setConfirmCancelId(null);
-      toast.success("Đã hủy lịch hẹn thành công!");
-      // fetchData(); // Có thể gọi lại để đồng bộ full data nếu cần
+        toastSuccess("Đã hủy lịch hẹn thành công!");
     } catch (error) {
-      toast.error("Lỗi hủy lịch: " + (error.response?.data?.error || error.message));
+      toastError("Lỗi hủy lịch: " + (error.response?.data?.error || error.message));
     }
   };
 
-  // ... (Các handler hiển thị lịch giữ nguyên) ...
   const handleDateSelection = useCallback((dateString, selectedApps) => {
     setCurrentDayDetails({ date: dateString, apps: selectedApps });
     setIsDayModalOpen(true);
@@ -279,14 +327,13 @@ const handleOpenVisitModal = (appointment) => {
                getPatientName={getPatientName}
                getStatusStyle={getStatusStyle}
                handleAddEdit={handleAddEdit}
-               confirmCancel={confirmCancel} // Truyền hàm HỦY thay vì hàm xóa
+               confirmCancel={confirmCancel} 
                handleOpenVisitModal={handleOpenVisitModal}
              />
           </div>
         )}
       </div>
 
-      {/* Modals */}
       <AppointmentDayModal
         isOpen={isDayModalOpen}
         onClose={() => setIsDayModalOpen(false)}
@@ -296,7 +343,7 @@ const handleOpenVisitModal = (appointment) => {
         getPatientName={getPatientName}
         getStatusStyle={getStatusStyle}
         handleAddEdit={handleAddEdit}
-        confirmCancel={confirmCancel} // Truyền hàm HỦY
+        confirmCancel={confirmCancel} 
       />
 
       {isModalOpen && (
@@ -314,11 +361,10 @@ const handleOpenVisitModal = (appointment) => {
         />
       )}
 
-      {/* Tái sử dụng Modal xóa nhưng đổi nội dung thành Hủy */}
       <AppointmentDeleteModal
         confirmCancelId={confirmCancelId}
         setconfirmCancelId={setConfirmCancelId}
-        handleCancel={handleCancel} // Gọi hàm HỦY
+        handleCancel={handleCancel}
         title="Xác nhận hủy lịch"
         message="Bạn có chắc chắn muốn hủy lịch hẹn này không? Lịch hẹn sẽ chuyển sang trạng thái 'Đã hủy' và thông báo sẽ được gửi đến bệnh nhân."
         confirmText="Hủy Lịch"
@@ -329,7 +375,7 @@ const handleOpenVisitModal = (appointment) => {
           onClose={() => setIsVisitModalOpen(false)}
           appointment={selectedAppointmentForVisit}
           onSuccess={() => {
-             fetchData(); // Load lại dữ liệu để cập nhật trạng thái appointment thành 'completed'
+             fetchData(); 
           }}
       />
     </main>

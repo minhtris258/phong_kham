@@ -71,7 +71,7 @@ const NotificationPage = () => {
   const handleViewResult = (notification) => {
     // Điều hướng đến trang bệnh án (Giả sử route là /medical-records/:appointmentId)
     // Bạn sửa lại đường dẫn này cho khớp với router của bạn
-    navigate(`/medical-records/${notification.appointment_id}`);
+    navigate(`/visit-detail/${notification.appointment_id}`);
   };
 
   // 3. Khi đánh giá thành công

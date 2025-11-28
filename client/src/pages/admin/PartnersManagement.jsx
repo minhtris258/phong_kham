@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Image as ImageIcon, X, Check, Search } from "lucide-react";
 import partnersService from "../../services/PartnersService"; 
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 
 const PartnersManagement = () => {
   // --- State ---
@@ -68,22 +69,22 @@ const PartnersManagement = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.name) return alert("Vui lòng nhập tên đối tác");
+    if (!formData.name) return toastWarning("Vui lòng nhập tên đối tác");
 
     try {
       if (editingItem) {
         // Update
         await partnersService.updatePartner(editingItem._id || editingItem.id, formData);
-        alert("Cập nhật đối tác thành công!");
+        toastSuccess("Cập nhật đối tác thành công!");
       } else {
         // Create
         await partnersService.createPartner(formData);
-        alert("Thêm đối tác thành công!");
+        toastSuccess("Thêm đối tác thành công!");
       }
       setIsModalOpen(false);
       fetchPartners(); 
     } catch (error) {
-      alert("Lỗi: " + (error.response?.data?.error || error.message));
+      toastError("Lỗi: " + (error.response?.data?.error || error.message));
     }
   };
 
@@ -93,7 +94,7 @@ const PartnersManagement = () => {
         await partnersService.deletePartner(id);
         fetchPartners();
       } catch (error) {
-        alert("Xóa thất bại: " + error.message);
+        toastError("Xóa thất bại: " + error.message);
       }
     }
   };

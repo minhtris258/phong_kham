@@ -9,7 +9,12 @@ export const initializeSocketIO = (httpServer, app) => {
 
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
-
+socket.on("join_room", (userId) => {
+        if (userId) {
+            socket.join(userId); // Join vào room có tên là User ID
+            console.log(`Socket ${socket.id} joined room ${userId}`);
+        }
+    });
     socket.on("client_chat_ai", async (data) => {
       try {
         socket.emit("ai_typing");

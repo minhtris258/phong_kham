@@ -5,6 +5,7 @@ import {
   CheckCircle, XCircle, Loader2 
 } from "lucide-react";
 import postService from "../../services/PostService"; 
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 // Lưu ý: Thay đường dẫn import service cho đúng cấu trúc thư mục của bạn
 
 const PostManagement = () => {
@@ -56,7 +57,7 @@ const PostManagement = () => {
       await postService.deletePost(id);
       setPosts(prev => prev.filter(p => p._id !== id)); // Xóa nóng trên UI
     } catch (error) {
-      alert("Xóa thất bại: " + error.message);
+      toastError("Xóa thất bại: " + error.message);
     }
   };
 
@@ -72,7 +73,7 @@ const PostManagement = () => {
     } catch (error) {
       // Nếu lỗi thì revert lại giao diện cũ
       setPosts(oldPosts);
-      alert("Không thể cập nhật trạng thái.");
+      toastError("Không thể cập nhật trạng thái.");
     }
   };
 

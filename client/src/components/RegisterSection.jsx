@@ -1,24 +1,27 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // 👈 THÊM DÒNG NÀY
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../index.css";
+// Đảm bảo các import này đúng đường dẫn trong project của bạn
 import "../assets/assets.js";
 import hero from "../assets/slider-03-b.jpg";
 import logo from "../assets/logo.png";
+import { toastSuccess, toastError,toastWarning } from "../utils/toast";
 
 export default function RegisterSection() {
+  // 1. Sửa state: Bỏ phone, thêm confirmPassword
   const [form, setForm] = useState({
     name: "",
     email: "",
-    phone: "",
     password: "",
+    confirmPassword: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const navigate = useNavigate(); // 👈 KHỞI TẠO NAVIGATE
+  const navigate = useNavigate();
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -31,12 +34,20 @@ export default function RegisterSection() {
     setError("");
     setSuccess("");
 
+    // 2. Kiểm tra mật khẩu khớp nhau
+    if (form.password !== form.confirmPassword) {
+      toastError("Mật khẩu nhập lại không khớp!");
+      setLoading(false);
+      return;
+    }
+
     try {
+      // Payload chỉ gửi name, email, password
       const payload = {
         name: form.name,
         email: form.email,
         password: form.password,
-        
+        confirmPassword: form.confirmPassword
       };
 
       const res = await axios.post(
@@ -51,20 +62,20 @@ export default function RegisterSection() {
 
       console.log("Register success:", res.data);
 
-      // Lưu token nếu muốn auto login sau khi đăng ký
       if (res.data?.token) {
         localStorage.setItem("token", res.data.token);
+         localStorage.setItem("profileCompleted", "false"); 
       }
 
-      setSuccess(res.data.message || "Đăng ký thành công!");
+      toastSuccess(res.data.message || "Đăng ký thành công!");
+      
+      // Reset form
+      setForm((s) => ({ ...s, password: "", confirmPassword: "" }));
 
-      // Xoá mật khẩu cho an toàn
-      setForm((s) => ({ ...s, password: "" }));
-
-      // 👇 SAU KHI ĐĂNG KÝ THÀNH CÔNG → CHUYỂN SANG TRANG HOÀN THIỆN PROFILE
-
-      navigate("/ProfileCompletion", { state: { email: form.email } });
-
+      // Chuyển hướng
+      setTimeout(() => {
+        navigate("/onboarding/profile-patient", { state: { email: form.email } });
+      }, 1000);
 
     } catch (err) {
       console.error(err);
@@ -123,20 +134,7 @@ export default function RegisterSection() {
                 required
               />
 
-              {/* Số điện thoại */}
-              <label htmlFor="phone" className="sr-only">
-                Số điện thoại
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                placeholder="Số điện thoại"
-                className="w-full h-12 mt-4 px-4 rounded-lg bg-white color-title border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus:border-white/30 focus:ring-2 focus:ring-white/15 transition"
-                value={form.phone}
-                onChange={onChange}
-                required
-              />
+              {/* ĐÃ XÓA TRƯỜNG PHONE Ở ĐÂY */}
 
               {/* Password */}
               <label htmlFor="password" className="sr-only">
@@ -149,6 +147,21 @@ export default function RegisterSection() {
                 placeholder="Mật khẩu"
                 className="w-full h-12 mt-4 px-4 rounded-lg bg-white color-title border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus:border-white/30 focus:ring-2 focus:ring-white/15 transition"
                 value={form.password}
+                onChange={onChange}
+                required
+              />
+
+              {/* THÊM: Confirm Password (sử dụng y hệt class của password để giữ giao diện) */}
+              <label htmlFor="confirmPassword" className="sr-only">
+                Nhập lại mật khẩu
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                placeholder="Nhập lại mật khẩu"
+                className="w-full h-12 mt-4 px-4 rounded-lg bg-white color-title border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus:border-white/30 focus:ring-2 focus:ring-white/15 transition"
+                value={form.confirmPassword}
                 onChange={onChange}
                 required
               />

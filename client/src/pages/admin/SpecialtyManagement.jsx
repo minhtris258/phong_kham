@@ -1,7 +1,7 @@
 // src/pages/admin/SpecialtyManagement.jsx
 import React, { useState, useEffect } from 'react';
 import specialtyService from '../../services/SpecialtyService'; 
-
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 // Import components con
 import SpecialtyList from './../../components/admin/specialty/SpecialtyList';
 import SpecialtyFormModal from './../../components/admin/specialty/SpecialtyFormModal';
@@ -87,7 +87,7 @@ const SpecialtyManagement = () => {
         e.preventDefault();
         
         if (!formData.name) {
-            alert('Vui lòng điền tên chuyên khoa.');
+            toastWarning('Vui lòng điền tên chuyên khoa.');
             return;
         }
         
@@ -95,14 +95,14 @@ const SpecialtyManagement = () => {
             if (editingSpecialty) {
                 // SỬA: formData bây giờ chứa cả name và thumbnail (nếu có thay đổi)
                 await specialtyService.updateSpecialty(editingSpecialty._id || editingSpecialty.id, formData);
-                alert("Cập nhật chuyên khoa thành công!");
+                toastSuccess("Cập nhật chuyên khoa thành công!");
             } else {
                 // THÊM MỚI
                 await specialtyService.createSpecialty(formData);
-                alert("Thêm chuyên khoa thành công!");
+                toastSuccess("Thêm chuyên khoa thành công!");
             }
         } catch (err) {
-            alert("Lỗi lưu: " + (err.response?.data?.message || err.message || "Lỗi không xác định"));
+            toastError("Lỗi lưu: " + (err.response?.data?.message || err.message || "Lỗi không xác định"));
             console.error("Lỗi lưu chuyên khoa:", err);
         } finally {
             setIsModalOpen(false);
@@ -118,9 +118,9 @@ const SpecialtyManagement = () => {
         try {
             await specialtyService.deleteSpecialty(confirmDeleteId);
             setConfirmDeleteId(null);
-            alert("Xóa chuyên khoa thành công!");
+            toastSuccess("Xóa chuyên khoa thành công!");
         } catch (err) {
-            alert("Xóa thất bại: " + (err.response?.data?.error || "Lỗi không xác định"));
+            toastError("Xóa thất bại: " + (err.response?.data?.error || "Lỗi không xác định"));
         } finally {
             fetchSpecialties();
         }
@@ -140,7 +140,7 @@ const SpecialtyManagement = () => {
             });
         } catch (err) {
             console.error("Lỗi tải danh sách bác sĩ:", err);
-            alert("Lỗi: Không thể tải danh sách bác sĩ thuộc chuyên khoa này.");
+            toastError("Lỗi: Không thể tải danh sách bác sĩ thuộc chuyên khoa này.");
         } finally {
             setIsViewDoctorsLoading(false);
         }

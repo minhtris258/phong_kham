@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, Calendar, Settings, LogOut, X, Stethoscope } from 'lucide-react';
 import doctorService from '../../services/DoctorService'; // Import service
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 
 export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
   const location = useLocation();
@@ -18,7 +19,7 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
         const profile = res.profile || res;
         setDoctor(profile);
       } catch (error) {
-        console.error("Lỗi lấy thông tin bác sĩ sidebar:", error);
+        toastError("Lỗi lấy thông tin bác sĩ sidebar:" + (error.response?.data?.message || error.message));
       }
     };
 

@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import doctorSchedulesService from "../../../services/DoctorScheduleService";
+import { toastSuccess, toastError,toastWarning,toastInfo } from "../../../utils/toast";
 
 const DoctorScheduleAdminModal = ({
   isOpen,
@@ -49,7 +50,7 @@ const DoctorScheduleAdminModal = ({
       const res = await doctorSchedulesService.getDoctorSchedule(doctorId);
       setScheduleData(res.data.schedule);
     } catch (err) {
-      console.error("Lỗi tải lịch:", err);
+      toastError("Lỗi tải lịch: " + (err.response?.data?.message || err.message));
       setScheduleData(null);
     } finally {
       setLoading(false);
@@ -135,10 +136,10 @@ const DoctorScheduleAdminModal = ({
         doctorId,
         payload
       );
-      alert("Lưu ngoại lệ thành công!");
+      toastSuccess("Lưu ngoại lệ thành công!");
       fetchSchedule();
     } catch (err) {
-      alert("Lỗi: " + (err.response?.data?.error || "Không xác định"));
+      toastError("Lỗi: " + (err.response?.data?.error || "Không xác định"));
     }
   };
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, AlertTriangle } from 'lucide-react';
 import Modal from '../../Modal'; 
 import timeslotService from '../../../services/TimeslotService'; // Import service
-
+import { toastSuccess, toastError,toastWarning,toastInfo } from "../../../utils/toast";
 const AppointmentFormModal = ({
     isOpen,
     onClose,
@@ -71,7 +71,7 @@ const AppointmentFormModal = ({
 
                 setAvailableSlots(slots);
             } catch (error) {
-                console.error("Lỗi lấy lịch rảnh:", error);
+                toastError("Lỗi lấy lịch rảnh: " + (error.response?.data?.message || error.message));
                 setSlotError("Không thể tải lịch làm việc.");
             } finally {
                 setIsLoadingSlots(false);
@@ -107,7 +107,7 @@ const AppointmentFormModal = ({
         
         // Validate
         if (!formData.patient_id || !formData.date || !formData.timeslot_id) {
-             alert('Vui lòng chọn đầy đủ thông tin (Bệnh nhân, Ngày, Giờ khám).');
+             toastWarning('Vui lòng chọn đầy đủ thông tin (Bệnh nhân, Ngày, Giờ khám).');
              return;
         }
         

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 
 // Import Services
 import visitService from "../../services/VisitService";
@@ -57,7 +57,7 @@ const DoctorVisit = () => {
       }
     } catch (error) {
       console.error("Lỗi tải danh sách:", error);
-      toast.error("Không thể tải danh sách hồ sơ khám.");
+        toastError("Không thể tải danh sách hồ sơ khám.");
     } finally {
       setLoading(false);
     }

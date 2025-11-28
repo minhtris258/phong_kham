@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Plus, CalendarSync, CalendarX, ClipboardPen } from "lucide-react";
 
 const AppointmentListTable = ({
@@ -6,31 +6,43 @@ const AppointmentListTable = ({
   selectedDate,
   getStatusStyle,
   handleAddEdit,
-  confirmCancel, // Thực chất là confirmCancel (Hủy)
+  confirmCancel,
   handleOpenVisitModal,
 }) => {
   const title = selectedDate
     ? `Lịch Hẹn Ngày ${selectedDate.split("-").reverse().join("/")}`
     : "Danh Sách Lịch Hẹn";
 
-  const getPatientDisplay = (patient) => {
-    if (!patient) return "Không rõ";
-    if (typeof patient === "object")
-      return patient.name || patient.fullName || "Không rõ";
-    return patient;
+  // Helper hiển thị tên
+  const getDisplay = (obj) => {
+    if (!obj) return "Không rõ";
+    if (typeof obj === "object") return obj.name || obj.fullName || "Không rõ";
+    return obj; // Trường hợp chưa populate
   };
 
-  const getDoctorDisplay = (doctor) => {
-    if (!doctor) return "Không rõ";
-    if (typeof doctor === "object")
-      return doctor.fullName || doctor.name || "Không rõ";
-    return doctor;
-  };
+  // [QUAN TRỌNG] Sắp xếp lại danh sách để Realtime không làm nhảy lộn xộn
+  const sortedAppointments = useMemo(() => {
+    // Tạo bản sao để tránh mutate props
+    return [...appointments].sort((a, b) => {
+        // 1. Sắp theo ngày
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        if (dateA !== dateB) return dateB - dateA; // Mới nhất lên đầu (theo ngày)
+        
+        // 2. Nếu cùng ngày thì sắp theo giờ (08:00 -> 09:00)
+        return a.start.localeCompare(b.start);
+    });
+  }, [appointments]);
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-2xl border border-gray-100">
       <div className="flex justify-between items-center mb-4 border-b pb-3">
-        <h3 className="text-2xl font-bold text-gray-800">{title}</h3>
+        <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            {title} 
+            <span className="text-sm font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                {appointments.length}
+            </span>
+        </h3>
         <button
           onClick={() => handleAddEdit(null)}
           className="flex items-center bg-indigo-600 text-white px-4 py-2 text-sm rounded-xl font-semibold shadow-md hover:bg-indigo-700 transition transform hover:scale-105"
@@ -61,17 +73,24 @@ const AppointmentListTable = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {appointments.length > 0 ? (
-              appointments.map((app) => (
+            {sortedAppointments.length > 0 ? (
+              sortedAppointments.map((app) => (
                 <tr
                   key={app._id || app.id}
                   className="hover:bg-indigo-50/50 transition duration-150"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {getPatientDisplay(app.patient_id)}
+                    <div className="flex flex-col">
+                        <span>{getDisplay(app.patient_id)}</span>
+                        {/* Hiển thị SĐT nếu có (đã populate) */}
+                        {app.patient_id?.phone && (
+                            <span className="text-xs text-gray-500">{app.patient_id.phone}</span>
+                        )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                    {app.start} -{" "}
+                    <span className="text-indigo-600 font-bold">{app.start}</span>
+                    <span className="text-gray-400 mx-1">|</span> 
                     {new Date(app.date).toLocaleDateString("vi-VN")}
                   </td>
                   <td className="hidden sm:table-cell px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
@@ -83,11 +102,14 @@ const AppointmentListTable = ({
                         app.status
                       )}`}
                     >
-                      {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                      {app.status === 'pending' ? 'Chờ xác nhận' : 
+                       app.status === 'confirmed' ? 'Đã xác nhận' :
+                       app.status === 'completed' ? 'Hoàn thành' :
+                       app.status === 'cancelled' ? 'Đã hủy' : app.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end items-center gap-2">
-                    {/* Nút Khám Bệnh: Chỉ hiện nếu status là confirmed hoặc pending */}
+                    {/* Các nút hành động */}
                     {["confirmed", "pending"].includes(app.status) && (
                       <button
                         onClick={() => handleOpenVisitModal(app)}
@@ -97,20 +119,18 @@ const AppointmentListTable = ({
                         <ClipboardPen className="w-5 h-5" />
                       </button>
                     )}
-                    {/* Nút Sửa (Dời lịch / Cập nhật) */}
-                    {app.status !== "cancelled" && (
+                    
+                    {app.status !== "cancelled" && app.status !== "completed" && (
                       <button
                         onClick={() => handleAddEdit(app)}
                         className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full hover:bg-indigo-100 transition"
-                        title="Dời lịch / Cập nhật thông tin"
+                        title="Dời lịch / Cập nhật"
                       >
                         <CalendarSync className="w-5 h-5" />
                       </button>
                     )}
 
-                    {/* Nút Hủy (Chỉ hiện khi chưa hủy) */}
-                    {app.status !== "cancelled" &&
-                    app.status !== "completed" ? (
+                    {app.status !== "cancelled" && app.status !== "completed" ? (
                       <button
                         onClick={() => confirmCancel(app._id || app.id)}
                         className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-100 transition"
@@ -119,7 +139,6 @@ const AppointmentListTable = ({
                         <CalendarX className="w-5 h-5" />
                       </button>
                     ) : (
-                      // Placeholder để giữ khoảng cách nếu đã hủy/hoàn thành
                       <div className="w-9 h-9"></div>
                     )}
                   </td>
@@ -131,7 +150,7 @@ const AppointmentListTable = ({
                   colSpan="6"
                   className="px-6 py-10 text-center text-gray-500 font-medium bg-gray-50"
                 >
-                  Không có lịch hẹn nào được tìm thấy.
+                  Chưa có lịch hẹn nào.
                 </td>
               </tr>
             )}

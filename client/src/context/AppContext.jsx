@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import axios from "axios";
+// Đảm bảo đường dẫn import SocketContext đúng với dự án của bạn
 import { useSocket } from "./SocketContext";
 
 // ----------------------------------------------------
@@ -44,6 +45,7 @@ export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token") || null);
 
+  // Lấy socket từ context
   const { socket } = useSocket();
 
   // --- Thiết lập/Xóa Token cho Axios ---
@@ -56,7 +58,10 @@ export const AppProvider = ({ children }) => {
     } else {
       // LOGIC ĐĂNG XUẤT / XÓA TOKEN
       localStorage.removeItem("token");
-      localStorage.removeItem("user"); // <--- THÊM: Xóa user khỏi storage khi logout
+      localStorage.removeItem("user"); 
+      // === QUAN TRỌNG: Xóa luôn trạng thái profileCompleted để Guard chặn lại ===
+      localStorage.removeItem("profileCompleted"); 
+      
       delete apiClient.defaults.headers.common["Authorization"];
       setToken(null);
       setIsAuthenticated(false);
@@ -104,13 +109,21 @@ export const AppProvider = ({ children }) => {
         setUser(finalUserData);
         setIsAuthenticated(true);
 
-        // <--- QUAN TRỌNG: Lưu User vào LocalStorage để Header đọc được ngay ---
+        // <--- QUAN TRỌNG: Lưu User vào LocalStorage ---
         localStorage.setItem("user", JSON.stringify(finalUserData)); 
+
+        // <--- ĐỒNG BỘ PROFILE COMPLETED ---
+        const isCompleted = finalUserData.profile_completed ? "true" : "false";
+        localStorage.setItem("profileCompleted", isCompleted);
+        
+        console.log("Updated User Data:", finalUserData); // Log để debug
 
       } catch (error) {
         console.error("Lỗi tải thông tin người dùng:", error);
-        // Nếu token hết hạn hoặc lỗi, có thể cân nhắc logout tại đây
-        // setAuthToken(null); 
+        // Nếu token lỗi, tự động logout để tránh kẹt
+        if (error.response && error.response.status === 401) {
+            setAuthToken(null);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -119,7 +132,8 @@ export const AppProvider = ({ children }) => {
   );
 
   // --- Đăng nhập ---
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // State này có vẻ dư thừa vì đã có isAuthenticated, nhưng giữ lại nếu bạn dùng logic riêng
+  // eslint-disable-next-line no-unused-vars
+  const [isLoggedIn, setIsLoggedIn] = useState(false); 
   
   const login = async (email, password) => {
     try {
@@ -128,7 +142,7 @@ export const AppProvider = ({ children }) => {
 
       if (token) {
         setAuthToken(token);
-        // Gọi hàm này sẽ tự động lưu user vào localStorage khi xong
+        // Gọi hàm này sẽ tự động lưu user và profileCompleted vào localStorage
         await loadCurrentUser(token); 
         return response.data;
       }
@@ -138,9 +152,9 @@ export const AppProvider = ({ children }) => {
   };
 
   const handleLogout = () => {
-    setAuthToken(null); // Hàm này đã bao gồm xóa token và user trong localStorage
+    setAuthToken(null); // Hàm này đã bao gồm xóa token, user và profileCompleted
     setIsLoggedIn(false);
-    window.location.href = "/";
+    window.location.href = "/Login"; // Chuyển hướng về trang login
   };
 
   // --- Khởi tạo (Chạy một lần khi app load) ---
@@ -151,6 +165,29 @@ export const AppProvider = ({ children }) => {
       setIsLoading(false);
     }
   }, [token, loadCurrentUser]);
+
+  // --- SOCKET: Lắng nghe sự kiện Real-time ---
+  useEffect(() => {
+    if (!socket || !token) return;
+
+    // Hàm xử lý khi nhận sự kiện update từ server
+    const handleProfileUpdate = (data) => {
+      console.log("🔔 Socket: Nhận tín hiệu profile_updated", data);
+      // Tải lại toàn bộ thông tin user mới nhất từ DB
+      loadCurrentUser();
+    };
+
+    // Lắng nghe sự kiện "profile_updated" (Backend cần emit sự kiện này khi user update hồ sơ)
+    socket.on("profile_updated", handleProfileUpdate);
+    
+    // Lắng nghe sự kiện "user_updated" (Dự phòng)
+    socket.on("user_updated", handleProfileUpdate);
+
+    return () => {
+      socket.off("profile_updated", handleProfileUpdate);
+      socket.off("user_updated", handleProfileUpdate);
+    };
+  }, [socket, token, loadCurrentUser]);
 
   const contextValue = {
     isAuthenticated,

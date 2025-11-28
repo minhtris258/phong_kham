@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/UserModel.js";
 import Role from "../models/RoleModel.js";
+import Patient from "../models/PatientModel.js";
 
 // POST /api/login
 export const login = async (req, res, next) => {
@@ -51,10 +52,10 @@ export const login = async (req, res, next) => {
     if (roleName === "patient") {
       if (!isProfileCompleted) {
       // Bệnh nhân chưa hoàn thành hồ sơ -> onboarding
-      nextRoute = "/onboarding/profile";
+      nextRoute = "/onboarding/profile-patient";
       } else {
       // Bệnh nhân đã hoàn thành hồ sơ -> trang chính bệnh nhân
-      nextRoute = "/patient";
+      nextRoute = "/";
       }
     }
     // Nếu là bác sĩ
@@ -94,26 +95,55 @@ export const login = async (req, res, next) => {
 // POST /api/registerpublic
 export async function registerPublic(req, res, next) {
   try {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password)
-      return res.status(400).json({ error: "Thiếu name|email|password" });
+    // 1. Nhận thêm confirmPassword từ req.body
+    const { name, email, password, confirmPassword } = req.body;
 
-    const existed = await User.findOne({ email });
-    if (existed) return res.status(409).json({ error: "Email đã tồn tại" });
+    // 2. Validate cơ bản: Kiểm tra dữ liệu rỗng
+    if (!name || !email || !password || !confirmPassword) {
+      return res.status(400).json({ error: "Vui lòng nhập đầy đủ: Tên, Email, Mật khẩu và Xác nhận mật khẩu." });
+    }
 
-    const patientRole = await Role.findOne({ name: "patient" });
-    if (!patientRole) return res.status(500).json({ error: "Chưa seed role 'patient'" });
+    // 3. === LOGIC MỚI === 
+    // Kiểm tra mật khẩu và mật khẩu xác nhận có khớp nhau không
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: "Mật khẩu xác nhận không khớp." });
+    }
 
-    const hash = await bcrypt.hash(password, 10);
+    // 4. Kiểm tra Email đã tồn tại trong User chưa
+    const existed = await User.findOne({ email }).lean();
+    if (existed) {
+      return res.status(409).json({ error: "Email này đã được sử dụng." });
+    }
+
+    // 5. Tìm Role 'patient'
+    const patientRole = await Role.findOne({ name: "patient" }).lean();
+    if (!patientRole) {
+      return res.status(500).json({ error: "Lỗi hệ thống: Chưa cấu hình role 'patient'." });
+    }
+
+    // 6. Mã hóa mật khẩu
+    const hash = await bcrypt.hash(password, 3);
+
+    // 7. Tạo User (Tài khoản đăng nhập)
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
       password: hash,
       role_id: patientRole._id,
-      profile_completed: false,
+      profile_completed: false, 
       status: "pending_profile"
     });
- const token = jwt.sign(
+
+    // 8. Tạo ngay bản ghi Patient rỗng
+    const patient = await Patient.create({
+      user_id: user._id,
+      fullName: name,
+      email: email.trim().toLowerCase(),
+      status: "inactive", 
+    });
+
+    // 9. Tạo Token
+    const token = jwt.sign(
       {
         _id: user._id,
         email: user.email,
@@ -125,9 +155,10 @@ export async function registerPublic(req, res, next) {
       { expiresIn: "7d" }
     );
 
+    // 10. Trả về kết quả
     return res.status(201).json({
-      message: "Đăng ký thành công. Vui lòng hoàn tất hồ sơ bệnh nhân.",
-      token, // FE lưu token để gọi API bước 2
+      message: "Đăng ký thành công! Vui lòng hoàn tất hồ sơ cá nhân.",
+      token,
       user: {
         _id: user._id,
         name: user.name,
@@ -136,7 +167,11 @@ export async function registerPublic(req, res, next) {
         status: "pending_profile",
         profile_completed: false
       },
-      next: "/ProfileCompletion " // 👈 gợi ý điều hướng
+      patientId: patient._id,
+      next: "/onboarding/profile-patient"
     });
-  } catch (e) { next(e); }
+
+  } catch (e) {
+    next(e);
+  }
 };

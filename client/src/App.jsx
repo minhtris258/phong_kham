@@ -1,14 +1,14 @@
 import React from "react";
 import "./index.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import AdminLayout from "./layouts/AdminLayout";
 import UserLayout from "./layouts/UserLayout";
 import DoctorLayout from "./layouts/DoctorLayout";
-
 import Chatbox from "./components/Chatbox";
+import RequireProfile from "./components/RequireProfile"; // <--- IMPORT MỚI
 
 // Admin Pages
 import AdminRoute from "./components/AdminRoute.jsx";
@@ -18,70 +18,66 @@ import PatientManagement from "./pages/admin/PatientManagement";
 import DoctorManagement from "./pages/admin/DoctorManagement";
 import ProfileSettings from "./pages/admin/ProfileSettings";
 import SpecialtyManagement from "./pages/admin/SpecialtyManagement";
+import HolidayManagement from "./pages/admin/HolidayManagement";
+import PartnersManagement from "./pages/admin/PartnersManagement";
+import PostManagement from "./pages/admin/PostManagement";
+import PostEditor from "./pages/admin/PostEditor";
 
 // Doctor Pages
 import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorSchedule from "./pages/doctor/DoctorSchedule";
 import DoctorSettings from "./pages/doctor/DoctorSettings";
 import DoctorAppointment from "./pages/doctor/DoctorAppointment";
-
-import DoctorList from "./pages/doctor/DoctorList";
-
+import DoctorVisit from "./pages/doctor/DoctorVisit.jsx";
 import DoctorRoute from "./components/DoctorRoute.jsx";
-
 
 // User Pages
 import HomePage from "./pages/Home";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
-import DoctorDetailPage from "./pages/patient/DoctorDetail"; // ← Đảm bảo import đúng
-import PatientDashboard from "./pages/patient/Dashboard";
-import PatientProfileContent from "./pages/patient/dashboard-sections/PatientProfile";
-import AppointmentListContent from "./pages/patient/dashboard-sections/AppointmentList";
-import PaymentHistoryContent from "./pages/patient/dashboard-sections/PaymentHistory";
-import AccountSettingsContent from "./pages/patient/dashboard-sections/AccountSettings";
-import HolidayManagement from "./pages/admin/HolidayManagement";
+import DoctorDetailPage from "./pages/DoctorDetail.jsx";
+import PatientProfile from "./pages/patient/PatientProfile.jsx";
 import NotificationPage from "./pages/NotificationPage";
-import PartnersManagement from "./pages/admin/PartnersManagement";
-import PostManagement from "./pages/admin/PostManagement";
-import PostEditor from "./pages/admin/PostEditor";
 import ProfileCompletion from "./pages/patient/ProfileCompletion.jsx";
 import NotFound from "./pages/404.jsx";
-import DoctorVisit from "./pages/doctor/DoctorVisit.jsx";
 import PostList from "./pages/PostList.jsx";
-
-// src/App.jsx
-
 import PostDetailPage from "./pages/PostDetailPage.jsx";
+import PatientDashboard from "./pages/patient/PatientDashboard.jsx";
+import PatientPassword from "./pages/patient/PatientPassword.jsx";
+import PatientAppointment from "./pages/patient/PatientAppointment.jsx";
+import PatientVisitDetail from "./pages/patient/PatientVisitDetail.jsx";
+import DoctorList from "./pages/doctor/DoctorList";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ==================== USER LAYOUT (CÓ HEADER + FOOTER) ==================== */}
+        {/* ==================== USER LAYOUT ==================== */}
         <Route path="/" element={<UserLayout />}>
-          <Route index element={<HomePage />} />
+          
+          {/* 1. CÁC TRANG PUBLIC (KHÔNG CẦN CHECK HỒ SƠ) */}
           <Route path="Login" element={<LoginPage />} />
-          <Route path="/post/:slug" element={<PostDetailPage />} />
           <Route path="Register" element={<RegisterPage />} />
-          <Route path="notifications" element={<NotificationPage />} />
-          <Route path="doctors/:id" element={<DoctorDetailPage />} />
-          <Route path="doctorList" element={<DoctorList />} />
-          <Route path="post" element={<PostList />} />
-          <Route path="/" element={<PatientDashboard />}>
-            <Route path="ho-so" element={<PatientProfileContent />} />
+          <Route path="/onboarding/profile-patient" element={<ProfileCompletion />} />
 
-            <Route path="lich-kham" element={<AppointmentListContent />} />
-            <Route
-              path="lich-su-thanh-toan"
-              element={<PaymentHistoryContent />}
-            />
-            <Route path="tai-khoan" element={<AccountSettingsContent />} />
+          {/* 2. CÁC TRANG CẦN BẢO VỆ (PHẢI CÓ HỒ SƠ MỚI VÀO ĐƯỢC) */}
+          <Route element={<RequireProfile />}>
+            <Route index element={<HomePage />} />
+            <Route path="/post/:slug" element={<PostDetailPage />} />
+            <Route path="notifications" element={<NotificationPage />} />
+            <Route path="doctors/:id" element={<DoctorDetailPage />} />
+            <Route path="doctors" element={<DoctorList />} />
+            <Route path="post" element={<PostList />} />
+            <Route path="/visit-detail/:appointmentId" element={<PatientVisitDetail />} />
+            
+            {/* Dashboard Patient */}
+            <Route path="/profile" element={<PatientDashboard />}>
+              <Route index element={<PatientProfile />} />
+              <Route path="appointments" element={<PatientAppointment />} />
+              <Route path="password" element={<PatientPassword />} />
+            </Route>
           </Route>
-          <Route path="ProfileCompletion" element={<ProfileCompletion />} />
-          {/* Có thể thêm các trang public khác ở đây */}
-          {/* <Route path="tim-kiem" element={<SearchPage />} /> */}
-          {/* <Route path="chuyen-khoa/:slug" element={<SpecialtyPage />} /> */}
+
           <Route path="*" element={<NotFound />} />
         </Route>
 
@@ -107,8 +103,6 @@ export default function App() {
           <Route path="profile" element={<ProfileSettings />} />
           <Route path="*" element={<NotFound />} />
         </Route>
-
-        {/* ... các routes khác */}
 
         {/* ==================== DOCTOR LAYOUT ==================== */}
         <Route

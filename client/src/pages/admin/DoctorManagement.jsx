@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import doctorService from "../../services/DoctorService";
 import doctorSchedulesService from "../../services/DoctorScheduleService";
-
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 // Import components
 import DoctorList from "./../../components/admin/doctor/DoctorList";
 import DoctorAddModal from "../../components/admin/doctor/DoctorAddModal";
@@ -107,9 +107,9 @@ const DoctorManagement = () => {
       await doctorService.deleteDoctor(confirmDeleteId);
       setConfirmDeleteId(null);
       fetchDoctors();
-      alert("Xóa bác sĩ thành công!");
+      toastSuccess("Xóa bác sĩ thành công!");
     } catch (err) {
-      alert(
+      toastError(
         "Xóa thất bại: " + (err.response?.data?.error || "Lỗi không xác định")
       );
     }
@@ -130,13 +130,13 @@ const DoctorManagement = () => {
       if (editingDoctor) {
         // CẬP NHẬT bác sĩ đã có hồ sơ đầy đủ
         await doctorService.updateDoctor(editingDoctor._id, formData);
-        alert("Cập nhật thông tin bác sĩ thành công!");
+        toastSuccess("Cập nhật thông tin bác sĩ thành công!");
       } else {
         // TẠO MỚI: CHỈ gửi 3 trường → backend chấp nhận
         const { name, email, password } = formData;
 
         if (!name || !email || !password) {
-          alert("Vui lòng nhập đầy đủ: Tên đăng nhập, Email, Mật khẩu");
+          toastWarning("Vui lòng nhập đầy đủ: Tên đăng nhập, Email, Mật khẩu");
           return;
         }
 
@@ -146,7 +146,7 @@ const DoctorManagement = () => {
           password: password,
         });
 
-        alert(
+        toastSuccess(
           "Tạo tài khoản bác sĩ thành công!\n\nBác sĩ sẽ nhận thông tin đăng nhập và cần hoàn tất hồ sơ cá nhân khi đăng nhập lần đầu."
         );
       }
@@ -155,7 +155,7 @@ const DoctorManagement = () => {
       fetchDoctors(); // Refresh danh sách
     } catch (err) {
       const errorMsg = err.response?.data?.error || "Lỗi không xác định";
-      alert("Lỗi: " + errorMsg);
+      toastError("Lỗi: " + errorMsg);
       console.error("Lỗi lưu bác sĩ:", err);
     }
   };
@@ -183,7 +183,7 @@ const DoctorManagement = () => {
     reader.onerror = (error) => {
       console.error("Lỗi đọc file:", error);
       setIsImagePending(false);
-      alert("Lỗi tải ảnh cục bộ. Vui lòng thử lại.");
+      toastError("Lỗi tải ảnh cục bộ. Vui lòng thử lại.");
     };
   };
 

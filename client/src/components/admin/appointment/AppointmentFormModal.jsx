@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../Modal'; 
 import timeslotService from '../../../services/TimeslotService'; 
+import { toastSuccess, toastError,toastWarning,toastInfo } from "../../../utils/toast";
 
 const AppointmentFormModal = ({
     isOpen,
@@ -52,7 +53,7 @@ const AppointmentFormModal = ({
 
                 setAvailableSlots(slots);
             } catch (error) {
-                console.error("Lỗi lấy lịch rảnh:", error);
+                toastError("Lỗi lấy lịch rảnh: " + (error.response?.data?.message || error.message));
                 setSlotError("Không thể tải lịch rảnh của bác sĩ.");
             } finally {
                 setIsLoadingSlots(false);
@@ -88,7 +89,7 @@ const AppointmentFormModal = ({
         
         // Kiểm tra kỹ timeslot_id
         if (!formData.patient_id || !formData.date || !formData.timeslot_id) {
-             alert('Vui lòng chọn đầy đủ Bệnh nhân, Bác sĩ, Ngày và Giờ khám.');
+             toastError('Vui lòng chọn đầy đủ Bệnh nhân, Bác sĩ, Ngày và Giờ khám.');
              return;
         }
         handleSave(formData); 

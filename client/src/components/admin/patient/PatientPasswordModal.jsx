@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Modal from '../Modal'; 
-
+import { toastSuccess, toastError,toastWarning,toastInfo } from "../../../utils/toast";
 const PatientPasswordModal = ({ 
     isOpen, 
     onClose, 
@@ -26,11 +26,11 @@ const PatientPasswordModal = ({
         e.preventDefault();
         
         if (passwordData.newPassword !== passwordData.confirmNewPassword) {
-            alert('Lỗi: Mật khẩu xác nhận không khớp!');
+            toastError('Lỗi: Mật khẩu xác nhận không khớp!');
             return;
         }
         if (passwordData.newPassword.length < 6) { // Dùng 6 thay vì 10 cho tính tương thích
-             alert('Lỗi: Mật khẩu phải có ít nhất 6 ký tự.');
+             toastError('Lỗi: Mật khẩu phải có ít nhất 6 ký tự.');
              return;
         }
         

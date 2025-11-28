@@ -4,7 +4,7 @@ import {
     ChevronLeft, ChevronRight, X, Plus, Trash2, 
     Calendar, AlertCircle, Loader2, Settings 
 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 import doctorSchedulesService from '../../services/DoctorScheduleService';
 import WeeklyScheduleModal from '../../components/doctor/schedule/WeeklyScheduleModal';
 
@@ -103,11 +103,11 @@ export default function DoctorSchedule() {
 
         try {
             await doctorSchedulesService.upsertMyException(payload);
-            toast.success("Cập nhật lịch ngày thành công!");
+            toastSuccess("Cập nhật lịch ngày thành công!");
             fetchSchedule();
         } catch (err) {
             console.error(err);
-            toast.error("Lỗi: " + (err.response?.data?.error || "Không thể lưu thay đổi"));
+            toastError("Lỗi: " + (err.response?.data?.error || "Không thể lưu thay đổi"));
         }
     };
 
@@ -330,7 +330,7 @@ export default function DoctorSchedule() {
                                                             setExceptionFormData(prev => ({ ...prev, add: [...prev.add, tempTimeInput] }));
                                                             setTempTimeInput({ start: "", end: "" });
                                                         } else {
-                                                            toast.warn("Giờ không hợp lệ");
+                                                            toastWarning("Giờ không hợp lệ");
                                                         }
                                                     }}
                                                     className="flex items-center justify-center gap-1 bg-green-100 text-green-700 hover:bg-green-200 py-2 rounded-lg text-sm font-medium transition"
@@ -343,7 +343,7 @@ export default function DoctorSchedule() {
                                                             setExceptionFormData(prev => ({ ...prev, removeSlot: [...prev.removeSlot, tempTimeInput] }));
                                                             setTempTimeInput({ start: "", end: "" });
                                                         } else {
-                                                            toast.warn("Giờ không hợp lệ");
+                                                            toastWarning("Giờ không hợp lệ");
                                                         }
                                                     }}
                                                     className="flex items-center justify-center gap-1 bg-orange-100 text-orange-700 hover:bg-orange-200 py-2 rounded-lg text-sm font-medium transition"

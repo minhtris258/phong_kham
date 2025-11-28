@@ -7,7 +7,7 @@ import "../assets/assets.js";
 import hero from "../assets/slider-03-b.jpg";
 import logo from "../assets/logo.png";
 import { useAppContext } from "../context/AppContext.jsx";
-
+import { toastSuccess, toastError,toastWarning } from "../utils/toast";
 export default function LoginSection() {
   const { login } = useAppContext();
 
@@ -33,12 +33,12 @@ export default function LoginSection() {
 
     try {
       const res = await login(form.email, form.password);
-      setSuccess("Đăng nhập thành công!");
+      toastSuccess("Đăng nhập thành công!");
       window.location.href = res.next || "/";
     } catch (err) {
       console.error(err);
       const message = err.response?.data?.error || err.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại.";
-      setError(message);
+      toastError(message);
     } finally {
       setLoading(false);
     }

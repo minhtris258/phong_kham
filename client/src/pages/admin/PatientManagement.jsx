@@ -93,11 +93,11 @@ const PatientManagement = () => {
     try {
       if (editingPatient) {
         await patientService.updatePatient(editingPatient._id, formData);
-        alert("Cập nhật thông tin bệnh nhân thành công!");
+        toastSuccess("Cập nhật thông tin bệnh nhân thành công!");
       } else {
         const { name, email, password } = formData;
         if (!name || !email || !password) {
-          alert("Vui lòng nhập đầy đủ: Tên đăng nhập, Email, Mật khẩu");
+          toastError("Vui lòng nhập đầy đủ: Tên đăng nhập, Email, Mật khẩu");
           return;
         }
         await patientService.createPatient({
@@ -164,7 +164,7 @@ const PatientManagement = () => {
       // GỌI API THỰC TẾ
       await patientService.changePatientPassword(patientId, newPassword);
 
-      alert(`Đổi mật khẩu cho ${patientToChangePassword.fullName} thành công!`);
+      toastSuccess(`Đổi mật khẩu cho ${patientToChangePassword.fullName} thành công!`);
 
       setIsPasswordModalOpen(false);
       setPatientToChangePassword(null);
@@ -173,7 +173,7 @@ const PatientManagement = () => {
         err.response?.data?.message ||
         err.response?.data?.error ||
         "Lỗi đổi mật khẩu không xác định";
-      alert("Lỗi đổi mật khẩu: " + errorMsg);
+      toastError("Lỗi đổi mật khẩu: " + errorMsg);
       console.error("Lỗi đổi mật khẩu:", err);
     }
   };

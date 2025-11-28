@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Save, Calendar, Pill, DollarSign, FileText, Clock } from "lucide-react";
-import { toast } from "react-toastify";
+import { toastSuccess, toastError,toastWarning,toastInfo } from "../../../utils/toast";
 import visitService from "../../../services/VIsitService"; // Đảm bảo đúng tên file service của bạn
 import timeslotService from "../../../services/TimeslotService"; // Import service bạn vừa cung cấp
 import Modal from "../../Modal"; 
@@ -79,8 +79,8 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
         
         setAvailableTimeslots(freeSlots);
       } catch (error) {
-        console.error("Lỗi lấy timeslot:", error);
-        toast.error("Không thể tải danh sách khung giờ trống.");
+        toastError("Lỗi lấy timeslot: " + (error.response?.data?.message || error.message));
+        toastError("Không thể tải danh sách khung giờ trống.");
         setAvailableTimeslots([]);
       } finally {
         setLoadingSlots(false);
@@ -120,13 +120,13 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
   // === SUBMIT ===
   const handleSubmit = async () => {
     if (!formData.symptoms.trim()) {
-      toast.error("Vui lòng nhập triệu chứng bệnh.");
+      toastError("Vui lòng nhập triệu chứng bệnh.");
       return;
     }
 
     // Validate: Nếu chọn ngày tái khám thì phải chọn giờ
     if (formData.next_visit_date && !selectedTimeslotId) {
-        toast.warn("Vui lòng chọn khung giờ cho lịch tái khám.");
+        toastWarning("Vui lòng chọn khung giờ cho lịch tái khám.");
         return;
     }
 
@@ -151,17 +151,17 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
       };
 
       const res = await visitService.createVisit(payload);
-      toast.success("Hoàn tất khám bệnh thành công!");
+      toastSuccess("Hoàn tất khám bệnh thành công!");
       
       // Thông báo kết quả đặt lịch tái khám
       if (res.data?.followup?.scheduled) {
-        toast.info(`Đã hẹn tái khám: ${new Date(res.data.followup.date).toLocaleDateString('vi-VN')} (${res.data.followup.start})`);
+        toastInfo(`Đã hẹn tái khám: ${new Date(res.data.followup.date).toLocaleDateString('vi-VN')} (${res.data.followup.start})`);
       }
       
       onSuccess(); 
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.error || "Lỗi khi tạo hồ sơ");
+      toastError(error.response?.data?.error || "Lỗi khi tạo hồ sơ");
     } finally {
       setLoading(false);
     }

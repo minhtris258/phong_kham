@@ -229,11 +229,22 @@ export const getVisitByAppointment = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-export const myVisits = async (_req, res, next) => {
+export const myVisits = async (req, res, next) => {
   try {
-    const list = await Visit.find({ patient_id: _req.user._id })
+    // 1. Tìm hồ sơ bệnh nhân từ User ID đăng nhập
+    const patientProfile = await Patient.findOne({ user_id: req.user._id });
+    
+    if (!patientProfile) {
+        // Nếu chưa có hồ sơ bệnh nhân -> Trả về danh sách rỗng
+        return res.json({ data: [] });
+    }
+
+    // 2. Dùng ID hồ sơ bệnh nhân để tìm Visit
+    const list = await Visit.find({ patient_id: patientProfile._id })
+      .populate({ path: "doctor_id", select: "fullName specialty_id" }) // Populate thêm tên bác sĩ nếu cần
       .sort({ createdAt: -1 })
       .lean();
+
     res.json({ data: list });
   } catch (e) { next(e); }
 };

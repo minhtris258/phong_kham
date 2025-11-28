@@ -1,7 +1,7 @@
 // src/pages/admin/AppointmentManagement.jsx
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Calendar, List, Plus } from "lucide-react"; // Import icon còn thiếu
-
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 // Import components
 import AppointmentCalendar from "../../components/admin/appointment/AppointmentCalendar";
 import AppointmentListTable from "../../components/admin/appointment/AppointmentListTable";
@@ -49,7 +49,7 @@ console.log("API Patients Response:", patRes.data);
       setPatients(patRes.data?.patients || []); // Giả sử API trả về list users
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
-      alert("Không thể tải dữ liệu lịch hẹn.");
+      toastError("Không thể tải dữ liệu lịch hẹn.");
     } finally {
       setLoading(false);
     }
@@ -134,18 +134,18 @@ const getPatientName = useCallback((patient) => {
     try {
       if (editingAppointment) {
         await appointmentsService.updateAppointment(editingAppointment._id, submitData);
-        alert("Cập nhật thành công!");
+        toastSuccess("Cập nhật thành công!");
       } else {
         // Lưu ý: API tạo lịch hẹn cho Admin có thể khác API book của Patient
         // Nếu chưa có API admin create, bạn có thể dùng tạm bookAppointment hoặc viết thêm
         await appointmentsService.bookAppointment(submitData); // Cần check quyền admin ở backend
-        alert("Tạo lịch hẹn thành công!");
+        toastSuccess("Tạo lịch hẹn thành công!");
       }
       setIsModalOpen(false);
       fetchData(); // Refresh lại dữ liệu
     } catch (error) {
       console.error(error);
-      alert("Lỗi lưu dữ liệu: " + (error.response?.data?.error || error.message));
+      toastError("Lỗi lưu dữ liệu: " + (error.response?.data?.error || error.message));
     }
   };
 
@@ -163,11 +163,11 @@ const getPatientName = useCallback((patient) => {
           }));
       }
        setConfirmDeleteId(null);
-      alert("Xóa thành công!");
+      toastSuccess("Xóa thành công!");
      
       fetchData();
     } catch (error) {
-      alert("Lỗi xóa: " + error.message);
+      toastError("Lỗi xóa: " + error.message);
     }
   };
 

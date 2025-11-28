@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Calendar, X, Check } from "lucide-react";
 import holidayService from "../../services/HolidayService"; // Đảm bảo đường dẫn đúng
+import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
 
 const HolidayManagement = () => {
   // --- State ---
@@ -67,16 +68,16 @@ const HolidayManagement = () => {
       if (editingItem) {
         // Update
         await holidayService.updateHoliday(editingItem._id || editingItem.id, formData);
-        alert("Cập nhật ngày lễ thành công!");
+        toastSuccess("Cập nhật ngày lễ thành công!");
       } else {
         // Create
         await holidayService.createHoliday(formData);
-        alert("Thêm ngày lễ thành công!");
+        toastSuccess("Thêm ngày lễ thành công!");
       }
       setIsModalOpen(false);
       fetchHolidays(); // Refresh list
     } catch (error) {
-      alert("Lỗi: " + (error.response?.data?.error || error.message));
+      toastError("Lỗi: " + (error.response?.data?.error || error.message));
     }
   };
 
@@ -86,7 +87,7 @@ const HolidayManagement = () => {
         await holidayService.deleteHoliday(id);
         fetchHolidays();
       } catch (error) {
-        alert("Xóa thất bại: " + error.message);
+        toastError("Xóa thất bại: " + error.message);
       }
     }
   };

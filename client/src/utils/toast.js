@@ -25,3 +25,6 @@ export const toastError = (message) => {
 export const toastWarning = (message) => {
   toast.warn(message, toastConfig);
 };
+export const toastInfo = (message) => {
+  toast.info(message, toastConfig);
+};

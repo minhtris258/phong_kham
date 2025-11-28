@@ -111,7 +111,7 @@ export const updatePatientAdmin = async (req, res, next) => {
     const patientToUpdateId = req.params.id;
     
     if (!userId) return res.status(401).json({ error: "Thiếu token." });
-const existingPatient = await Patient.findById(patientToUpdateId);
+    const existingPatient = await Patient.findById(patientToUpdateId);
     
     if (!existingPatient) {
         // Trả về 404 nếu không tìm thấy document Patient
@@ -119,10 +119,10 @@ const existingPatient = await Patient.findById(patientToUpdateId);
     }
     // Cho phép cả doctor và admin sửa
    if (role !== "admin" && userId.toString() !== existingPatient.user_id.toString()) {
-      return res
-        .status(403)
-        .json({ error: "Không có quyền cập nhật hồ sơ của người khác." });
-    }
+      return res
+        .status(403)
+        .json({ error: "Không có quyền cập nhật hồ sơ của người khác." });
+    }
     const ALLOWED_FIELDS = [
       "fullName",
       "dob",
@@ -205,6 +205,18 @@ const existingPatient = await Patient.findById(patientToUpdateId);
         status: "active",
       });
       profileStatusChanged = true;
+
+      // === SOCKET.IO: Gửi thông báo realtime cho user nếu Admin kích hoạt giúp ===
+      const io = req.app.get("io");
+      if (io) {
+        const targetRoom = existingPatient.user_id.toString();
+        console.log(`[Socket] Admin updated patient. Emitting 'profile_updated' to room: ${targetRoom}`);
+        io.to(targetRoom).emit("profile_updated", {
+            userId: existingPatient.user_id,
+            profile_completed: true,
+            status: "active"
+        });
+      }
     }
 
     return res.status(200).json({
@@ -224,75 +236,81 @@ export const completePatientProfile = async (req, res, next) => {
   try {
     const userId = req.user?._id;
     const role = req.user?.role || req.user?.role?.name;
+    
     if (!userId) return res.status(401).json({ error: "Thiếu hoặc sai token." });
     if (role !== "patient") {
       return res.status(403).json({ error: "Chỉ tài khoản bệnh nhân mới được hoàn tất hồ sơ." });
     }
 
-    // user để lấy email (không cho FE tự gửi email)
-    const user = await User.findById(userId).lean();
-    if (!user) return res.status(404).json({ error: "Không tìm thấy user." });
+    const { fullName, dob, gender, phone, address, note } = req.body;
 
-    // đã có hồ sơ chưa
-    const existed = await Patient.findOne({ user_id: userId }).lean();
-    if (existed) return res.status(409).json({ error: "Hồ sơ đã tồn tại." });
-
-    // làm sạch key và value (tránh "fullName " có khoảng trắng)
-    const clean = {};
-    for (const [k, v] of Object.entries(req.body || {})) {
-      clean[k.trim()] = typeof v === "string" ? v.trim() : v;
-    }
-
-    const { fullName, dob, gender, phone, address, note } = clean;
-
-    // bắt buộc
+    // 1. Validate dữ liệu đầu vào
     if (!fullName || !dob || !gender || !phone || !address) {
-      return res.status(400).json({ error: "Thiếu thông tin hồ sơ bắt buộc: fullName, dob, gender, phone, address." });
+      return res.status(400).json({ error: "Thiếu thông tin bắt buộc: fullName, dob, gender, phone, address." });
     }
 
-    // validate
     const allowedGender = ["male", "female", "other"];
     if (!allowedGender.includes(gender)) {
-      return res.status(400).json({ error: "Giá trị gender không hợp lệ." });
+      return res.status(400).json({ error: "Giới tính không hợp lệ." });
     }
 
     const dobDate = parseDob(dob);
     if (!dobDate) {
-      return res.status(400).json({ error: "Định dạng dob không hợp lệ. Hỗ trợ yyyy-mm-dd hoặc dd/MM/yyyy." });
+      return res.status(400).json({ error: "Ngày sinh không hợp lệ." });
     }
 
-    // số điện thoại trùng với hồ sơ bệnh nhân khác?
-    const phoneTaken = await Patient.findOne({ phone }).lean();
+    // 2. Kiểm tra SĐT trùng (trừ chính user này ra, phòng trường hợp update lại)
+    const phoneTaken = await Patient.findOne({ 
+        phone: phone, 
+        user_id: { $ne: userId } 
+    }).lean();
+    
     if (phoneTaken) {
       return res.status(409).json({ error: "Số điện thoại đã được dùng cho hồ sơ khác." });
     }
 
-    // tạo hồ sơ (email lấy từ User)
-    const profile = await Patient.create({
-      user_id: userId,
-      fullName,
-      dob: dobDate,
-      gender,
-      phone,
-      email: user.email,
-      address,
-      note: note || "",
-      status: "active",
-    });
-
-    // cập nhật trạng thái user
-    await User.updateOne(
-      { _id: userId },
-      { $set: { profile_completed: true, status: "active" } }
+    // 3. Thực hiện Update (hoặc Insert nếu chưa có - upsert)
+    const updatedProfile = await Patient.findOneAndUpdate(
+      { user_id: userId }, 
+      {
+        $set: {
+          fullName: fullName.trim(),
+          dob: dobDate,
+          gender,
+          phone: phone.trim(),
+          address: address.trim(),
+          note: note || "",
+          status: "active", // Kích hoạt hồ sơ
+        }
+      },
+      { new: true, upsert: true } 
     );
 
-    // trả về
-    const result = await Patient.findById(profile._id).select("-__v").lean();
-    return res.status(201).json({
-      message: "Hoàn tất hồ sơ bệnh nhân thành công.",
-      profile: result,
-      next: "/dashboard/patient",
+    // 4. Cập nhật trạng thái User gốc (để lần sau login không bắt onboarding nữa)
+    await User.findByIdAndUpdate(userId, {
+        profile_completed: true,
+        status: "active"
     });
+
+    // === SOCKET.IO: Gửi thông báo realtime để Frontend tự động refresh ===
+    const io = req.app.get("io");
+    if (io) {
+      const targetRoom = userId.toString();
+      console.log(`[Socket] Profile completed. Emitting 'profile_updated' to room: ${targetRoom}`);
+      io.to(targetRoom).emit("profile_updated", {
+          userId: userId,
+          profile_completed: true,
+          status: "active"
+      });
+    }
+    // ====================================================================
+
+    return res.status(200).json({
+      message: "Hoàn tất hồ sơ thành công.",
+      profile: updatedProfile,
+      next: "/dashboard" // Chuyển hướng vào trang chính
+    });
+
   } catch (e) {
     next(e);
   }
@@ -388,7 +406,7 @@ export const updateMyPatientProfile = async (req, res, next) => {
       payload.dob = d;
     }
     if (payload.phone) {
-      const phoneTaken = await Doctor.findOne({
+      const phoneTaken = await Patient.findOne({
         user_id: { $ne: userId },
         phone: payload.phone,
       }).lean();
