@@ -24,7 +24,11 @@ import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorSchedule from "./pages/doctor/DoctorSchedule";
 import DoctorSettings from "./pages/doctor/DoctorSettings";
 import DoctorAppointment from "./pages/doctor/DoctorAppointment";
+
+import DoctorList from "./pages/doctor/DoctorList";
+
 import DoctorRoute from "./components/DoctorRoute.jsx";
+
 
 // User Pages
 import HomePage from "./pages/Home";
@@ -45,6 +49,10 @@ import ProfileCompletion from "./pages/patient/ProfileCompletion.jsx";
 import NotFound from "./pages/404.jsx";
 import DoctorVisit from "./pages/doctor/DoctorVisit.jsx";
 
+// src/App.jsx
+
+import PostDetail from "./pages/PostDetail";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -53,9 +61,11 @@ export default function App() {
         <Route path="/" element={<UserLayout />}>
           <Route index element={<HomePage />} />
           <Route path="Login" element={<LoginPage />} />
+          <Route path="/bai-viet/:slug" element={<PostDetail />} />
           <Route path="Register" element={<RegisterPage />} />
           <Route path="notifications" element={<NotificationPage />} />
           <Route path="doctors/:id" element={<DoctorDetailPage />} />
+          <Route path="doctorList" element={<DoctorList />} />
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
 
