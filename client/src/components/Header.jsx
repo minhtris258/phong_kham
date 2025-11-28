@@ -180,7 +180,7 @@ export default function Header() {
                   </a>
                 </li>
                 <li>
-                  <a className="hover:text-cyan-300" href="#">
+                  <a className="hover:text-cyan-300" href="/doctorList">
                     Bác Sĩ
                   </a>
                 </li>
@@ -335,7 +335,7 @@ export default function Header() {
             Dịch Vụ
           </a>
           <a
-            href="#"
+            href="/doctorList"
             className="block hover:text-cyan-300"
             onClick={() => setOpen(false)}
           >
