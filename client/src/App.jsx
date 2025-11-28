@@ -45,6 +45,10 @@ import ProfileCompletion from "./pages/patient/ProfileCompletion.jsx";
 import NotFound from "./pages/404.jsx";
 import DoctorVisit from "./pages/doctor/DoctorVisit.jsx";
 
+// src/App.jsx
+
+import PostDetail from "./pages/PostDetail";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -53,6 +57,7 @@ export default function App() {
         <Route path="/" element={<UserLayout />}>
           <Route index element={<HomePage />} />
           <Route path="Login" element={<LoginPage />} />
+          <Route path="/bai-viet/:slug" element={<PostDetail />} />
           <Route path="Register" element={<RegisterPage />} />
           <Route path="notifications" element={<NotificationPage />} />
           <Route path="doctors/:id" element={<DoctorDetailPage />} />
