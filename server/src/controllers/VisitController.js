@@ -3,8 +3,8 @@ import Visit from "../models/VisitModel.js";
 import Appointment from "../models/AppointmentModel.js";
 import Doctor from "../models/DoctorModel.js";
 import Timeslot from "../models/TimeslotModel.js";
-import Notification from "../models/NotificationModel.js"; // Model của bạn
-import Rating from "../models/RatingModel.js";
+import Notification from "../models/NotificationModel.js"; 
+import Patient from "../models/PatientModel.js"; // <--- [MỚI] Import để lấy user_id
 import { getDoctorIdFromUser } from "../utils/getDoctorIdFromUser.js";
 
 // Helper: Tính tiền tổng
@@ -22,6 +22,9 @@ function calcTotals(visitLike) {
 /** POST /api/visits */
 export const createVisit = async (req, res, next) => {
   try {
+    // [MỚI] Lấy IO để bắn socket
+    const io = req.app.get('io'); 
+
     const {
       appointment_id,
       symptoms,
@@ -129,47 +132,69 @@ export const createVisit = async (req, res, next) => {
     await appt.save();
 
     // ============================================================
-    // 9. GỬI THÔNG BÁO (NOTIFICATION) - Đã sửa theo yêu cầu
+    // 9. GỬI THÔNG BÁO (NOTIFICATION) [ĐÃ SỬA LẠI LOGIC]
     // ============================================================
     try {
-        const notificationsToSend = [];
+        // [QUAN TRỌNG] Lấy User ID từ bảng Patient để gửi đúng người
+        const patientProfile = await Patient.findById(appt.patient_id);
+        const targetUserId = patientProfile ? patientProfile.user_id : null;
 
-        // --- THÔNG BÁO 1: KẾT QUẢ KHÁM & TÁI KHÁM ---
-        let visitTitle = "Kết quả khám bệnh";
-        let visitBody = `Buổi khám cho bệnh lý "${diagnosis || symptoms}" đã hoàn tất.`;
-        
-        // Nếu có tái khám, thông báo gộp vào đây luôn
-        if (followupResult.scheduled) {
-             const dateStr = new Date(followupResult.date).toLocaleDateString('vi-VN');
-             visitBody += ` Bác sĩ đã lên lịch tái khám cho bạn vào ngày ${dateStr} lúc ${followupResult.start}. Vui lòng kiểm tra lịch hẹn.`;
-        } else if (prescriptions.length > 0) {
-             visitBody += " Đơn thuốc điện tử đã được cập nhật vào hồ sơ.";
+        if (targetUserId) {
+            const notificationsToSend = [];
+
+            // --- THÔNG BÁO 1: KẾT QUẢ KHÁM & TÁI KHÁM ---
+            let visitTitle = "Kết quả khám bệnh";
+            let visitBody = `Buổi khám cho bệnh lý "${diagnosis || symptoms}" đã hoàn tất.`;
+            
+            if (followupResult.scheduled) {
+                 const dateStr = new Date(followupResult.date).toLocaleDateString('vi-VN');
+                 visitBody += ` Bác sĩ đã lên lịch tái khám cho bạn vào ngày ${dateStr} lúc ${followupResult.start}. Vui lòng kiểm tra lịch hẹn.`;
+            } else if (prescriptions.length > 0) {
+                 visitBody += " Đơn thuốc điện tử đã được cập nhật vào hồ sơ.";
+            }
+
+            const notifResult = {
+                user_id: targetUserId, // Gửi vào User ID (Account)
+                type: "appointment",
+                title: visitTitle,
+                body: visitBody,
+                appointment_id: appt._id,
+                channels: ["in-app"],
+                status: "unread",
+                sent_at: new Date()
+            };
+            notificationsToSend.push(notifResult);
+
+            // --- THÔNG BÁO 2: YÊU CẦU ĐÁNH GIÁ ---
+            const notifRating = {
+                user_id: targetUserId, // Gửi vào User ID (Account)
+                type: "rating_request",
+                title: "Đánh giá bác sĩ",
+                body: "Bạn cảm thấy buổi khám hôm nay thế nào? Hãy dành 1 phút để đánh giá bác sĩ nhé!",
+                appointment_id: appt._id,
+                channels: ["in-app"],
+                status: "unread",
+                sent_at: new Date()
+            };
+            notificationsToSend.push(notifRating);
+
+            // Gửi vào Database
+            const savedNotifs = await Notification.insertMany(notificationsToSend);
+
+            // [MỚI] Bắn Socket Realtime để App hiện ngay
+            if (io) {
+                savedNotifs.forEach(notif => {
+                    io.to(targetUserId.toString()).emit('new_notification', {
+                        message: notif.title,
+                        data: notif
+                    });
+                });
+            }
+        } else {
+            console.warn("Không tìm thấy User ID liên kết với bệnh nhân này, không thể gửi thông báo.");
         }
 
-        notificationsToSend.push({
-            user_id: appt.patient_id,
-            type: "appointment", // Loại thông báo chung về lịch hẹn/kết quả
-            title: visitTitle,
-            body: visitBody,
-            appointment_id: appt._id,
-            channels: ["in-app"]
-        });
-
-        // --- THÔNG BÁO 2: YÊU CẦU ĐÁNH GIÁ ---
-        notificationsToSend.push({
-            user_id: appt.patient_id,
-            type: "rating_request", // Frontend check type này để hiện popup đánh giá
-            title: "Đánh giá bác sĩ",
-            body: "Bạn cảm thấy buổi khám hôm nay thế nào? Hãy dành 1 phút để đánh giá bác sĩ nhé!",
-            appointment_id: appt._id, // Gắn ID này để Frontend biết đánh giá cho appointment nào
-            channels: ["in-app"]
-        });
-
-        // Gửi tất cả thông báo cùng lúc
-        await Notification.insertMany(notificationsToSend);
-
     } catch (notifyError) {
-        // Lỗi thông báo không được làm ảnh hưởng đến việc lưu Visit
         console.error("Lỗi gửi thông báo:", notifyError);
     }
 
@@ -188,7 +213,8 @@ export const createVisit = async (req, res, next) => {
   }
 };
 
-// ... (Giữ nguyên các hàm GET/PUT khác) ...
+// ... (GIỮ NGUYÊN TẤT CẢ CÁC HÀM GET/PUT/DELETE BÊN DƯỚI) ...
+
 export const getVisitById = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -262,199 +288,88 @@ export const getVisitByPatient  = async (req, res, next) => {
     res.json({ data: list });
   } catch (e) { next(e); }
 };
-// ==========================================
-// PHẦN CHỨC NĂNG DÀNH CHO ADMIN
-// ==========================================
 
-/**
- * [ADMIN] Lấy danh sách tất cả Visit (có phân trang & lọc)
- * Mục đích: Quản lý tổng quan, kiểm tra lịch sử khám toàn hệ thống.
- */
+// ... (Phần Admin & Report giữ nguyên) ...
 export const getAllVisitsAdmin = async (req, res, next) => {
   try {
-    // Chỉ Admin mới được dùng
     if (req.user.role !== 'admin') {
       return res.status(403).json({ error: "Quyền truy cập bị từ chối." });
     }
-
     const { page = 1, limit = 10, search = "" } = req.query;
-    
-    // Tạo bộ lọc tìm kiếm (nếu có chuỗi search)
     const query = search 
-      ? { 
-          $or: [
-            { diagnosis: { $regex: search, $options: "i" } }, // Tìm theo chẩn đoán
-            { notes: { $regex: search, $options: "i" } }      // Tìm theo ghi chú
-          ] 
-        } 
+      ? { $or: [ { diagnosis: { $regex: search, $options: "i" } }, { notes: { $regex: search, $options: "i" } } ] } 
       : {};
 
     const visits = await Visit.find(query)
-      .populate("patient_id", "fullName email phone") // Lấy thông tin bệnh nhân
-      .populate({
-         path: "doctor_id",
-         populate: { path: "user_id", select: "name" } // Lấy tên bác sĩ từ bảng User liên kết
-      })
+      .populate("patient_id", "fullName email phone")
+      .populate({ path: "doctor_id", populate: { path: "user_id", select: "name" } })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .lean();
 
     const total = await Visit.countDocuments(query);
-
-    res.json({
-      data: visits,
-      meta: {
-        total,
-        page: Number(page),
-        pages: Math.ceil(total / limit)
-      }
-    });
+    res.json({ data: visits, meta: { total, page: Number(page), pages: Math.ceil(total / limit) } });
   } catch (e) { next(e); }
 };
 
-/**
- * [ADMIN] Xóa hồ sơ khám bệnh
- * Mục đích: Xử lý các hồ sơ rác hoặc bị tạo sai lệch nghiêm trọng.
- */
 export const deleteVisitAdmin = async (req, res, next) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: "Chỉ Admin mới có quyền xóa hồ sơ khám." });
-    }
-
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Chỉ Admin mới có quyền xóa hồ sơ khám." });
     const { id } = req.params;
     const deletedVisit = await Visit.findByIdAndDelete(id);
-
-    if (!deletedVisit) {
-      return res.status(404).json({ error: "Không tìm thấy hồ sơ để xóa." });
-    }
-
-    // Tùy chọn: Có thể cần cập nhật lại status của Appointment gốc thành 'confirmed' 
-    // nếu muốn cho phép bác sĩ khám lại, nhưng ở đây ta chỉ xóa Visit.
-    
+    if (!deletedVisit) return res.status(404).json({ error: "Không tìm thấy hồ sơ để xóa." });
     res.json({ message: "Đã xóa hồ sơ khám bệnh thành công.", id });
   } catch (e) { next(e); }
 };
 
-/**
- * [ADMIN] Báo cáo doanh thu tổng hợp (Theo khoảng thời gian)
- */
 export const getRevenueReportAdmin = async (req, res, next) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
-
     const { fromDate, toDate } = req.query;
-    const start = fromDate ? new Date(fromDate) : new Date(0); // Mặc định từ đầu
-    const end = toDate ? new Date(toDate) : new Date();       // Mặc định đến hiện tại
+    const start = fromDate ? new Date(fromDate) : new Date(0);
+    const end = toDate ? new Date(toDate) : new Date();
 
     const stats = await Visit.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: start, $lte: end }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalVisits: { $sum: 1 },
-          totalRevenue: { $sum: "$total_amount" },
-          avgRevenuePerVisit: { $avg: "$total_amount" }
-        }
-      }
+      { $match: { createdAt: { $gte: start, $lte: end } } },
+      { $group: { _id: null, totalVisits: { $sum: 1 }, totalRevenue: { $sum: "$total_amount" }, avgRevenuePerVisit: { $avg: "$total_amount" } } }
     ]);
-
-    res.json({ 
-      period: { start, end },
-      report: stats[0] || { totalVisits: 0, totalRevenue: 0, avgRevenuePerVisit: 0 } 
-    });
+    res.json({ period: { start, end }, report: stats[0] || { totalVisits: 0, totalRevenue: 0, avgRevenuePerVisit: 0 } });
   } catch (e) { next(e); }
 };
 
-// ==========================================
-// PHẦN CHỨC NĂNG DÀNH CHO DOCTOR (BÁC SĨ)
-// ==========================================
-
-/**
- * [DOCTOR] Thống kê Dashboard cá nhân
- * Mục đích: Bác sĩ xem nhanh số lượng bệnh nhân hôm nay và doanh thu tháng.
- */
+// ... (Phần Dashboard giữ nguyên) ...
 export const getDoctorDashboardStats = async (req, res, next) => {
   try {
     const doctorId = await getDoctorIdFromUser(req.user._id);
     if (!doctorId) return res.status(403).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    // 1. Đếm số ca khám hôm nay
-    const visitsToday = await Visit.countDocuments({
-      doctor_id: doctorId,
-      createdAt: { $gte: today }
-    });
-
-    // 2. Tổng doanh thu trong tháng này
+    const visitsToday = await Visit.countDocuments({ doctor_id: doctorId, createdAt: { $gte: today } });
     const revenueStats = await Visit.aggregate([
-      {
-        $match: {
-          doctor_id: new mongoose.Types.ObjectId(doctorId),
-          createdAt: { $gte: firstDayOfMonth }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalMonthRevenue: { $sum: "$total_amount" },
-          countMonth: { $sum: 1 }
-        }
-      }
+      { $match: { doctor_id: new mongoose.Types.ObjectId(doctorId), createdAt: { $gte: firstDayOfMonth } } },
+      { $group: { _id: null, totalMonthRevenue: { $sum: "$total_amount" }, countMonth: { $sum: 1 } } }
     ]);
-
     const statData = revenueStats[0] || { totalMonthRevenue: 0, countMonth: 0 };
-
-    res.json({
-      stats: {
-        visits_today: visitsToday,
-        visits_this_month: statData.countMonth,
-        revenue_this_month: statData.totalMonthRevenue
-      }
-    });
+    res.json({ stats: { visits_today: visitsToday, visits_this_month: statData.countMonth, revenue_this_month: statData.totalMonthRevenue } });
   } catch (e) { next(e); }
 };
 
-/**
- * [DOCTOR] Tìm kiếm hồ sơ bệnh án nâng cao
- * Mục đích: Tìm lại hồ sơ cũ dựa trên Chẩn đoán (Diagnosis) hoặc Khoảng thời gian.
- */
 export const searchDoctorVisits = async (req, res, next) => {
   try {
     const doctorId = await getDoctorIdFromUser(req.user._id);
     if (!doctorId) return res.status(403).json({ error: "Access denied." });
-
     const { diagnosis, fromDate, toDate } = req.query;
-
     let filter = { doctor_id: doctorId };
-
-    // Tìm theo tên bệnh (diagnosis) - không phân biệt hoa thường
-    if (diagnosis) {
-      filter.diagnosis = { $regex: diagnosis, $options: "i" };
-    }
-
-    // Tìm theo khoảng ngày
+    if (diagnosis) filter.diagnosis = { $regex: diagnosis, $options: "i" };
     if (fromDate || toDate) {
       filter.createdAt = {};
       if (fromDate) filter.createdAt.$gte = new Date(fromDate);
       if (toDate) filter.createdAt.$lte = new Date(toDate);
     }
-
-    const results = await Visit.find(filter)
-      .populate("patient_id", "fullName email") // Hiển thị tên bệnh nhân
-      .sort({ createdAt: -1 })
-      .limit(50) // Giới hạn kết quả để tránh quá tải
-      .lean();
-
+    const results = await Visit.find(filter).populate("patient_id", "fullName email").sort({ createdAt: -1 }).limit(50).lean();
     res.json({ count: results.length, data: results });
   } catch (e) { next(e); }
 };

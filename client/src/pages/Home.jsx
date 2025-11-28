@@ -4,7 +4,6 @@ import PartnersSection from '../components/PartnersSection';
 import DoctorsFavorite from '../components/DoctorsFavorite';
 import SpecialtySection from '../components/SpecialtySection';
 import DownloadAppSection from '../components/DownloadAppSection';
-import PostCarousel from '../components/post/PostCarousel';
 
 
 const Home = () => {
@@ -14,7 +13,6 @@ const Home = () => {
       <PartnersSection />
       <DoctorsFavorite />
       <SpecialtySection />
-      <PostCarousel />
       <DownloadAppSection />
 
     </>

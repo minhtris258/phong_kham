@@ -9,6 +9,7 @@ const visitService = {
   myDoctorVisits: () => api.get("/visits/doctor/me"),
   updateVisit: (id, data) => api.put(`/visits/${id}`, data),
 
+
   // 1. ADMIN: Lấy tất cả visits (hỗ trợ phân trang & search)
   // params ví dụ: { page: 1, limit: 10, search: "Sốt xuất huyết" }
   getAllVisitsAdmin: (params) => api.get("/visits/admin/all", { params }),

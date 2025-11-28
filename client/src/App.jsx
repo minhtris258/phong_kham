@@ -51,7 +51,7 @@ import DoctorVisit from "./pages/doctor/DoctorVisit.jsx";
 
 // src/App.jsx
 
-import PostDetail from "./pages/PostDetail";
+import PostDetailPage from "./pages/PostDetailPage.jsx";
 
 export default function App() {
   return (
@@ -61,7 +61,7 @@ export default function App() {
         <Route path="/" element={<UserLayout />}>
           <Route index element={<HomePage />} />
           <Route path="Login" element={<LoginPage />} />
-          <Route path="/bai-viet/:slug" element={<PostDetail />} />
+          <Route path="/post/:slug" element={<PostDetailPage />} />
           <Route path="Register" element={<RegisterPage />} />
           <Route path="notifications" element={<NotificationPage />} />
           <Route path="doctors/:id" element={<DoctorDetailPage />} />
