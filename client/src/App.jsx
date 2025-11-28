@@ -41,6 +41,10 @@ import PostManagement from "./pages/admin/PostManagement";
 import PostEditor from "./pages/admin/PostEditor";
 import ProfileCompletion from "./pages/patient/ProfileCompletion.jsx";
 
+// src/App.jsx
+
+import PostDetail from "./pages/PostDetail";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -49,6 +53,7 @@ export default function App() {
         <Route path="/" element={<UserLayout />}>
           <Route index element={<HomePage />} />
           <Route path="Login" element={<LoginPage />} />
+          <Route path="/bai-viet/:slug" element={<PostDetail />} />
           <Route path="Register" element={<RegisterPage />} />
           <Route path="Notification" element={<NotificationPage />} />
           <Route path="doctors/:id" element={<DoctorDetailPage />} />
