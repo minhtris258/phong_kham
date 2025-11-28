@@ -79,9 +79,9 @@ export default function DoctorProfile() {
         return <div className="text-center py-10 text-xl font-medium text-red-500">Không tìm thấy hồ sơ bác sĩ.</div>;
     }
 
-    const experience = doctorData.dob 
-        ? new Date().getFullYear() - new Date(doctorData.dob).getFullYear() 
-        : 0;
+    const currentYear = new Date().getFullYear();
+    const startYear = doctorData.career_start_year || currentYear;
+    const experienceYears = Math.max(0, currentYear - startYear);
 
     return (
         <div className="max-w-5xl mx-auto px-4 py-8 mt-10">
@@ -95,19 +95,18 @@ export default function DoctorProfile() {
                 onEditClick={() => setOpenEdit(true)}
             />
 
-            <div className="bg-white rounded-2xl shadow-lg mt-4">
+           <div className="bg-white rounded-2xl shadow-lg mt-4">
                 <div className="pt-2 px-8 pb-8">
                     <div className="grid md:grid-cols-2 gap-8 mt-8">
                         <ContactInfo 
                             phone={doctorData.phone}
                             email={doctorData.email}
-                            address={doctorData.address}
                         />
                         
                         <ExpertiseInfo 
-                            experience={experience}
+                            experience={experienceYears} // Truyền số năm đã tính
                             consultationFee={doctorData.consultation_fee}
-                            introduction={doctorData.introduction}
+                            careerStart={doctorData.career_start_year} // Truyền thêm năm bắt đầu để hiển thị chi tiết
                         />
                     </div>
                 </div>

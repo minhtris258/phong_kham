@@ -125,53 +125,58 @@ export default function BookingSection({ doctor, scheduleConfig }) {
     }
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border p-8">
-            <div className="text-center mb-8 pb-6 border-b-2 border-gray-100">
-                <p className="text-sm text-gray-600 uppercase tracking-wider">Phí khám</p>
-                <p className="text-5xl font-bold text-blue-600 mt-3">
+        <div className="bg-white rounded-2xl shadow-sm border p-4 md:p-8">
+            <div className="text-center mb-6 md:mb-8 pb-4 md:pb-6 border-b-2 border-gray-100">
+                <p className="text-xs md:text-sm text-gray-600 uppercase tracking-wider">Phí khám</p>
+                <p className="text-3xl md:text-4xl font-bold text-[#00B5F1] mt-2 md:mt-3">
                     {doctor.consultation_fee ? doctor.consultation_fee.toLocaleString('vi-VN') : 0}₫
                 </p>
             </div>
 
-            <h3 className="text-2xl font-bold mb-6 flex items-center justify-center gap-3">
-                <Calendar className="w-8 h-8 text-blue-600" />
+            <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center justify-center gap-2 md:gap-3">
+                <Calendar className="w-6 h-6 md:w-8 md:h-8 text-[#00B5F1]" />
                 Đặt khám nhanh
             </h3>
 
-            {/* List ngày */}
-            <div className="flex gap-4 overflow-x-auto pb-4 mb-8 scrollbar-hide">
+            {/* List ngày - Scroll ngang trên mobile */}
+            {/* -mx-4 px-4: Giúp scroll tràn viền trên mobile nhưng vẫn giữ padding cho nội dung khác */}
+            <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 mb-6 md:mb-8 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                 {weekDays.map((day, idx) => (
                     <button
                         key={idx}
                         onClick={() => setSelectedDateIndex(idx)}
-                        className={`min-w-40 text-center py-6 px-5 rounded-2xl border-2 transition-all font-medium shadow-sm ${
-                            selectedDateIndex === idx
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
-                                : isDayOffUI(day.fullDate)
-                                ? 'bg-red-50 text-red-600 border-red-200 line-through opacity-70'
-                                : 'bg-gray-50 hover:bg-gray-100 border-gray-300'
-                        }`}
+                        className={`
+                            min-w-[100px] md:min-w-25 text-center py-3 px-2 md:py-6 md:px-5 
+                            rounded-xl md:rounded-2xl border-2 transition-all font-light shadow-sm flex-shrink-0
+                            ${
+                                selectedDateIndex === idx
+                                    ? 'bg-[#00B5F1] text-white border-[#00B5F1] shadow-lg'
+                                    : isDayOffUI(day.fullDate)
+                                    ? 'bg-red-50 text-red-600 border-red-200 line-through opacity-70'
+                                    : 'bg-gray-50 hover:bg-gray-100 border-gray-300'
+                            }
+                        `}
                     >
-                        <div className="text-lg">{day.dayName}</div>
-                        <div className="text-4xl font-bold mt-2">{day.dateStr.split('/')[0]}</div>
-                        <div className="text-sm opacity-90">Th {day.dateStr.split('/')[1]}</div>
+                        <div className="text-sm md:text-lg">{day.dayName}</div>
+                        <div className="text-2xl md:text-4xl font-bold mt-1 md:mt-2">{day.dateStr.split('/')[0]}</div>
+                        <div className="text-xs md:text-sm opacity-90">Th {day.dateStr.split('/')[1]}</div>
                     </button>
                 ))}
             </div>
 
             {/* Slots Grid */}
             {loadingSlots ? (
-                <div className="text-center py-16 text-gray-500">
-                    <Loader2 className="w-10 h-10 animate-spin mx-auto mb-2 text-blue-600" />
+                <div className="text-center py-10 md:py-16 text-gray-500">
+                    <Loader2 className="w-8 h-8 md:w-10 md:h-10 animate-spin mx-auto mb-2 text-blue-600" />
                     <p>Đang tải lịch...</p>
                 </div>
             ) : availableSlots.length === 0 ? (
-                <div className="text-center py-16 text-gray-500">
-                    <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                    <p className="text-xl">Không có lịch khám trong ngày này</p>
+                <div className="text-center py-10 md:py-16 text-gray-500">
+                    <AlertCircle className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-gray-300" />
+                    <p className="text-lg md:text-xl">Không có lịch khám trong ngày này</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
                     {availableSlots.map((slot, i) => {
                         const display = slot.display || `${slot.start} - ${slot.end}`;
                         const isSelected = selectedSlot && (
@@ -183,11 +188,15 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                             <button
                                 key={i}
                                 onClick={() => handleSlotClick({ ...slot, display })}
-                                className={`py-5 px-4 rounded-2xl font-bold text-lg transition-all shadow-md ${
-                                    isSelected
-                                    ? 'bg-green-600 text-white shadow-lg transform scale-105'
-                                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:shadow-xl border-2 border-blue-200'
-                                }`}
+                                className={`
+                                    py-3 md:py-5 px-2 md:px-4 rounded-xl md:rounded-2xl 
+                                    text-sm md:text-lg font-bold transition-all shadow-md
+                                    ${
+                                        isSelected
+                                        ? 'bg-[#007ACC] text-white shadow-lg transform scale-105'
+                                        : 'bg-gray-50 hover:bg-[#00B5F1] hover:text-white hover:shadow-xl hover:border-[#00B5F1] border-2 border-gray-300 text-gray-700'
+                                    }
+                                `}
                             >
                                 {display}
                             </button>
@@ -196,10 +205,10 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                 </div>
             )}
             
-             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-8">
+             <div className="mt-8 md:mt-12 flex flex-col sm:flex-row items-center justify-center gap-6 md:gap-8">
                  <div className="text-center">
-                    <p className="text-gray-600 text-lg">Hỗ trợ đặt khám</p>
-                    <a href="tel:19002805" className="text-3xl font-bold text-blue-600 hover:underline">
+                    <p className="text-gray-600 text-base md:text-lg">Hỗ trợ đặt khám</p>
+                    <a href="tel:19002805" className="text-2xl md:text-3xl font-bold text-[#00B5F1] hover:underline">
                         1900-2805
                     </a>
                 </div>
@@ -208,21 +217,24 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                  <button
                     onClick={handleOpenBooking}
                     disabled={loadingSlots || availableSlots.length === 0}
-                    className={`px-20 py-6 rounded-2xl font-bold text-2xl transition-all shadow-xl ${
-                         loadingSlots || availableSlots.length === 0
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
+                    className={`
+                        w-full sm:w-auto px-6 md:px-20 py-4 md:py-6 rounded-xl md:rounded-2xl 
+                        font-bold text-lg md:text-2xl transition-all shadow-xl
+                        ${
+                             loadingSlots || availableSlots.length === 0
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-[#00B5F1] text-white hover:bg-[#007ACC]'
+                        }
+                    `}
                 >
                     ĐẶT KHÁM NGAY
                 </button>
              </div>
 
             {/* --- MODAL --- */}
-            {/* QUAN TRỌNG: Truyền isOpen={true} hoặc isOpen={openBooking} */}
             {openBooking && selectedSlot && (
                 <BookingModal 
-                    isOpen={openBooking} // <--- Đã thêm dòng này
+                    isOpen={openBooking}
                     doctor={doctor} 
                     selectedDate={selectedDay.fullDate}
                     selectedSlot={selectedSlot}

@@ -8,6 +8,15 @@ import Doctor from "../models/DoctorModel.js";
 import Specialty from "../models/SpecialtyModel.js";
 import DoctorSchedule from "../models/DoctorScheduleModel.js";
 
+// Helper validate năm
+const validateCareerYear = (year) => {
+    if (!year) return true; // Cho phép null
+    const currentYear = new Date().getFullYear();
+    if (isNaN(year) || year < 1950 || year > currentYear) {
+        return false;
+    }
+    return true;
+};
 /** POST /api/doctors  (ADMIN tạo tài khoản bác sĩ) */
 export const createDoctor = async (req, res, next) => {
   try {
@@ -140,6 +149,7 @@ export const completeDoctorProfile = async (req, res, next) => {
       thumbnail, // <--- Nguồn ảnh cần upload
       specialty_id,
       consultation_fee,
+      career_start_year,
     } = req.body;
 
     if (!fullName || !dob || !gender || !phone || !address || !specialty_id) {
@@ -147,6 +157,9 @@ export const completeDoctorProfile = async (req, res, next) => {
         error:
           "Thiếu thông tin bắt buộc: fullName, dob, gender, phone, address, specialty_id.",
       });
+    }
+    if (career_start_year && !validateCareerYear(career_start_year)) {
+        return res.status(400).json({ error: "Năm bắt đầu hành nghề không hợp lệ." });
     }
 
     const allowedGender = ["male", "female", "other"];
@@ -212,6 +225,7 @@ export const completeDoctorProfile = async (req, res, next) => {
       specialty_id,
       status: "active",
       consultation_fee,
+    career_start_year: career_start_year || null,
     });
 
     // Cập nhật trạng thái user đã hoàn thành hồ sơ (nếu có trường này)
@@ -298,6 +312,7 @@ export const updateMyDoctorProfile = async (req, res, next) => {
       "thumbnail", // <--- Field này cần được xử lý upload
       "specialty_id",
       "consultation_fee",
+      "career_start_year",
     ]);
 
     const payload = {};
@@ -308,6 +323,9 @@ export const updateMyDoctorProfile = async (req, res, next) => {
     }
 
     // validate cơ bản
+    if (payload.career_start_year && !validateCareerYear(payload.career_start_year)) {
+        return res.status(400).json({ error: "Năm bắt đầu hành nghề không hợp lệ." });
+    }
     if (payload.gender) {
       const allowedGender = ["male", "female", "other"];
       if (!allowedGender.includes(payload.gender)) {
@@ -422,6 +440,7 @@ const existingDoctor = await Doctor.findById(doctorToUpdateId);
       "thumbnail",
       "specialty_id",
       "consultation_fee",
+      "career_start_year",
     ];
 
     const payload = {};
@@ -459,6 +478,9 @@ const existingDoctor = await Doctor.findById(doctorToUpdateId);
     }
 
     // === VALIDATE DỮ LIỆU ===
+    if (payload.career_start_year && !validateCareerYear(payload.career_start_year)) {
+         return res.status(400).json({ error: "Năm bắt đầu hành nghề không hợp lệ." });
+    }
     if (
       payload.gender &&
       !["male", "female", "other"].includes(payload.gender)

@@ -1,10 +1,16 @@
+// src/components/admin/doctor/DoctorViewModal.jsx
 import React from 'react';
-import Modal from '../Modal'; // Đảm bảo đường dẫn đúng
+import Modal from '../Modal';
 import StatusBadge from './StatusBadge';
 
 const DoctorViewModal = ({ isOpen, onClose, viewingDoctor, specialtyMap }) => {
     
-    // Hàm chuyển đổi giới tính
+    const calculateExperience = (startYear) => {
+        if (!startYear) return "Chưa cập nhật";
+        const currentYear = new Date().getFullYear();
+        const years = currentYear - startYear;
+        return `Từ năm ${startYear} (${years > 0 ? years : 0} năm kinh nghiệm)`;
+    };
     const getGenderVietnamese = (gender) => {
         switch (gender) {
             case 'male': return 'Nam';
@@ -13,7 +19,6 @@ const DoctorViewModal = ({ isOpen, onClose, viewingDoctor, specialtyMap }) => {
         }
     }
 
-    // Định dạng ngày sinh (nếu có)
     const formatDOB = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
@@ -30,19 +35,17 @@ const DoctorViewModal = ({ isOpen, onClose, viewingDoctor, specialtyMap }) => {
             {viewingDoctor && (
                 <div className="space-y-4 text-gray-700">
                     
-                    {/* === Hàng 1: Thumbnail & Thông tin tài chính === */}
+                    {/* === Hàng 1: Thumbnail & Thông tin tài chính/Kinh nghiệm === */}
                     <div className="flex items-start gap-6 border-b pb-4">
                         
-                        {/* Avatar */}
                         <div className="flex-shrink-0">
                             <img
-                                src={viewingDoctor.thumbnail || 'URL_ANH_MAC_DINH'} // Cung cấp ảnh mặc định nếu không có
+                                src={viewingDoctor.thumbnail || 'https://via.placeholder.com/150'} 
                                 alt={`Ảnh ${viewingDoctor.fullName}`}
                                 className="w-24 h-24 object-cover rounded-full border-2 border-indigo-400 shadow-md"
                             />
                         </div>
 
-                        {/* Thông tin tài chính & Chuyên khoa */}
                         <div className="flex-1 space-y-2">
                             <div>
                                 <p className="text-sm font-semibold">Chuyên Khoa:</p>
@@ -50,12 +53,23 @@ const DoctorViewModal = ({ isOpen, onClose, viewingDoctor, specialtyMap }) => {
                                     {specialtyMap.get(viewingDoctor.specialty_id?._id || viewingDoctor.specialty_id) || 'N/A'}
                                 </p>
                             </div>
-                            <div>
-                                <p className="text-sm font-semibold">Phí Khám:</p>
-                                <p className="text-lg font-bold">
-                                    {viewingDoctor.consultation_fee?.toLocaleString('vi-VN') || 0} VNĐ
-                                </p>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-sm font-semibold">Phí Khám:</p>
+                                    <p className="font-bold">
+                                        {viewingDoctor.consultation_fee?.toLocaleString('vi-VN') || 0} VNĐ
+                                    </p>
+                                </div>
+                                {/* [MỚI] Hiển thị Kinh nghiệm */}
+                               <div>
+            <p className="text-sm font-semibold">Thâm Niên:</p>
+            <p className="font-bold text-gray-800">
+                {calculateExperience(viewingDoctor.career_start_year)}
+            </p>
+        </div>
                             </div>
+
                             <div>
                                 <p className="text-sm font-semibold">Trạng Thái:</p>
                                 <StatusBadge status={viewingDoctor.status} />
@@ -63,7 +77,7 @@ const DoctorViewModal = ({ isOpen, onClose, viewingDoctor, specialtyMap }) => {
                         </div>
                     </div>
 
-                    {/* === Hàng 2: Thông tin cá nhân (Giới tính, Ngày sinh, SĐT, Email) === */}
+                    {/* === Hàng 2: Thông tin cá nhân === */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-sm font-semibold">Giới Tính:</p>
@@ -97,7 +111,7 @@ const DoctorViewModal = ({ isOpen, onClose, viewingDoctor, specialtyMap }) => {
                         </p>
                     </div>
 
-                    {/* === Hàng 5: Ghi chú nội bộ (Chỉ Admin/Nội bộ thấy) === */}
+                    {/* === Hàng 5: Ghi chú nội bộ === */}
                     <div className="border-t pt-3 mt-4">
                         <p className="text-sm font-semibold text-red-700">Ghi Chú Nội Bộ (Admin Only):</p>
                         <p className="bg-yellow-50 text-sm p-3 rounded-md min-h-[50px] border border-yellow-200">

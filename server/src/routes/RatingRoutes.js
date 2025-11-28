@@ -15,6 +15,6 @@ router.post("/", verifyToken, createRating);
 router.get("/me", verifyToken, myRatings);
 
 // xem tất cả đánh giá của bác sĩ (public hoặc có token)
-router.get("/doctor/:doctorId", verifyToken, getRatingsByDoctor);
+router.get("/doctor/:doctorId", getRatingsByDoctor);
 
 export default router;

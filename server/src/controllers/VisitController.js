@@ -4,6 +4,7 @@ import Appointment from "../models/AppointmentModel.js";
 import Doctor from "../models/DoctorModel.js";
 import Timeslot from "../models/TimeslotModel.js";
 import Notification from "../models/NotificationModel.js"; // Model của bạn
+import Rating from "../models/RatingModel.js";
 import { getDoctorIdFromUser } from "../utils/getDoctorIdFromUser.js";
 
 // Helper: Tính tiền tổng
@@ -64,7 +65,7 @@ export const createVisit = async (req, res, next) => {
       notes,
       advice,
       next_visit_timeslot_id: next_visit_timeslot_id || null, 
-      next_visit_date: undefined, // Sẽ cập nhật nếu có tái khám
+      next_visit_date: undefined, 
       prescriptions,
       consultation_fee_snapshot,
       bill_items
@@ -74,7 +75,6 @@ export const createVisit = async (req, res, next) => {
 
     // 6. XỬ LÝ TÁI KHÁM (Nếu có ID Timeslot)
     if (next_visit_timeslot_id) {
-      // Validate ID hợp lệ
       if (!mongoose.Types.ObjectId.isValid(next_visit_timeslot_id)) {
          console.warn("Invalid Timeslot ID:", next_visit_timeslot_id);
       } else {
@@ -109,21 +109,7 @@ export const createVisit = async (req, res, next) => {
             // c. Cập nhật ngày vào Draft Visit
             draft.next_visit_date = targetSlot.date;
 
-            // d. TẠO THÔNG BÁO (Đã sửa khớp với NotificationModel của bạn)
-            try {
-              const dateStr = new Date(targetSlot.date).toLocaleDateString('vi-VN');
-              await Notification.create({
-                user_id: appt.patient_id, // Khớp với model: user_id
-                type: "appointment",      // Khớp enum: "appointment"
-                title: "Lịch tái khám mới",
-                body: `Bác sĩ đã hẹn lịch tái khám cho bạn vào ngày ${dateStr} lúc ${targetSlot.start}.`,
-                appointment_id: newAppt._id, // Khớp với model: appointment_id
-                channels: ["in-app"]
-              });
-            } catch (notifyError) {
-              console.error("Lỗi tạo thông báo (không ảnh hưởng quy trình chính):", notifyError);
-            }
-
+            // Lưu kết quả để dùng cho notification bên dưới
             followupResult = {
               scheduled: true,
               appointment_id: newAppt._id,
@@ -142,6 +128,51 @@ export const createVisit = async (req, res, next) => {
     appt.status = "completed";
     await appt.save();
 
+    // ============================================================
+    // 9. GỬI THÔNG BÁO (NOTIFICATION) - Đã sửa theo yêu cầu
+    // ============================================================
+    try {
+        const notificationsToSend = [];
+
+        // --- THÔNG BÁO 1: KẾT QUẢ KHÁM & TÁI KHÁM ---
+        let visitTitle = "Kết quả khám bệnh";
+        let visitBody = `Buổi khám cho bệnh lý "${diagnosis || symptoms}" đã hoàn tất.`;
+        
+        // Nếu có tái khám, thông báo gộp vào đây luôn
+        if (followupResult.scheduled) {
+             const dateStr = new Date(followupResult.date).toLocaleDateString('vi-VN');
+             visitBody += ` Bác sĩ đã lên lịch tái khám cho bạn vào ngày ${dateStr} lúc ${followupResult.start}. Vui lòng kiểm tra lịch hẹn.`;
+        } else if (prescriptions.length > 0) {
+             visitBody += " Đơn thuốc điện tử đã được cập nhật vào hồ sơ.";
+        }
+
+        notificationsToSend.push({
+            user_id: appt.patient_id,
+            type: "appointment", // Loại thông báo chung về lịch hẹn/kết quả
+            title: visitTitle,
+            body: visitBody,
+            appointment_id: appt._id,
+            channels: ["in-app"]
+        });
+
+        // --- THÔNG BÁO 2: YÊU CẦU ĐÁNH GIÁ ---
+        notificationsToSend.push({
+            user_id: appt.patient_id,
+            type: "rating_request", // Frontend check type này để hiện popup đánh giá
+            title: "Đánh giá bác sĩ",
+            body: "Bạn cảm thấy buổi khám hôm nay thế nào? Hãy dành 1 phút để đánh giá bác sĩ nhé!",
+            appointment_id: appt._id, // Gắn ID này để Frontend biết đánh giá cho appointment nào
+            channels: ["in-app"]
+        });
+
+        // Gửi tất cả thông báo cùng lúc
+        await Notification.insertMany(notificationsToSend);
+
+    } catch (notifyError) {
+        // Lỗi thông báo không được làm ảnh hưởng đến việc lưu Visit
+        console.error("Lỗi gửi thông báo:", notifyError);
+    }
+
     return res.status(201).json({
       message: "Tạo hồ sơ khám thành công.",
       visit: createdVisit,
@@ -149,7 +180,6 @@ export const createVisit = async (req, res, next) => {
     });
 
   } catch (e) {
-    // Log lỗi chi tiết ra console server để debug
     console.error("CREATE VISIT ERROR:", e);
     return res.status(500).json({ 
       error: "Lỗi Server khi tạo hồ sơ khám.", 

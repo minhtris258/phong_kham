@@ -2,7 +2,6 @@
 import React from 'react';
 import { MapPin } from 'lucide-react';
 
-// Thêm prop 'avatar' vào danh sách nhận
 export default function ProfileHeaderCard({ doctor, specialtyName, onEditClick, avatar }) {
     return (
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -11,15 +10,13 @@ export default function ProfileHeaderCard({ doctor, specialtyName, onEditClick, 
                 {/* Avatar Section */}
                 <div className="absolute -bottom-16 left-8">
                     {avatar ? (
-                        // TRƯỜNG HỢP 1: CÓ ẢNH (URL hoặc Base64) -> Hiển thị ảnh
                         <img 
                             src={avatar} 
                             alt={doctor.fullName} 
                             className="w-32 h-32 rounded-full border-4 border-white shadow-xl object-cover bg-white"
                         />
                     ) : (
-                        // TRƯỜNG HỢP 2: KHÔNG CÓ ẢNH -> Hiển thị chữ cái đầu
-                        <div className="w-32 h-32 bg-white rounded-full border-4 border-white shadow-xl flex items-center justify-center text-5xl font-bold text-blue-600">
+                        <div className="w-32 h-32 bg-white rounded-full border-4 border-white shadow-xl flex items-center justify-center text-4xl font-bold text-blue-600 select-none">
                             {doctor.fullName?.charAt(0).toUpperCase()}
                         </div>
                     )}
@@ -37,7 +34,6 @@ export default function ProfileHeaderCard({ doctor, specialtyName, onEditClick, 
                         </p>
                     </div>
                     
-                    {/* Nút Chỉnh sửa */}
                     <button 
                         onClick={onEditClick} 
                         className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium shadow-md transition whitespace-nowrap"
@@ -45,6 +41,13 @@ export default function ProfileHeaderCard({ doctor, specialtyName, onEditClick, 
                         Chỉnh sửa hồ sơ
                     </button>
                 </div>
+                
+                {/* Giới thiệu ngắn */}
+                {doctor.introduction && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-gray-600 italic">"{doctor.introduction}"</p>
+                    </div>
+                )}
             </div>
         </div>
     );

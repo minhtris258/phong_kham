@@ -1,12 +1,13 @@
 // src/components/doctor/EditDoctorProfileModal.jsx
 import React, { useState } from 'react';
-import { Save, Camera, Loader2, User, Phone, Mail, MapPin, DollarSign, FileText, Calendar } from 'lucide-react';
+import { Save, Camera, Loader2, User, Phone, Mail, MapPin, DollarSign, FileText, Calendar, Briefcase } from 'lucide-react';
 import { toast } from 'react-toastify';
 import doctorService from '../../services/DoctorService';
 import Modal from '../Modal';
 
 export default function EditDoctorProfileModal({ doctor, onClose, onSuccess }) {
     const [loading, setLoading] = useState(false);
+    const currentYear = new Date().getFullYear();
     
     const [formData, setFormData] = useState({
         fullName: doctor.name || doctor.fullName || '',
@@ -18,6 +19,7 @@ export default function EditDoctorProfileModal({ doctor, onClose, onSuccess }) {
         dob: doctor.dob ? new Date(doctor.dob).toISOString().split('T')[0] : '',
         gender: doctor.gender || 'male',
         thumbnail: doctor.thumbnail || doctor.image || '',
+        career_start_year: doctor.career_start_year || '', // [NEW] Initialize career start year
     });
 
     const [previewImage, setPreviewImage] = useState(doctor.thumbnail || doctor.image);
@@ -49,13 +51,25 @@ export default function EditDoctorProfileModal({ doctor, onClose, onSuccess }) {
                 toast.warning("Họ tên và Số điện thoại là bắt buộc");
                 return;
             }
-            await doctorService.updateDoctor(doctor._id, formData);
+
+            // [NEW] Validate career_start_year
+            if (formData.career_start_year) {
+                const year = parseInt(formData.career_start_year);
+                if (year < 1950 || year > currentYear) {
+                    toast.warning(`Năm bắt đầu phải từ 1950 đến ${currentYear}`);
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            await doctorService.updateMyDoctorProfile(formData); // Use the correct service method for self-update
             toast.success("Cập nhật hồ sơ thành công!");
             if (onSuccess) onSuccess(formData);
             onClose();
         } catch (error) {
             console.error("Lỗi cập nhật:", error);
-            toast.error("Cập nhật thất bại. Vui lòng thử lại.");
+            const errorMsg = error.response?.data?.error || "Cập nhật thất bại. Vui lòng thử lại.";
+            toast.error(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -68,9 +82,7 @@ export default function EditDoctorProfileModal({ doctor, onClose, onSuccess }) {
             isOpen={true} 
             maxWidth="3xl"
         >
-            <div className="space-y-8 relative"> {/* Thêm relative */}
-                
-                {/* --- PHẦN NỘI DUNG CUỘN --- */}
+            <div className="space-y-8 relative"> 
                 
                 {/* 1. Avatar Upload */}
                 <div className="flex flex-col items-center pt-2">
@@ -149,25 +161,50 @@ export default function EditDoctorProfileModal({ doctor, onClose, onSuccess }) {
                                 <input type="number" value={formData.consultation_fee} onChange={e => handleChange('consultation_fee', e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all bg-gray-50 focus:bg-white" placeholder="200000" />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-green-600" /> Địa chỉ / Nơi công tác
-                            </label>
-                            <input type="text" value={formData.address} onChange={e => handleChange('address', e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all bg-gray-50 focus:bg-white" placeholder="Nhập địa chỉ chi tiết" />
+
+                        {/* [NEW] Row for Address & Career Start Year */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                    <MapPin className="w-4 h-4 text-green-600" /> Địa chỉ / Nơi công tác
+                                </label>
+                                <input type="text" value={formData.address} onChange={e => handleChange('address', e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all bg-gray-50 focus:bg-white" placeholder="Nhập địa chỉ chi tiết" />
+                            </div>
+
+                            {/* [NEW] Career Start Year Input */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                    <Briefcase className="w-4 h-4 text-green-600" /> Năm bắt đầu hành nghề
+                                </label>
+                                <div className="relative">
+                                    <input 
+                                        type="number" 
+                                        value={formData.career_start_year} 
+                                        onChange={e => handleChange('career_start_year', e.target.value)}
+                                        min="1950"
+                                        max={currentYear}
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all bg-gray-50 focus:bg-white pr-24" // Added padding-right
+                                        placeholder={`VD: ${currentYear - 5}`}
+                                    />
+                                    {formData.career_start_year && (
+                                        <span className="absolute right-3 top-3 text-sm font-semibold text-green-600 bg-green-50 px-2 rounded">
+                                            {Math.max(0, currentYear - formData.career_start_year)} năm KN
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
                         </div>
+
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-green-600" /> Giới thiệu / Kinh nghiệm
+                                <FileText className="w-4 h-4 text-green-600" /> Giới thiệu kinh nghiệm
                             </label>
-                            <textarea value={formData.introduction} onChange={e => handleChange('introduction', e.target.value)} rows={4} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all bg-gray-50 focus:bg-white resize-none" placeholder="Mô tả kinh nghiệm..." />
+                            <textarea value={formData.introduction} onChange={e => handleChange('introduction', e.target.value)} rows={4} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all bg-gray-50 focus:bg-white resize-none" placeholder="Mô tả chuyên sâu về kinh nghiệm, các chứng chỉ..." />
                         </div>
                     </div>
                 </div>
 
-                {/* --- FOOTER (ĐƯỢC GIM CỐ ĐỊNH XUỐNG ĐÁY) --- */}
-                {/* sticky bottom-0: Luôn dính ở đáy khung nhìn */}
-                {/* bg-white: Che nội dung khi lướt qua */}
-                {/* z-10: Nổi lên trên */}
+                {/* Footer */}
                 <div className="sticky bottom-0 bg-white z-10 flex justify-end gap-4 pt-4 pb-2 border-t border-gray-100">
                     <button 
                         onClick={onClose} 

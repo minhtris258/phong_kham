@@ -66,7 +66,7 @@ const NotificationPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 mt-15">
-      <div className="max-w-lvw mx-auto"> {/* Thu hẹp chiều rộng lại cho giống list mobile */}
+      <div className="max-w-lvh mx-auto"> {/* Thu hẹp chiều rộng lại cho giống list mobile */}
         
         {/* Header & Tabs (Giữ nguyên như cũ) */}
         <div className="flex items-center justify-between mb-6">

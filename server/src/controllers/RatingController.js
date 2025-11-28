@@ -1,5 +1,6 @@
 import Rating from "../models/RatingModel.js";
 import Appointment from "../models/AppointmentModel.js";
+import Doctor from "../models/DoctorModel.js";
 
 /** POST /api/ratings
  *  - bệnh nhân đánh giá sau khi hoàn tất khám
@@ -37,6 +38,30 @@ export const createRating = async (req, res, next) => {
       star,
       comment,
     });
+
+    try {
+      const stats = await Rating.aggregate([
+        { $match: { doctor_id: appt.doctor_id } },
+        { 
+          $group: { 
+            _id: null, 
+            avg: { $avg: "$star" } // Chỉ cần tính trung bình
+          } 
+        }
+      ]);
+
+      if (stats.length > 0) {
+        // Làm tròn 1 chữ số thập phân (ví dụ: 4.6666 -> 4.7)
+        const avgRating = Math.round(stats[0].avg * 10) / 10;
+        
+        await Doctor.findByIdAndUpdate(appt.doctor_id, {
+          averageRating: avgRating
+        });
+      }
+    } catch (err) {
+      console.error("Lỗi cập nhật averageRating:", err);
+    }
+    // ============================================
 
     return res.status(201).json({ message: "Đánh giá thành công.", rating });
   } catch (e) {
