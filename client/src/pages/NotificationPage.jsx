@@ -66,22 +66,22 @@ const NotificationPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 mt-15">
-      <div className="max-w-2xl mx-auto"> {/* Thu hẹp chiều rộng lại cho giống list mobile */}
+      <div className="max-w-lvw mx-auto"> {/* Thu hẹp chiều rộng lại cho giống list mobile */}
         
         {/* Header & Tabs (Giữ nguyên như cũ) */}
         <div className="flex items-center justify-between mb-6">
             <div>
                 <h1 className="text-2xl font-bold text-gray-800">Thông báo ({unreadCount})</h1>
             </div>
-            <button onClick={handleReadAll} disabled={unreadCount === 0} className="text-sm text-indigo-600 font-medium hover:underline disabled:text-gray-400 disabled:no-underline">
+            <button onClick={handleReadAll} disabled={unreadCount === 0} className="text-sm text-[#00B5F1] font-medium hover:underline disabled:text-gray-400 disabled:no-underline">
                 Đọc tất cả
             </button>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-4 border-b">
-            <button onClick={() => setFilter("all")} className={`pb-2 px-4 text-sm font-medium ${filter === "all" ? "border-b-2 border-indigo-600 text-indigo-600" : "text-gray-500"}`}>Tất cả</button>
-            <button onClick={() => setFilter("unread")} className={`pb-2 px-4 text-sm font-medium ${filter === "unread" ? "border-b-2 border-indigo-600 text-indigo-600" : "text-gray-500"}`}>Chưa đọc</button>
+            <button onClick={() => setFilter("all")} className={`pb-2 px-4 text-sm font-medium ${filter === "all" ? "border-b-2 border-[#00B5F1] text-[#00B5F1]" : "text-gray-500"}`}>Tất cả</button>
+            <button onClick={() => setFilter("unread")} className={`pb-2 px-4 text-sm font-medium ${filter === "unread" ? "border-b-2 border-[#00B5F1] text-[#00B5F1]" : "text-gray-500"}`}>Chưa đọc</button>
         </div>
 
         {/* List Items */}

@@ -11,6 +11,7 @@ import DoctorLayout from "./layouts/DoctorLayout";
 import Chatbox from "./components/Chatbox";
 
 // Admin Pages
+import AdminRoute from "./components/AdminRoute.jsx";
 import DashboardContent from "./pages/admin/Dashboard";
 import AppointmentManagement from "./pages/admin/AppointmentManagement";
 import PatientManagement from "./pages/admin/PatientManagement";
@@ -23,7 +24,11 @@ import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorSchedule from "./pages/doctor/DoctorSchedule";
 import DoctorSettings from "./pages/doctor/DoctorSettings";
 import DoctorAppointment from "./pages/doctor/DoctorAppointment";
+
 import DoctorList from "./pages/doctor/DoctorList";
+
+import DoctorRoute from "./components/DoctorRoute.jsx";
+
 
 // User Pages
 import HomePage from "./pages/Home";
@@ -41,6 +46,12 @@ import PartnersManagement from "./pages/admin/PartnersManagement";
 import PostManagement from "./pages/admin/PostManagement";
 import PostEditor from "./pages/admin/PostEditor";
 import ProfileCompletion from "./pages/patient/ProfileCompletion.jsx";
+import NotFound from "./pages/404.jsx";
+import DoctorVisit from "./pages/doctor/DoctorVisit.jsx";
+
+// src/App.jsx
+
+import PostDetail from "./pages/PostDetail";
 
 export default function App() {
   return (
@@ -50,13 +61,14 @@ export default function App() {
         <Route path="/" element={<UserLayout />}>
           <Route index element={<HomePage />} />
           <Route path="Login" element={<LoginPage />} />
+          <Route path="/bai-viet/:slug" element={<PostDetail />} />
           <Route path="Register" element={<RegisterPage />} />
-          <Route path="Notification" element={<NotificationPage />} />
+          <Route path="notifications" element={<NotificationPage />} />
           <Route path="doctors/:id" element={<DoctorDetailPage />} />
           <Route path="doctorList" element={<DoctorList />} />
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
-            
+
             <Route path="lich-kham" element={<AppointmentListContent />} />
             <Route
               path="lich-su-thanh-toan"
@@ -68,10 +80,18 @@ export default function App() {
           {/* Có thể thêm các trang public khác ở đây */}
           {/* <Route path="tim-kiem" element={<SearchPage />} /> */}
           {/* <Route path="chuyen-khoa/:slug" element={<SpecialtyPage />} /> */}
+          <Route path="*" element={<NotFound />} />
         </Route>
 
         {/* ==================== ADMIN LAYOUT ==================== */}
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }
+        >
           <Route index element={<DashboardContent />} />
           <Route path="posts" element={<PostManagement />} />
           <Route path="posts/new" element={<PostEditor />} />
@@ -83,31 +103,27 @@ export default function App() {
           <Route path="holidays" element={<HolidayManagement />} />
           <Route path="partners" element={<PartnersManagement />} />
           <Route path="profile" element={<ProfileSettings />} />
-          
+          <Route path="*" element={<NotFound />} />
         </Route>
 
         {/* ... các routes khác */}
 
         {/* ==================== DOCTOR LAYOUT ==================== */}
-        <Route path="/doctor" element={<DoctorLayout />}>
+        <Route
+          path="/doctor"
+          element={
+            <DoctorRoute>
+              <DoctorLayout />
+            </DoctorRoute>
+          }
+        >
           <Route index element={<DoctorProfile />} />
           <Route path="appointments" element={<DoctorAppointment />} />
           <Route path="schedule" element={<DoctorSchedule />} />
+          <Route path="visits" element={<DoctorVisit />} />
           <Route path="settings" element={<DoctorSettings />} />
-          
+          <Route path="*" element={<NotFound />} />
         </Route>
-
-        {/* ==================== 404 ==================== */}
-        <Route
-          path="*"
-          element={
-            <UserLayout>
-              <div className="flex items-center justify-center min-h-screen text-3xl font-bold text-gray-500 bg-gray-50">
-                404 - Không tìm thấy trang
-              </div>
-            </UserLayout>
-          }
-        />
       </Routes>
       <ToastContainer />
       <Chatbox />

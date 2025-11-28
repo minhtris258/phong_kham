@@ -35,7 +35,8 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
   const navItems = [
     { name: "Hồ sơ cá nhân", icon: User, path: "/doctor" },
     { name: "Cuộc hẹn", icon: Calendar, path: "/doctor/appointments" },
-    { name: "Lịch khám", icon: Calendar, path: "/doctor/schedule" },
+    { name: "Lịch làm", icon: Calendar, path: "/doctor/schedule" },
+    { name: "Hồ sơ khám", icon: Stethoscope, path: "/doctor/visits" },
     { name: "Cài đặt", icon: Settings, path: "/doctor/settings" },
   ];
 

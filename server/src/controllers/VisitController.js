@@ -225,3 +225,206 @@ export const updateVisit = async (req, res, next) => {
     res.json({ message: "Cập nhật hồ sơ khám thành công.", visit: v });
   } catch (e) { next(e); }
 };
+export const getVisitByPatient  = async (req, res, next) => {
+  try {
+    const { patientId } = req.params;
+    const list = await Visit.find({ patient_id: patientId }).lean();
+    res.json({ data: list });
+  } catch (e) { next(e); }
+};
+// ==========================================
+// PHẦN CHỨC NĂNG DÀNH CHO ADMIN
+// ==========================================
+
+/**
+ * [ADMIN] Lấy danh sách tất cả Visit (có phân trang & lọc)
+ * Mục đích: Quản lý tổng quan, kiểm tra lịch sử khám toàn hệ thống.
+ */
+export const getAllVisitsAdmin = async (req, res, next) => {
+  try {
+    // Chỉ Admin mới được dùng
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Quyền truy cập bị từ chối." });
+    }
+
+    const { page = 1, limit = 10, search = "" } = req.query;
+    
+    // Tạo bộ lọc tìm kiếm (nếu có chuỗi search)
+    const query = search 
+      ? { 
+          $or: [
+            { diagnosis: { $regex: search, $options: "i" } }, // Tìm theo chẩn đoán
+            { notes: { $regex: search, $options: "i" } }      // Tìm theo ghi chú
+          ] 
+        } 
+      : {};
+
+    const visits = await Visit.find(query)
+      .populate("patient_id", "fullName email phone") // Lấy thông tin bệnh nhân
+      .populate({
+         path: "doctor_id",
+         populate: { path: "user_id", select: "name" } // Lấy tên bác sĩ từ bảng User liên kết
+      })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+    const total = await Visit.countDocuments(query);
+
+    res.json({
+      data: visits,
+      meta: {
+        total,
+        page: Number(page),
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (e) { next(e); }
+};
+
+/**
+ * [ADMIN] Xóa hồ sơ khám bệnh
+ * Mục đích: Xử lý các hồ sơ rác hoặc bị tạo sai lệch nghiêm trọng.
+ */
+export const deleteVisitAdmin = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Chỉ Admin mới có quyền xóa hồ sơ khám." });
+    }
+
+    const { id } = req.params;
+    const deletedVisit = await Visit.findByIdAndDelete(id);
+
+    if (!deletedVisit) {
+      return res.status(404).json({ error: "Không tìm thấy hồ sơ để xóa." });
+    }
+
+    // Tùy chọn: Có thể cần cập nhật lại status của Appointment gốc thành 'confirmed' 
+    // nếu muốn cho phép bác sĩ khám lại, nhưng ở đây ta chỉ xóa Visit.
+    
+    res.json({ message: "Đã xóa hồ sơ khám bệnh thành công.", id });
+  } catch (e) { next(e); }
+};
+
+/**
+ * [ADMIN] Báo cáo doanh thu tổng hợp (Theo khoảng thời gian)
+ */
+export const getRevenueReportAdmin = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "Forbidden" });
+
+    const { fromDate, toDate } = req.query;
+    const start = fromDate ? new Date(fromDate) : new Date(0); // Mặc định từ đầu
+    const end = toDate ? new Date(toDate) : new Date();       // Mặc định đến hiện tại
+
+    const stats = await Visit.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: start, $lte: end }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalVisits: { $sum: 1 },
+          totalRevenue: { $sum: "$total_amount" },
+          avgRevenuePerVisit: { $avg: "$total_amount" }
+        }
+      }
+    ]);
+
+    res.json({ 
+      period: { start, end },
+      report: stats[0] || { totalVisits: 0, totalRevenue: 0, avgRevenuePerVisit: 0 } 
+    });
+  } catch (e) { next(e); }
+};
+
+// ==========================================
+// PHẦN CHỨC NĂNG DÀNH CHO DOCTOR (BÁC SĨ)
+// ==========================================
+
+/**
+ * [DOCTOR] Thống kê Dashboard cá nhân
+ * Mục đích: Bác sĩ xem nhanh số lượng bệnh nhân hôm nay và doanh thu tháng.
+ */
+export const getDoctorDashboardStats = async (req, res, next) => {
+  try {
+    const doctorId = await getDoctorIdFromUser(req.user._id);
+    if (!doctorId) return res.status(403).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // 1. Đếm số ca khám hôm nay
+    const visitsToday = await Visit.countDocuments({
+      doctor_id: doctorId,
+      createdAt: { $gte: today }
+    });
+
+    // 2. Tổng doanh thu trong tháng này
+    const revenueStats = await Visit.aggregate([
+      {
+        $match: {
+          doctor_id: new mongoose.Types.ObjectId(doctorId),
+          createdAt: { $gte: firstDayOfMonth }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalMonthRevenue: { $sum: "$total_amount" },
+          countMonth: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const statData = revenueStats[0] || { totalMonthRevenue: 0, countMonth: 0 };
+
+    res.json({
+      stats: {
+        visits_today: visitsToday,
+        visits_this_month: statData.countMonth,
+        revenue_this_month: statData.totalMonthRevenue
+      }
+    });
+  } catch (e) { next(e); }
+};
+
+/**
+ * [DOCTOR] Tìm kiếm hồ sơ bệnh án nâng cao
+ * Mục đích: Tìm lại hồ sơ cũ dựa trên Chẩn đoán (Diagnosis) hoặc Khoảng thời gian.
+ */
+export const searchDoctorVisits = async (req, res, next) => {
+  try {
+    const doctorId = await getDoctorIdFromUser(req.user._id);
+    if (!doctorId) return res.status(403).json({ error: "Access denied." });
+
+    const { diagnosis, fromDate, toDate } = req.query;
+
+    let filter = { doctor_id: doctorId };
+
+    // Tìm theo tên bệnh (diagnosis) - không phân biệt hoa thường
+    if (diagnosis) {
+      filter.diagnosis = { $regex: diagnosis, $options: "i" };
+    }
+
+    // Tìm theo khoảng ngày
+    if (fromDate || toDate) {
+      filter.createdAt = {};
+      if (fromDate) filter.createdAt.$gte = new Date(fromDate);
+      if (toDate) filter.createdAt.$lte = new Date(toDate);
+    }
+
+    const results = await Visit.find(filter)
+      .populate("patient_id", "fullName email") // Hiển thị tên bệnh nhân
+      .sort({ createdAt: -1 })
+      .limit(50) // Giới hạn kết quả để tránh quá tải
+      .lean();
+
+    res.json({ count: results.length, data: results });
+  } catch (e) { next(e); }
+};

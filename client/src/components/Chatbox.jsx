@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 // 👇 IMPORT HOOK TỪ FILE CONTEXT CỦA BẠN
 import { useSocket } from '../context/SocketContext'; // Sửa đường dẫn này nếu cần
-import { MessageCircle, X, Send, Bot, User, AlertCircle } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, AlertCircle, UserRound } from 'lucide-react';
 
 const Chatbox = () => {
   // 1. Lấy socket từ Context thay vì tự tạo mới
@@ -91,7 +91,7 @@ const Chatbox = () => {
         <div className="w-[360px] h-[520px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden mb-4 animate-in slide-in-from-bottom-5 fade-in duration-300">
           
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-4 flex justify-between items-center text-white shadow-md">
+          <div className="bg-gradient-to-r from-[#00B5F1] to-[#0095D5] p-4 flex justify-between items-center text-white shadow-md">
             <div className="flex items-center gap-2">
               <div className="bg-white/20 p-1.5 rounded-full">
                 <Bot size={20} />
@@ -123,13 +123,13 @@ const Chatbox = () => {
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`flex max-w-[85%] items-end gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${msg.sender === 'user' ? 'bg-indigo-100 text-indigo-600' : 'bg-blue-100 text-blue-600'}`}>
-                    {msg.sender === 'user' ? <User size={14} /> : <Bot size={14} />}
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${msg.sender === 'user' ? 'bg-[#00B5F1] text-white' : 'bg-[#00B5F1] text-white'}`}>
+                    {msg.sender === 'user' ? <UserRound size={14} /> : <Bot size={14} />}
                   </div>
 
                   <div className={`p-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
                     msg.sender === 'user' 
-                      ? 'bg-blue-600 text-white rounded-br-none' 
+                      ? 'bg-[#00B5F1] text-white rounded-br-none' 
                       : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
                   }`}>
                     {renderMessageText(msg.text)}
@@ -141,7 +141,7 @@ const Chatbox = () => {
             {isTyping && (
               <div className="flex justify-start w-full">
                  <div className="flex items-end gap-2">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0"><Bot size={14} /></div>
+                    <div className="w-6 h-6 rounded-full bg-[#00B5F1] text-white flex items-center justify-center shrink-0"><Bot size={14} /></div>
                     <div className="bg-white border border-gray-200 p-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-1">
                       <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
                       <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
@@ -157,7 +157,7 @@ const Chatbox = () => {
           <div className="p-3 bg-white border-t border-gray-100 flex gap-2 items-center">
             <input
               type="text"
-              className="flex-1 bg-gray-100 text-gray-800 text-sm rounded-full px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all border border-transparent focus:bg-white disabled:opacity-50"
+              className="flex-1 bg-gray-100 text-gray-800 text-sm rounded-full px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00B5F1]/50 transition-all border border-transparent focus:bg-white disabled:opacity-50"
               placeholder={isConnected ? "Nhập câu hỏi..." : "Vui lòng đăng nhập..."}
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -167,7 +167,7 @@ const Chatbox = () => {
             <button 
               onClick={handleSendMessage}
               disabled={!input.trim() || !isConnected}
-              className="bg-blue-600 text-white p-2.5 rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-transform active:scale-95 shadow-md"
+              className="bg-[#00B5F1] text-white p-2.5 rounded-full hover:bg-[#0095D5] disabled:opacity-50 disabled:cursor-not-allowed transition-transform active:scale-95 shadow-md"
             >
               <Send size={18} />
             </button>
@@ -178,7 +178,7 @@ const Chatbox = () => {
       {/* Toggle Button */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'} transition-all duration-300 absolute bottom-0 right-0 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-blue-500/30 flex items-center justify-center group z-50`}
+        className={`${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'} transition-all duration-300 absolute bottom-0 right-0 w-14 h-14 bg-[#00B5F1] hover:bg-[#0095D5] text-white rounded-full shadow-lg hover:shadow-[#00B5F1]/30 flex items-center justify-center group z-50`}
       >
         <MessageCircle size={28} className="group-hover:scale-110 transition-transform" />
         {/* Chỉ hiện chấm đỏ khi đã kết nối */}

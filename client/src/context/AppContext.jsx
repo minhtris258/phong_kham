@@ -7,7 +7,6 @@ import React, {
   useCallback,
 } from "react";
 import axios from "axios";
-// Import custom hook Socket (giả định bạn đã tạo file này)
 import { useSocket } from "./SocketContext";
 
 // ----------------------------------------------------
@@ -45,7 +44,6 @@ export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token") || null);
 
-  // Lấy socket instance từ SocketContext
   const { socket } = useSocket();
 
   // --- Thiết lập/Xóa Token cho Axios ---
@@ -56,7 +54,9 @@ export const AppProvider = ({ children }) => {
       setToken(t);
       setIsAuthenticated(true);
     } else {
+      // LOGIC ĐĂNG XUẤT / XÓA TOKEN
       localStorage.removeItem("token");
+      localStorage.removeItem("user"); // <--- THÊM: Xóa user khỏi storage khi logout
       delete apiClient.defaults.headers.common["Authorization"];
       setToken(null);
       setIsAuthenticated(false);
@@ -71,12 +71,11 @@ export const AppProvider = ({ children }) => {
       const currentToken = initialToken || localStorage.getItem("token");
 
       if (!currentToken) {
-        // setAuthToken(null); // Đảm bảo token bị xóa nếu không hợp lệ
         setIsLoading(false);
         return;
       }
 
-      setAuthToken(currentToken); // Cài đặt token vào header
+      setAuthToken(currentToken);
 
       try {
         // 1. Lấy thông tin cơ bản từ JWT (/api/auth/me)
@@ -88,9 +87,9 @@ export const AppProvider = ({ children }) => {
 
         // 2. Định tuyến để lấy hồ sơ chi tiết dựa trên vai trò
         if (basicUser.role === "patient") {
-          profileEndpoint = "/patients/me"; // GET /api/patients/me
+          profileEndpoint = "/patients/me";
         } else if (basicUser.role === "doctor") {
-          profileEndpoint = "/doctors/me"; // GET /api/doctors/me
+          profileEndpoint = "/doctors/me";
         }
 
         if (profileEndpoint) {
@@ -99,11 +98,19 @@ export const AppProvider = ({ children }) => {
         }
 
         // Kết hợp dữ liệu
-        setUser({ ...basicUser, ...fullProfile });
+        const finalUserData = { ...basicUser, ...fullProfile };
+        
+        // Cập nhật State
+        setUser(finalUserData);
         setIsAuthenticated(true);
+
+        // <--- QUAN TRỌNG: Lưu User vào LocalStorage để Header đọc được ngay ---
+        localStorage.setItem("user", JSON.stringify(finalUserData)); 
+
       } catch (error) {
         console.error("Lỗi tải thông tin người dùng:", error);
-        // setAuthToken(null);
+        // Nếu token hết hạn hoặc lỗi, có thể cân nhắc logout tại đây
+        // setAuthToken(null); 
       } finally {
         setIsLoading(false);
       }
@@ -112,36 +119,32 @@ export const AppProvider = ({ children }) => {
   );
 
   // --- Đăng nhập ---
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // State này có vẻ dư thừa vì đã có isAuthenticated, nhưng giữ lại nếu bạn dùng logic riêng
+  
   const login = async (email, password) => {
     try {
-      // POST /api/users/auth/login
       const response = await apiClient.post("/auth/login", { email, password });
-
       const { token } = response.data;
 
       if (token) {
         setAuthToken(token);
-        await loadCurrentUser(token);
+        // Gọi hàm này sẽ tự động lưu user vào localStorage khi xong
+        await loadCurrentUser(token); 
         return response.data;
       }
     } catch (error) {
-      // Xóa token nếu đăng nhập thất bại
-      // setAuthToken(null);
       throw error;
     }
   };
 
   const handleLogout = () => {
-    setAuthToken(null);
+    setAuthToken(null); // Hàm này đã bao gồm xóa token và user trong localStorage
     setIsLoggedIn(false);
-    setUser(null);
     window.location.href = "/";
   };
 
   // --- Khởi tạo (Chạy một lần khi app load) ---
   useEffect(() => {
-    // Chỉ tải dữ liệu nếu có token trong localStorage
     if (token) {
       loadCurrentUser();
     } else {
@@ -149,7 +152,6 @@ export const AppProvider = ({ children }) => {
     }
   }, [token, loadCurrentUser]);
 
-  // Giá trị Context được chia sẻ
   const contextValue = {
     isAuthenticated,
     isLoading,
@@ -158,7 +160,7 @@ export const AppProvider = ({ children }) => {
     login,
     handleLogout,
     loadCurrentUser,
-    apiClient, // Để gọi các API không liên quan đến Auth
+    apiClient,
   };
 
   return (
@@ -166,11 +168,9 @@ export const AppProvider = ({ children }) => {
   );
 };
 
-// 3. Custom Hook (để sử dụng Context dễ dàng)
 export const useAppContext = () => {
   const context = useContext(AppContext);
   if (!context) {
-    // Bắt lỗi nếu context chưa được bọc
     throw new Error("useAppContext must be used within an AppProvider");
   }
   return context;
