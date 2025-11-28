@@ -149,9 +149,9 @@ export default function Header() {
             <nav className="col-span-6 md:col-span-6 hidden md:flex items-center justify-center">
               <ul className="flex gap-6 text-white font-raleway font-semibold">
                 <li><a className="hover:text-cyan-300" href="/">Trang Chủ</a></li>
-                <li><a className="hover:text-cyan-300" href="#">Giới Thiệu</a></li>
+                <li><a className="hover:text-cyan-300" href="/postList">Bài Viết</a></li>
                 <li><a className="hover:text-cyan-300" href="#">Dịch Vụ</a></li>
-                <li><a className="hover:text-cyan-300" href="#">Bác Sĩ</a></li>
+                <li><a className="hover:text-cyan-300" href="/DoctorList">Bác Sĩ</a></li>
                 <li><a className="hover:text-cyan-300" href="#">Liên Hệ</a></li>
 
               </ul>
@@ -287,7 +287,7 @@ export default function Header() {
 
         <nav className="space-y-6 font-raleway text-lg border-b border-white/10 pb-6 mb-6">
           <a href="/" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Trang Chủ</a>
-          <a href="#" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Giới Thiệu</a>
+          <a href="/postList" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Bài Viết</a>
           <a href="#" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Dịch Vụ</a>
           <a href="#" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Bác Sĩ</a>
           <a href="#" className="block hover:text-cyan-300 transition" onClick={() => setOpen(false)}>Liên Hệ</a>
