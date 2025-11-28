@@ -48,6 +48,7 @@ import PostEditor from "./pages/admin/PostEditor";
 import ProfileCompletion from "./pages/patient/ProfileCompletion.jsx";
 import NotFound from "./pages/404.jsx";
 import DoctorVisit from "./pages/doctor/DoctorVisit.jsx";
+import PostList from "./pages/PostList.jsx";
 
 // src/App.jsx
 
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="notifications" element={<NotificationPage />} />
           <Route path="doctors/:id" element={<DoctorDetailPage />} />
           <Route path="doctorList" element={<DoctorList />} />
+          <Route path="postList" element={<PostList />} />
           <Route path="/" element={<PatientDashboard />}>
             <Route path="ho-so" element={<PatientProfileContent />} />
 
