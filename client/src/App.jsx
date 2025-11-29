@@ -30,6 +30,7 @@ import DoctorSettings from "./pages/doctor/DoctorSettings";
 import DoctorAppointment from "./pages/doctor/DoctorAppointment";
 import DoctorVisit from "./pages/doctor/DoctorVisit.jsx";
 import DoctorRoute from "./components/DoctorRoute.jsx";
+import CompletedProfileDoctor from "./pages/doctor/CompletedProfileDoctor.jsx";
 
 // User Pages
 import HomePage from "./pages/Home";
@@ -52,14 +53,29 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        
         {/* ==================== USER LAYOUT ==================== */}
         <Route path="/" element={<UserLayout />}>
           
-          {/* 1. CÁC TRANG PUBLIC (KHÔNG CẦN CHECK HỒ SƠ) */}
+          {/* --- PUBLIC ROUTES --- */}
           <Route path="Login" element={<LoginPage />} />
           <Route path="Register" element={<RegisterPage />} />
-          <Route path="/onboarding/profile-patient" element={<ProfileCompletion />} />
+          
+          {/* --- ONBOARDING ROUTES (Bọc RequireProfile để xử lý logic chặn/đẩy) --- */}
+          <Route element={<RequireProfile />}>
+             {/* Trang hoàn thiện của Bệnh nhân */}
+             <Route path="/onboarding/profile-patient" element={<ProfileCompletion />} />
 
+             {/* Trang hoàn thiện của Bác sĩ (Dùng UserLayout nhưng logic riêng) */}
+             <Route 
+                path="/onboarding/profile-doctor" 
+                element={
+                  <DoctorRoute>
+                     <CompletedProfileDoctor />
+                  </DoctorRoute>
+                } 
+             />
+          </Route>
           {/* 2. CÁC TRANG CẦN BẢO VỆ (PHẢI CÓ HỒ SƠ MỚI VÀO ĐƯỢC) */}
           <Route element={<RequireProfile />}>
             <Route index element={<HomePage />} />
@@ -113,12 +129,15 @@ export default function App() {
             </DoctorRoute>
           }
         >
+          <Route element={<RequireProfile />}>
           <Route index element={<DoctorProfile />} />
           <Route path="appointments" element={<DoctorAppointment />} />
           <Route path="schedule" element={<DoctorSchedule />} />
           <Route path="visits" element={<DoctorVisit />} />
           <Route path="settings" element={<DoctorSettings />} />
+          
           <Route path="*" element={<NotFound />} />
+          </Route>
         </Route>
       </Routes>
       <ToastContainer />

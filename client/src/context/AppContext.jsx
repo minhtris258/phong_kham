@@ -61,6 +61,7 @@ export const AppProvider = ({ children }) => {
       localStorage.removeItem("user"); 
       // === QUAN TRỌNG: Xóa luôn trạng thái profileCompleted để Guard chặn lại ===
       localStorage.removeItem("profileCompleted"); 
+      localStorage.removeItem("role");
       
       delete apiClient.defaults.headers.common["Authorization"];
       setToken(null);
@@ -111,7 +112,9 @@ export const AppProvider = ({ children }) => {
 
         // <--- QUAN TRỌNG: Lưu User vào LocalStorage ---
         localStorage.setItem("user", JSON.stringify(finalUserData)); 
-
+if (finalUserData.role) {
+            localStorage.setItem("role", finalUserData.role); 
+        }
         // <--- ĐỒNG BỘ PROFILE COMPLETED ---
         const isCompleted = finalUserData.profile_completed ? "true" : "false";
         localStorage.setItem("profileCompleted", isCompleted);

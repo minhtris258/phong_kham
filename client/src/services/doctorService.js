@@ -46,17 +46,13 @@ const doctorService = {
 
     // LẤY DANH SÁCH CHUYÊN KHOA (nếu có API)
     getSpecialties: async () => {
-        try {
             const response = await api.get('/specialties');
-            return response.data;
-        } catch (err) {
-            console.warn("Không có API specialties → dùng mock");
-            return [
-                { _id: 1, name: "Nha khoa" },
-                { _id: 2, name: "Tim mạch" },
-                { _id: 3, name: "Nội tổng quát" },
-            ];
-        }
+            return response.data || response;
+    },
+    completeProfile: async (profileData) => {
+        // Endpoint khớp với Controller: POST /onboarding/doctor-profile
+        const response = await api.post('/onboarding/doctor-profile', profileData);
+        return response;
     },
 };
 

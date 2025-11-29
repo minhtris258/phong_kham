@@ -10,12 +10,12 @@ import DoctorSchedule from "../models/DoctorScheduleModel.js";
 
 // Helper validate năm
 const validateCareerYear = (year) => {
-    if (!year) return true; // Cho phép null
-    const currentYear = new Date().getFullYear();
-    if (isNaN(year) || year < 1950 || year > currentYear) {
-        return false;
-    }
-    return true;
+  if (!year) return true; // Cho phép null
+  const currentYear = new Date().getFullYear();
+  if (isNaN(year) || year < 1950 || year > currentYear) {
+    return false;
+  }
+  return true;
 };
 /** POST /api/doctors  (ADMIN tạo tài khoản bác sĩ) */
 export const createDoctor = async (req, res, next) => {
@@ -69,19 +69,23 @@ export const createDoctor = async (req, res, next) => {
       // Các trường khác để trống → bác sĩ tự điền
     });
     const defaultSchedule = [
-        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
-    ].map(day => ({
-        dayOfWeek: day,
-        timeRanges: [
-            { start: "08:00", end: "11:00" },
-            { start: "13:00", end: "17:00" }
-        ]
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+    ].map((day) => ({
+      dayOfWeek: day,
+      timeRanges: [
+        { start: "08:00", end: "11:00" },
+        { start: "13:00", end: "17:00" },
+      ],
     }));
     await DoctorSchedule.create({
-      doctor_id: doctor._id,  // Liên kết với bác sĩ vừa tạo
-      slot_minutes: 30,          // Mặc định 30 phút/ca (hoặc tùy chỉnh)
+      doctor_id: doctor._id, // Liên kết với bác sĩ vừa tạo
+      slot_minutes: 30, // Mặc định 30 phút/ca (hoặc tùy chỉnh)
       weekly_schedule: defaultSchedule,
-      exceptions: []             // Chưa có ngày nghỉ phép nào
+      exceptions: [], // Chưa có ngày nghỉ phép nào
     });
     // Tạo token onboarding
     const token = jwt.sign(
@@ -159,7 +163,9 @@ export const completeDoctorProfile = async (req, res, next) => {
       });
     }
     if (career_start_year && !validateCareerYear(career_start_year)) {
-        return res.status(400).json({ error: "Năm bắt đầu hành nghề không hợp lệ." });
+      return res
+        .status(400)
+        .json({ error: "Năm bắt đầu hành nghề không hợp lệ." });
     }
 
     const allowedGender = ["male", "female", "other"];
@@ -225,19 +231,35 @@ export const completeDoctorProfile = async (req, res, next) => {
       specialty_id,
       status: "active",
       consultation_fee,
-    career_start_year: career_start_year || null,
+      career_start_year: career_start_year || null,
     });
 
     // Cập nhật trạng thái user đã hoàn thành hồ sơ (nếu có trường này)
-    await User.findByIdAndUpdate(userId, { profile_completed: true });
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { profile_completed: true, status: "active" }, // Cập nhật luôn status active nếu cần
+      { new: true }
+    );
+    const io = req.app.get("io"); // Lấy instance socket từ app express
+    if (io) {
+      // Gửi sự kiện đến room của user (nếu bạn đã join room theo userId ở client)
+      // Hoặc gửi broadcast tùy logic socket của bạn
+      io.to(userId.toString()).emit("profile_updated", {
+        message: "Hồ sơ bác sĩ đã hoàn tất!",
+        profile_completed: true,
+        user: updatedUser,
+      });
+      console.log(`Socket emit 'profile_updated' to user ${userId}`);
+    }
 
     return res.status(201).json({
       message: "Hoàn tất hồ sơ bác sĩ thành công.",
       profile,
+      user: updatedUser, // Trả về user mới để client cập nhật Context/LocalStorage
     });
   } catch (error) {
     console.error(error);
-    next(error); // Chuyển lỗi sang middleware xử lý lỗi tổng quát
+    next(error);
   }
 };
 
@@ -273,13 +295,24 @@ export const getMyDoctorProfile = async (req, res, next) => {
 export const getDoctorById = async (req, res, next) => {
   try {
     const doctorId = req.params.id;
+    const role = req.user?.role || req.user?.role?.name; // Lấy role hiện tại
+
     const profile = await Doctor.findById(doctorId)
       .populate({ path: "specialty_id", select: "name code" })
       .select("-__v")
       .lean();
 
+    // 1. Nếu không tìm thấy trong DB -> Lỗi 404
     if (!profile) {
       return res.status(404).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
+    }
+
+    // 2. Kiểm tra quyền xem nếu bác sĩ đang INACTIVE
+    if (profile.status !== "active") {
+      // Nếu không phải là admin thì coi như không tìm thấy (để bảo mật)
+      if (role !== "admin") {
+         return res.status(404).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
+      }
     }
 
     return res.status(200).json({ profile });
@@ -323,8 +356,13 @@ export const updateMyDoctorProfile = async (req, res, next) => {
     }
 
     // validate cơ bản
-    if (payload.career_start_year && !validateCareerYear(payload.career_start_year)) {
-        return res.status(400).json({ error: "Năm bắt đầu hành nghề không hợp lệ." });
+    if (
+      payload.career_start_year &&
+      !validateCareerYear(payload.career_start_year)
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Năm bắt đầu hành nghề không hợp lệ." });
     }
     if (payload.gender) {
       const allowedGender = ["male", "female", "other"];
@@ -414,20 +452,23 @@ export const updateDoctorAdmin = async (req, res, next) => {
     const userId = req.user?._id;
     const role = req.user?.role || req.user?.role?.name;
     const doctorToUpdateId = req.params.id;
-    
+
     if (!userId) return res.status(401).json({ error: "Thiếu token." });
-const existingDoctor = await Doctor.findById(doctorToUpdateId);
-    
+    const existingDoctor = await Doctor.findById(doctorToUpdateId);
+
     if (!existingDoctor) {
-        // Trả về 404 nếu không tìm thấy document Doctor
-        return res.status(404).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
+      // Trả về 404 nếu không tìm thấy document Doctor
+      return res.status(404).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
     }
     // Cho phép cả doctor và admin sửa
-   if (role !== "admin" && userId.toString() !== existingDoctor.user_id.toString()) {
-      return res
-        .status(403)
-        .json({ error: "Không có quyền cập nhật hồ sơ của người khác." });
-    }
+    if (
+      role !== "admin" &&
+      userId.toString() !== existingDoctor.user_id.toString()
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Không có quyền cập nhật hồ sơ của người khác." });
+    }
 
     const ALLOWED_FIELDS = [
       "fullName",
@@ -457,15 +498,14 @@ const existingDoctor = await Doctor.findById(doctorToUpdateId);
 
     // === XỬ LÝ UPLOAD ẢNH (nếu có) ===
     if (payload.thumbnail && !payload.thumbnail.startsWith("http")) {
-      try {
-        const upload = await cloudinary.uploader.upload(payload.thumbnail, {
-          folder: "doctor_profiles",
-          // SỬ DỤNG existingDoctor ĐÃ TÌM ĐƯỢC
-          public_id: `doctor_${existingDoctor.user_id.toString()}_avatar`, 
-          overwrite: true,
-        });
-        payload.thumbnail = upload.secure_url;
-      } catch (err) {
+      try {
+        const upload = await cloudinary.uploader.upload(payload.thumbnail, {
+          folder: "doctor_profiles", // SỬ DỤNG existingDoctor ĐÃ TÌM ĐƯỢC
+          public_id: `doctor_${existingDoctor.user_id.toString()}_avatar`,
+          overwrite: true,
+        });
+        payload.thumbnail = upload.secure_url;
+      } catch (err) {
         // Thêm console.error để xem lỗi chi tiết trong Terminal
         console.error("LỖI CHI TIẾT CLOUDINARY:", err.message);
 
@@ -478,8 +518,13 @@ const existingDoctor = await Doctor.findById(doctorToUpdateId);
     }
 
     // === VALIDATE DỮ LIỆU ===
-    if (payload.career_start_year && !validateCareerYear(payload.career_start_year)) {
-         return res.status(400).json({ error: "Năm bắt đầu hành nghề không hợp lệ." });
+    if (
+      payload.career_start_year &&
+      !validateCareerYear(payload.career_start_year)
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Năm bắt đầu hành nghề không hợp lệ." });
     }
     if (
       payload.gender &&
@@ -563,10 +608,23 @@ const existingDoctor = await Doctor.findById(doctorToUpdateId);
 };
 export const getAllDoctors = async (req, res, next) => {
   try {
-    const doctors = await Doctor.find()
+    // 1. Lấy role từ token (nếu người dùng đã đăng nhập)
+    const role = req.user?.role || req.user?.role?.name;
+
+    // 2. Mặc định: Chỉ lấy bác sĩ đang hoạt động (active)
+    let query = { status: "active" };
+
+    // 3. Nếu là ADMIN: Bỏ điều kiện lọc status (lấy tất cả)
+    if (role === "admin") {
+      query = {}; 
+    }
+
+    // 4. Thực hiện query
+    const doctors = await Doctor.find(query)
       .populate({ path: "specialty_id", select: "name code" })
       .select("-__v")
       .lean();
+
     return res.status(200).json({ doctors });
   } catch (e) {
     next(e);

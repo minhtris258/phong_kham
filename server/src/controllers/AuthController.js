@@ -62,10 +62,10 @@ export const login = async (req, res, next) => {
     else if (roleName === "doctor") {
       if (!isProfileCompleted) {
       // Bác sĩ chưa hoàn thành hồ sơ -> onboarding bác sĩ
-      nextRoute = "/onboarding/doctor-profile";
+      nextRoute = "/onboarding/profile-doctor";
       } else {
       // Bác sĩ đã hoàn thành hồ sơ -> trang chính bác sĩ
-      nextRoute = "/doctor";
+      nextRoute = "/";
       }
     }
     // Các role khác (company, staff, …) nếu chưa hoàn thành hồ sơ
