@@ -295,21 +295,33 @@ export const getMyDoctorProfile = async (req, res, next) => {
 export const getDoctorById = async (req, res, next) => {
   try {
     const doctorId = req.params.id;
-    const role = req.user?.role || req.user?.role?.name; // Lấy role hiện tại
+    let role = req.user?.role || req.user?.role?.name;
+
+    // ✨ SOFT AUTHENTICATION FIX CHO CHI TIẾT ✨
+    if (!role && req.headers.authorization) {
+        try {
+            const token = req.headers.authorization.split(" ")[1];
+            if (token) {
+                const secret = process.env.JWT_SECRET || "fallback_secret";
+                const decoded = jwt.verify(token, secret);
+                role = decoded.role;
+            }
+        } catch (err) {}
+    }
 
     const profile = await Doctor.findById(doctorId)
       .populate({ path: "specialty_id", select: "name code" })
       .select("-__v")
       .lean();
 
-    // 1. Nếu không tìm thấy trong DB -> Lỗi 404
+    // 1. Nếu không tìm thấy
     if (!profile) {
       return res.status(404).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
     }
 
     // 2. Kiểm tra quyền xem nếu bác sĩ đang INACTIVE
     if (profile.status !== "active") {
-      // Nếu không phải là admin thì coi như không tìm thấy (để bảo mật)
+      // Nếu không phải là admin thì báo lỗi 404 (ẩn luôn bác sĩ chưa active)
       if (role !== "admin") {
          return res.status(404).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
       }
@@ -608,13 +620,31 @@ export const updateDoctorAdmin = async (req, res, next) => {
 };
 export const getAllDoctors = async (req, res, next) => {
   try {
-    // 1. Lấy role từ token (nếu người dùng đã đăng nhập)
-    const role = req.user?.role || req.user?.role?.name;
+    // 1. Thử lấy role từ req.user (nếu Route đã qua middleware verifyToken)
+    let role = req.user?.role || req.user?.role?.name;
+
+    // ✨ SOFT AUTHENTICATION FIX ✨
+    // Nếu route này là PUBLIC (không có middleware), req.user sẽ undefined.
+    // Ta tự check Header để xem có phải Admin đang request không.
+    if (!role && req.headers.authorization) {
+        try {
+            const token = req.headers.authorization.split(" ")[1];
+            if (token) {
+                // Đảm bảo secret key khớp với file .env hoặc fallback
+                const secret = process.env.JWT_SECRET || "fallback_secret";
+                const decoded = jwt.verify(token, secret);
+                role = decoded.role || decoded.role?.name;
+            }
+        } catch (err) {
+            // Token lỗi hoặc hết hạn -> cứ coi như khách vãng lai
+            // console.log("Soft auth failed:", err.message);
+        }
+    }
 
     // 2. Mặc định: Chỉ lấy bác sĩ đang hoạt động (active)
     let query = { status: "active" };
 
-    // 3. Nếu là ADMIN: Bỏ điều kiện lọc status (lấy tất cả)
+    // 3. Nếu là ADMIN: Bỏ điều kiện lọc status (lấy tất cả: active, inactive,...)
     if (role === "admin") {
       query = {}; 
     }
