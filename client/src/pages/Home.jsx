@@ -4,7 +4,7 @@ import PartnersSection from '../components/PartnersSection';
 import DoctorsFavorite from '../components/DoctorsFavorite';
 import SpecialtySection from '../components/SpecialtySection';
 import DownloadAppSection from '../components/DownloadAppSection';
-
+import PostsDirectory from '../components/post/PostsDirectory';
 
 const Home = () => {
   return (
@@ -14,6 +14,7 @@ const Home = () => {
       <DoctorsFavorite />
       <SpecialtySection />
       <DownloadAppSection />
+      <PostsDirectory />
 
     </>
   );

@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+// import axios from "axios"; // <-- KHÔNG CẦN import axios ở đây nữa
 import "../index.css";
-// Đảm bảo các import này đúng đường dẫn trong project của bạn
 import "../assets/assets.js";
 import hero from "../assets/slider-03-b.jpg";
 import logo from "../assets/logo.png";
-import { toastSuccess, toastError,toastWarning } from "../utils/toast";
+import { toastSuccess, toastError } from "../utils/toast";
+
+// 1. IMPORT HOOK CONTEXT
+import { useAppContext } from "../context/AppContext";
 
 export default function RegisterSection() {
-  // 1. Sửa state: Bỏ phone, thêm confirmPassword
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -23,6 +24,9 @@ export default function RegisterSection() {
 
   const navigate = useNavigate();
 
+  // 2. LẤY HÀM REGISTER TỪ CONTEXT
+  const { register } = useAppContext();
+
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm((s) => ({ ...s, [name]: value }));
@@ -34,7 +38,6 @@ export default function RegisterSection() {
     setError("");
     setSuccess("");
 
-    // 2. Kiểm tra mật khẩu khớp nhau
     if (form.password !== form.confirmPassword) {
       toastError("Mật khẩu nhập lại không khớp!");
       setLoading(false);
@@ -42,39 +45,29 @@ export default function RegisterSection() {
     }
 
     try {
-      // Payload chỉ gửi name, email, password
-      const payload = {
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        confirmPassword: form.confirmPassword
-      };
-
-      const res = await axios.post(
-        "http://localhost:3000/api/auth/register",
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      // 3. GỌI HÀM REGISTER CỦA CONTEXT (Thay thế đoạn axios cũ)
+      // Hàm này sẽ tự động: Gọi API -> Lưu token -> Cập nhật state isAuthenticated = true
+      const data = await register(
+        form.name, 
+        form.email, 
+        form.password, 
+        form.confirmPassword
       );
 
-      console.log("Register success:", res.data);
-
-      if (res.data?.token) {
-        localStorage.setItem("token", res.data.token);
-         localStorage.setItem("profileCompleted", "false"); 
-      }
-
-      toastSuccess(res.data.message || "Đăng ký thành công!");
+      console.log("Register success:", data);
       
-      // Reset form
+      // Không cần tự set localStorage ở đây nữa, AppContext đã làm rồi
+
+      toastSuccess(data.message || "Đăng ký thành công!");
+      setSuccess("Đăng ký thành công! Đang chuyển hướng...");
+      
       setForm((s) => ({ ...s, password: "", confirmPassword: "" }));
 
-      // Chuyển hướng
+      // 4. CHUYỂN HƯỚNG
       setTimeout(() => {
-        navigate("/onboarding/profile-patient", { state: { email: form.email } });
+        // Ưu tiên dùng đường dẫn 'next' từ backend trả về nếu có
+        const redirectPath = data.next || "/onboarding/profile-patient";
+        navigate(redirectPath, { state: { email: form.email } });
       }, 1000);
 
     } catch (err) {
@@ -84,6 +77,7 @@ export default function RegisterSection() {
         err.response?.data?.message ||
         "Có lỗi xảy ra, vui lòng thử lại.";
       setError(message);
+      toastError(message);
     } finally {
       setLoading(false);
     }
@@ -104,10 +98,9 @@ export default function RegisterSection() {
             />
 
             <form className="w-full px-20 pt-4 pb-8" onSubmit={onSubmit}>
-              {/* Họ tên */}
-              <label htmlFor="name" className="sr-only">
-                Họ tên
-              </label>
+              {/* --- CÁC INPUT GIỮ NGUYÊN --- */}
+              
+              <label htmlFor="name" className="sr-only">Họ tên</label>
               <input
                 type="text"
                 id="name"
@@ -119,10 +112,7 @@ export default function RegisterSection() {
                 required
               />
 
-              {/* Email */}
-              <label htmlFor="email" className="sr-only">
-                Email
-              </label>
+              <label htmlFor="email" className="sr-only">Email</label>
               <input
                 type="email"
                 id="email"
@@ -134,12 +124,7 @@ export default function RegisterSection() {
                 required
               />
 
-              {/* ĐÃ XÓA TRƯỜNG PHONE Ở ĐÂY */}
-
-              {/* Password */}
-              <label htmlFor="password" className="sr-only">
-                Mật khẩu
-              </label>
+              <label htmlFor="password" className="sr-only">Mật khẩu</label>
               <input
                 type="password"
                 id="password"
@@ -151,10 +136,7 @@ export default function RegisterSection() {
                 required
               />
 
-              {/* THÊM: Confirm Password (sử dụng y hệt class của password để giữ giao diện) */}
-              <label htmlFor="confirmPassword" className="sr-only">
-                Nhập lại mật khẩu
-              </label>
+              <label htmlFor="confirmPassword" className="sr-only">Nhập lại mật khẩu</label>
               <input
                 type="password"
                 id="confirmPassword"
@@ -166,17 +148,9 @@ export default function RegisterSection() {
                 required
               />
 
-              {/* Thông báo */}
-              {error && (
-                <p className="mt-4 text-sm text-red-300">
-                  {error}
-                </p>
-              )}
-              {success && (
-                <p className="mt-4 text-sm text-emerald-300">
-                  {success}
-                </p>
-              )}
+              {/* Thông báo lỗi/thành công */}
+              {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
+              {success && <p className="mt-4 text-sm text-emerald-300">{success}</p>}
 
               <button
                 className="btn-color rounded-lg py-4 mt-6 w-full disabled:opacity-70"
@@ -185,10 +159,8 @@ export default function RegisterSection() {
               >
                 {loading ? "Đang đăng ký..." : "Đăng Ký"}
               </button>
-              <a
-                href="/login"
-                className="font-semibold text-white underline mt-4 block text-right px-2"
-              >
+              
+              <a href="/login" className="font-semibold text-white underline mt-4 block text-right px-2">
                 Đăng nhập ?
               </a>
             </form>
@@ -196,39 +168,15 @@ export default function RegisterSection() {
             <p className="mb-4 text-center">------------ OR ------------</p>
 
             <div className="flex justify-center gap-4">
-              {/* Social buttons giữ nguyên */}
-              <button className="bg-white rounded-lg p-3 shadow-md transition">
-                {/* Facebook */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="26"
-                  width="26"
-                  viewBox="0 0 512 512"
-                >
-                  <path d="M512 256C512 114.6 397.4 0 256 0S0 114.6 0 256C0 376 82.7 476.8 194.2 504.5l0-170.3-52.8 0 0-78.2 52.8 0 0-33.7c0-87.1 39.4-127.5 125-127.5 16.2 0 44.2 3.2 55.7 6.4l0 70.8c-6-.6-16.5-1-29.6-1-42 0-58.2 15.9-58.2 57.2l0 27.8 83.6 0-14.4 78.2-69.3 0 0 175.9C413.8 494.8 512 386.9 512 256z" />
-                </svg>
+               {/* Giữ nguyên phần nút Social Media */}
+               <button className="bg-white rounded-lg p-3 shadow-md transition">
+                <svg xmlns="http://www.w3.org/2000/svg" height="26" width="26" viewBox="0 0 512 512"><path d="M512 256C512 114.6 397.4 0 256 0S0 114.6 0 256C0 376 82.7 476.8 194.2 504.5l0-170.3-52.8 0 0-78.2 52.8 0 0-33.7c0-87.1 39.4-127.5 125-127.5 16.2 0 44.2 3.2 55.7 6.4l0 70.8c-6-.6-16.5-1-29.6-1-42 0-58.2 15.9-58.2 57.2l0 27.8 83.6 0-14.4 78.2-69.3 0 0 175.9C413.8 494.8 512 386.9 512 256z" /></svg>
               </button>
               <button className="bg-white rounded-lg p-3 shadow-md transition">
-                {/* Twitter/X */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="26"
-                  width="26"
-                  viewBox="0 0 512 512"
-                >
-                  <path d="M459.4 151.7c.3 4.5 .3 9.1 .3 13.6 0 138.7-105.6 298.6-298.6 298.6-59.5 0-114.7-17.2-161.1-47.1 8.4 1 16.6 1.3 25.3 1.3 49.1 0 94.2-16.6 130.3-44.8-46.1-1-84.8-31.2-98.1-72.8 6.5 1 13 1.6 19.8 1.6 9.4 0 18.8-1.3 27.6-3.6-48.1-9.7-84.1-52-84.1-103l0-1.3c14 7.8 30.2 12.7 47.4 13.3-28.3-18.8-46.8-51-46.8-87.4 0-19.5 5.2-37.4 14.3-53 51.7 63.7 129.3 105.3 216.4 109.8-1.6-7.8-2.6-15.9-2.6-24 0-57.8 46.8-104.9 104.9-104.9 30.2 0 57.5 12.7 76.7 33.1 23.7-4.5 46.5-13.3 66.6-25.3-7.8 24.4-24.4 44.8-46.1 57.8 21.1-2.3 41.6-8.1 60.4-16.2-14.3 20.8-32.2 39.3-52.6 54.3z" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" height="26" width="26" viewBox="0 0 512 512"><path d="M459.4 151.7c.3 4.5 .3 9.1 .3 13.6 0 138.7-105.6 298.6-298.6 298.6-59.5 0-114.7-17.2-161.1-47.1 8.4 1 16.6 1.3 25.3 1.3 49.1 0 94.2-16.6 130.3-44.8-46.1-1-84.8-31.2-98.1-72.8 6.5 1 13 1.6 19.8 1.6 9.4 0 18.8-1.3 27.6-3.6-48.1-9.7-84.1-52-84.1-103l0-1.3c14 7.8 30.2 12.7 47.4 13.3-28.3-18.8-46.8-51-46.8-87.4 0-19.5 5.2-37.4 14.3-53 51.7 63.7 129.3 105.3 216.4 109.8-1.6-7.8-2.6-15.9-2.6-24 0-57.8 46.8-104.9 104.9-104.9 30.2 0 57.5 12.7 76.7 33.1 23.7-4.5 46.5-13.3 66.6-25.3-7.8 24.4-24.4 44.8-46.1 57.8 21.1-2.3 41.6-8.1 60.4-16.2-14.3 20.8-32.2 39.3-52.6 54.3z" /></svg>
               </button>
               <button className="bg-white rounded-lg p-3 shadow-md transition">
-                {/* Google */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="26"
-                  width="26"
-                  viewBox="0 0 512 512"
-                >
-                  <path d="M500 261.8C500 403.3 403.1 504 260 504 122.8 504 12 393.2 12 256S122.8 8 260 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9c-88.3-85.2-252.5-21.2-252.5 118.2 0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9l-140.8 0 0-85.3 236.1 0c2.3 12.7 3.9 24.9 3.9 41.4z" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" height="26" width="26" viewBox="0 0 512 512"><path d="M500 261.8C500 403.3 403.1 504 260 504 122.8 504 12 393.2 12 256S122.8 8 260 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9c-88.3-85.2-252.5-21.2-252.5 118.2 0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9l-140.8 0 0-85.3 236.1 0c2.3 12.7 3.9 24.9 3.9 41.4z" /></svg>
               </button>
             </div>
           </div>

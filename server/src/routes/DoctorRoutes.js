@@ -13,13 +13,14 @@ import {
 
 const router = Router();
 
-router.post("/", verifyToken, requireRole(["admin"]), createDoctor);
-router.put("/:id", verifyToken, requireRole(["admin"]), updateDoctorAdmin);
+
 router.post("/onboarding/doctor-profile", verifyToken, requireRole(["doctor"]), completeDoctorProfile);
 router.get("/me", verifyToken, requireRole(["doctor"]), getMyDoctorProfile);
 router.put("/me", verifyToken, requireRole(["doctor"]), updateMyDoctorProfile);
 
 router.get("/:id", getDoctorById);
 router.get("/", getAllDoctors);
+router.post("/", verifyToken, requireRole(["admin"]), createDoctor);
+router.put("/:id", verifyToken, requireRole(["admin"]), updateDoctorAdmin);
 router.delete("/:id", verifyToken, requireRole(["admin"]), deleteDoctor);
 export default router;

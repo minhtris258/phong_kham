@@ -127,138 +127,147 @@ export const completeDoctorProfile = async (req, res, next) => {
   try {
     const userId = req.user?._id;
     const role = req.user?.role || req.user?.role?.name;
-    if (!userId)
-      return res.status(401).json({ error: "Thiếu hoặc sai token." });
+    
+    if (!userId) return res.status(401).json({ error: "Thiếu hoặc sai token." });
     if (role !== "doctor") {
-      return res
-        .status(403)
-        .json({ error: "Chỉ tài khoản bác sĩ mới được hoàn tất hồ sơ." });
+      return res.status(403).json({ error: "Chỉ tài khoản bác sĩ mới được hoàn tất hồ sơ." });
     }
 
     const user = await User.findById(userId).lean();
     if (!user) return res.status(404).json({ error: "Không tìm thấy user." });
 
-    const existed = await Doctor.findOne({ user_id: userId }).lean();
-    if (existed)
-      return res.status(409).json({ error: "Hồ sơ bác sĩ đã tồn tại." });
+    // --- FIX LỖI 409: KHÔNG KIỂM TRA existed (để cho phép ghi đè/sửa lại khi onboarding lỗi) ---
+    // const existed = await Doctor.findOne({ user_id: userId }).lean();
+    // if (existed) return res.status(409).json({ error: "Hồ sơ bác sĩ đã tồn tại." });
 
     const {
-      fullName,
-      dob,
-      gender, // "male" | "female" | "other"
-      phone,
-      address,
-      introduction,
-      note,
-      thumbnail, // <--- Nguồn ảnh cần upload
-      specialty_id,
-      consultation_fee,
-      career_start_year,
+      fullName, dob, gender, phone, address, introduction, note,
+      thumbnail, specialty_id, consultation_fee, career_start_year,
     } = req.body;
 
+    // 1. Validate dữ liệu
     if (!fullName || !dob || !gender || !phone || !address || !specialty_id) {
       return res.status(400).json({
-        error:
-          "Thiếu thông tin bắt buộc: fullName, dob, gender, phone, address, specialty_id.",
+        error: "Thiếu thông tin bắt buộc: fullName, dob, gender, phone, address, specialty_id.",
       });
     }
-    if (career_start_year && !validateCareerYear(career_start_year)) {
-      return res
-        .status(400)
-        .json({ error: "Năm bắt đầu hành nghề không hợp lệ." });
-    }
-
     const allowedGender = ["male", "female", "other"];
     if (!allowedGender.includes(gender)) {
       return res.status(400).json({ error: "Giá trị gender không hợp lệ." });
     }
-
     const dobDate = new Date(dob);
     if (isNaN(dobDate.getTime())) {
-      return res
-        .status(400)
-        .json({ error: "Định dạng dob không hợp lệ (ISO hoặc yyyy-mm-dd)." });
+      return res.status(400).json({ error: "Định dạng dob không hợp lệ." });
     }
 
-    const specialty = await Specialty.findById(specialty_id).lean();
-    if (!specialty)
-      return res.status(404).json({ error: "Chuyên khoa không tồn tại." });
+    // 2. Kiểm tra trùng SĐT (Trừ chính mình ra)
+    const phoneTaken = await Doctor.findOne({ 
+        phone: phone, 
+        user_id: { $ne: userId } // <--- QUAN TRỌNG: Loại trừ chính user đang update
+    }).lean();
+    
+    if (phoneTaken) {
+      return res.status(409).json({ error: "Số điện thoại đã được dùng cho hồ sơ khác." });
+    }
 
-    const phoneTaken = await Doctor.findOne({ phone }).lean();
-    if (phoneTaken)
-      return res
-        .status(409)
-        .json({ error: "Số điện thoại đã được dùng cho hồ sơ khác." });
-
-    // -----------------------------------------------------------------
-    // ✨ Xử lý Upload ảnh lên Cloudinary ✨
-    // -----------------------------------------------------------------
+    // 3. Upload ảnh (Giữ nguyên logic Cloudinary của bạn)
     let thumbnailUrl = "";
-
     if (thumbnail) {
-      try {
-        // Giả định 'thumbnail' là đường dẫn file tạm thời (nếu dùng multer)
-        // Hoặc là chuỗi base64 (nếu upload trực tiếp từ client)
-        const uploadResult = await cloudinary.uploader.upload(thumbnail, {
-          folder: "doctor_profiles", // Đặt tên thư mục của bạn
-          resource_type: "image",
-          public_id: `doctor_${userId}_avatar`, // Tạo public ID độc nhất
-          overwrite: true,
-        });
-        thumbnailUrl = uploadResult.secure_url;
-
-        // Lưu ý: Nếu bạn dùng multer, hãy đảm bảo bạn xóa file tạm thời ở đây
-        // if (req.file) fs.unlinkSync(req.file.path);
-      } catch (uploadError) {
-        console.error("Cloudinary upload error:", uploadError);
-        // Bạn có thể chọn trả về lỗi hoặc tiếp tục với thumbnail rỗng
-        return res.status(500).json({ error: "Lỗi khi upload ảnh đại diện." });
-      }
+        // Logic đơn giản: Nếu là chuỗi base64 (dài) thì upload, nếu là URL (ngắn) thì giữ nguyên
+        // Hoặc kiểm tra startsWith('data:image')
+        if (!thumbnail.startsWith("http")) {
+            try {
+                const uploadResult = await cloudinary.uploader.upload(thumbnail, {
+                folder: "doctor_profiles",
+                resource_type: "image",
+                public_id: `doctor_${userId}_avatar`,
+                overwrite: true,
+                });
+                thumbnailUrl = uploadResult.secure_url;
+            } catch (uploadError) {
+                console.error("Cloudinary upload error:", uploadError);
+                return res.status(500).json({ error: "Lỗi khi upload ảnh đại diện." });
+            }
+        } else {
+            thumbnailUrl = thumbnail; // Giữ nguyên URL cũ nếu user không đổi ảnh
+        }
     }
-    // -----------------------------------------------------------------
 
-    const profile = await Doctor.create({
+    // 4. Update Profile (Dùng findOneAndUpdate với upsert: true thay vì create)
+    const updateData = {
       user_id: userId,
       fullName,
       gender,
       dob: dobDate,
       phone,
-      email: user.email, // khóa theo User.email
+      email: user.email,
       address,
       introduction: introduction || "",
       note: note || "",
-      thumbnail: thumbnailUrl || "", // <-- Sử dụng URL từ Cloudinary
       specialty_id,
       status: "active",
       consultation_fee,
       career_start_year: career_start_year || null,
-    });
+    };
+    
+    // Chỉ cập nhật ảnh nếu có ảnh mới (hoặc giữ ảnh cũ nếu logic trên trả về URL)
+    if (thumbnailUrl) {
+        updateData.thumbnail = thumbnailUrl;
+    }
 
-    // Cập nhật trạng thái user đã hoàn thành hồ sơ (nếu có trường này)
+    const profile = await Doctor.findOneAndUpdate(
+        { user_id: userId },
+        { $set: updateData },
+        { new: true, upsert: true } // Upsert: chưa có thì tạo, có rồi thì sửa
+    );
+
+    // 5. Cập nhật User gốc & Lấy User mới nhất về
+    // Dùng Model User để update
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { profile_completed: true, status: "active" }, // Cập nhật luôn status active nếu cần
-      { new: true }
+      { profile_completed: true, status: "active" },
+      { new: true } 
+    ).populate("role_id", "name"); // Populate để lấy role name
+
+    if (!updatedUser) {
+        return res.status(500).json({ error: "Lỗi cập nhật trạng thái User." });
+    }
+
+    // 6. === TẠO TOKEN MỚI ===
+    // Đảm bảo lấy đúng tên role từ object role_id nếu nó được populate, hoặc fallback về "doctor"
+    const roleName = updatedUser.role_id?.name || "doctor";
+    
+    const newToken = jwt.sign(
+      {
+        _id: updatedUser._id,
+        email: updatedUser.email,
+        role: roleName,
+        status: "active",
+        profile_completed: true // <--- Key chốt
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
     );
-    const io = req.app.get("io"); // Lấy instance socket từ app express
+
+    // 7. Gửi Socket
+    const io = req.app.get("io");
     if (io) {
-      // Gửi sự kiện đến room của user (nếu bạn đã join room theo userId ở client)
-      // Hoặc gửi broadcast tùy logic socket của bạn
       io.to(userId.toString()).emit("profile_updated", {
         message: "Hồ sơ bác sĩ đã hoàn tất!",
         profile_completed: true,
         user: updatedUser,
       });
-      console.log(`Socket emit 'profile_updated' to user ${userId}`);
     }
 
-    return res.status(201).json({
+    return res.status(200).json({
       message: "Hoàn tất hồ sơ bác sĩ thành công.",
       profile,
-      user: updatedUser, // Trả về user mới để client cập nhật Context/LocalStorage
+      token: newToken, // <--- Trả về token mới
+      user: updatedUser,
+      next: "/doctor"
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error completeDoctorProfile:", error);
     next(error);
   }
 };

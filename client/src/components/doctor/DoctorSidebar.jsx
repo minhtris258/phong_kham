@@ -1,13 +1,17 @@
 // src/components/doctor/DoctorSidebar.jsx
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, Calendar, Settings, LogOut, X, Stethoscope } from 'lucide-react';
-import doctorService from '../../services/DoctorService'; // Import service
-import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
+import { User, Calendar, Settings, LogOut, X, Stethoscope, Home } from 'lucide-react'; 
+import doctorService from '../../services/DoctorService';
+import { toastSuccess } from "../../utils/toast"; // Import thêm toast
+import { useAppContext } from '../../context/AppContext';
 
 export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
+
   const location = useLocation();
   const navigate = useNavigate();
+  // Lấy hàm logout và setAuthToken từ context
+  const { handleLogout: contextLogout } = useAppContext(); 
   const [doctor, setDoctor] = useState(null);
 
   // Gọi API lấy thông tin bác sĩ
@@ -15,23 +19,28 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
     const fetchDoctorInfo = async () => {
       try {
         const res = await doctorService.getMe();
-        // Xử lý dữ liệu trả về tùy cấu trúc API (ví dụ res.data hoặc res.profile)
         const profile = res.profile || res;
         setDoctor(profile);
       } catch (error) {
-        toastError("Lỗi lấy thông tin bác sĩ sidebar:" + (error.response?.data?.message || error.message));
+        console.error("Lỗi lấy thông tin sidebar:", error);
       }
     };
 
     fetchDoctorInfo();
   }, []);
 
-  const handleLogout = () => {
-    // Xóa token và chuyển hướng (Ví dụ)
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('token');
-    navigate('/login');
+  // --- HÀM XỬ LÝ LOGOUT AN TOÀN ---
+  const onLogoutClick = () => {
+      // 1. Gọi hàm logout của Context để xóa state/localStorage
+      contextLogout(); 
+      
+      // 2. Thông báo nhẹ
+      toastSuccess("Đăng xuất thành công!");
+
+      // 3. Chuyển hướng ngay lập tức về login
+      navigate('/login');
   };
+  // ---------------------------------
 
   const navItems = [
     { name: "Hồ sơ cá nhân", icon: User, path: "/doctor" },
@@ -43,7 +52,7 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
 
   const isActive = (path) => location.pathname === path;
 
-  // Helper lấy tên và chữ cái đầu (Xử lý an toàn khi chưa có dữ liệu)
+  // Helper lấy tên
   const doctorName = doctor?.fullName || doctor?.name || 'Bác sĩ';
   const lastName = doctorName.split(' ').slice(-1).join(' ');
   const firstLetter = lastName.charAt(0).toUpperCase();
@@ -62,13 +71,25 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
       {/* Sidebar chính */}
       <aside className={`fixed top-0 left-0 z-50 h-full w-72 bg-gradient-to-b from-blue-700 to-blue-900 text-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         
-        {/* Logo Header */}
+        {/* Logo Header & Home Button */}
         <div className="flex items-center justify-between p-6 border-b border-blue-800">
           <div className="flex items-center gap-3">
-            <Stethoscope className="w-8 h-8" />
-            <h1 className="text-xl font-bold">DOCTOR PORTAL</h1>
+            {/* --- NÚT VỀ TRANG CHỦ (Đã OK) --- */}
+            <Link 
+                to="/" 
+                className="p-2 bg-blue-800 rounded-lg hover:bg-blue-600 transition shadow-sm group relative"
+                title="Về trang chủ Website"
+            >
+                <Home className="w-6 h-6 text-white" />
+            </Link>
+            
+            <div className="flex flex-col">
+                <h1 className="text-lg font-bold leading-none">DOCTOR</h1>
+                <span className="text-xs text-blue-300 tracking-wider">PORTAL</span>
+            </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
+
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden hover:text-red-300 transition">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -76,8 +97,7 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
         {/* User Info Card */}
         <div className="p-6 border-b border-blue-800">
           <div className="flex items-center gap-4">
-            {/* Avatar: Ưu tiên hiển thị ảnh nếu có, không thì hiển thị chữ cái đầu */}
-            <div className="w-16 h-16 bg-white text-blue-700 rounded-full flex items-center justify-center text-2xl font-bold shadow-xl overflow-hidden border-2 border-white">
+            <div className="w-16 h-16 bg-white text-blue-700 rounded-full flex items-center justify-center text-2xl font-bold shadow-xl overflow-hidden border-2 border-white shrink-0">
                {doctor?.thumbnail || doctor?.image ? (
                   <img 
                     src={doctor.thumbnail || doctor.image} 
@@ -88,15 +108,15 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
                   firstLetter
                )}
             </div>
-            <div>
-              <p className="font-bold text-lg truncate max-w-[140px]">BS. {lastName}</p>
-              <p className="text-blue-200 text-sm truncate max-w-[140px]">{specialtyName}</p>
+            <div className="overflow-hidden">
+              <p className="font-bold text-lg truncate block" title={doctorName}>BS. {lastName}</p>
+              <p className="text-blue-200 text-sm truncate block" title={specialtyName}>{specialtyName}</p>
             </div>
           </div>
         </div>
 
         {/* Navigation Links */}
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 overflow-y-auto max-h-[calc(100vh-280px)]">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -107,25 +127,25 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${
                   active 
-                    ? 'bg-white text-blue-700 shadow-xl font-bold' 
+                    ? 'bg-white text-blue-700 shadow-xl font-bold transform scale-[1.02]' 
                     : 'hover:bg-blue-800 hover:bg-opacity-60 text-blue-100'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className={`w-5 h-5 ${active ? 'stroke-2' : ''}`} />
                 <span>{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Logout Button */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-800">
+        {/* Logout Button (Sử dụng hàm onLogoutClick mới) */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-800 bg-blue-900 bg-opacity-50">
           <button 
-            onClick={handleLogout}
-            className="flex items-center gap-4 px-5 py-4 rounded-xl hover:bg-blue-800 hover:bg-opacity-60 transition-all w-full text-blue-100 hover:text-white"
+            onClick={onLogoutClick} 
+            className="flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-red-600 hover:text-white transition-all w-full text-blue-100 group"
           >
-            <LogOut className="w-5 h-5" />
-            <span>Đăng xuất</span>
+            <LogOut className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
+            <span className="font-medium">Đăng xuất</span>
           </button>
         </div>
       </aside>
