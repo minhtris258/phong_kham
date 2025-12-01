@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 import { useNavigate } from "react-router-dom";
 import patientService from "../../services/PatientService";
 import { useAppContext } from "../../context/AppContext";
@@ -63,15 +64,15 @@ const ProfileCompletion = () => {
           // Load lại User để AppContext nhận diện profile_completed = true
           await loadCurrentUser(newToken);
       } else {
-          console.warn("Không tìm thấy Token trong response!");
+          toastWarning("Không tìm thấy Token trong response!");
       }
 
-      alert("Hồ sơ đã hoàn tất!");
+      toastSuccess("Hồ sơ đã hoàn tất!");
       navigate("/");
 
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.error || "Có lỗi xảy ra.");
+      toastError(err.response?.data?.error || err.message || "Có lỗi xảy ra.");
+      setError(err.response?.data?.error || err.message || "Có lỗi xảy ra.");
     } finally {
       setLoading(false);
     }

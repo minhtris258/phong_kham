@@ -1,7 +1,7 @@
 // src/components/doctor/EditDoctorProfileModal.jsx
 import React, { useState } from 'react';
 import { Save, Camera, Loader2, User, Phone, Mail, MapPin, DollarSign, FileText, Calendar, Briefcase } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 import doctorService from '../../services/DoctorService';
 import Modal from '../Modal';
 
@@ -32,7 +32,7 @@ export default function EditDoctorProfileModal({ doctor, onClose, onSuccess }) {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) {
-                toast.error("Ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB");
+                toastError("Ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB");
                 return;
             }
             const reader = new FileReader();
@@ -48,7 +48,7 @@ export default function EditDoctorProfileModal({ doctor, onClose, onSuccess }) {
         try {
             setLoading(true);
             if (!formData.fullName.trim() || !formData.phone.trim()) {
-                toast.warning("Họ tên và Số điện thoại là bắt buộc");
+                toastWarning("Họ tên và Số điện thoại là bắt buộc");
                 return;
             }
 
@@ -56,20 +56,20 @@ export default function EditDoctorProfileModal({ doctor, onClose, onSuccess }) {
             if (formData.career_start_year) {
                 const year = parseInt(formData.career_start_year);
                 if (year < 1950 || year > currentYear) {
-                    toast.warning(`Năm bắt đầu phải từ 1950 đến ${currentYear}`);
+                    toastWarning(`Năm bắt đầu phải từ 1950 đến ${currentYear}`);
                     setLoading(false);
                     return;
                 }
             }
 
             await doctorService.updateMyDoctorProfile(formData); // Use the correct service method for self-update
-            toast.success("Cập nhật hồ sơ thành công!");
+            toastSuccess("Cập nhật hồ sơ thành công!");
             if (onSuccess) onSuccess(formData);
             onClose();
         } catch (error) {
-            console.error("Lỗi cập nhật:", error);
+            toastError("Lỗi cập nhật:", error);
             const errorMsg = error.response?.data?.error || "Cập nhật thất bại. Vui lòng thử lại.";
-            toast.error(errorMsg);
+            toastError(errorMsg);
         } finally {
             setLoading(false);
         }

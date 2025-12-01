@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 import visitService from "../../services/VisitService";
 import { 
     FileText, ArrowLeft, Stethoscope, Pill, Receipt, Calendar, User, Activity 
@@ -46,7 +47,7 @@ const PatientVisitDetail = () => {
                 setError("Chưa tìm thấy hồ sơ khám bệnh cho lịch hẹn này.");
             }
         } catch (err) {
-            console.error("Lỗi tải chi tiết khám:", err);
+            toastError("Lỗi tải chi tiết khám:", err);
             if (err.response && err.response.status === 404) {
                  setError("Bác sĩ chưa cập nhật hồ sơ khám bệnh cho cuộc hẹn này.");
             } else {

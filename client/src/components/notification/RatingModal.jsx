@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Star, X, Loader2 } from "lucide-react";
 import Modal from "../Modal"; // Modal dùng chung của bạn
 import ratingService from "../../services/RatingService"; // Import service vừa tạo
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 
 const RatingModal = ({ isOpen, onClose, notification, onSuccess }) => {
   const [rating, setRating] = useState(5); // Mặc định 5 sao
@@ -24,7 +25,7 @@ const RatingModal = ({ isOpen, onClose, notification, onSuccess }) => {
     e.preventDefault();
 
     if (rating === 0) {
-      alert("Vui lòng chọn số sao để đánh giá!");
+      toastWarning("Vui lòng chọn số sao để đánh giá!");
       return;
     }
 
@@ -37,7 +38,7 @@ const RatingModal = ({ isOpen, onClose, notification, onSuccess }) => {
         comment: comment.trim()
       });
 
-      alert("Cảm ơn bạn đã gửi đánh giá thành công!");
+      toastSuccess("Cảm ơn bạn đã gửi đánh giá thành công!");
       
       // Callback để component cha (NotificationPage) xóa thông báo hoặc cập nhật UI
       if (onSuccess) {
@@ -48,7 +49,7 @@ const RatingModal = ({ isOpen, onClose, notification, onSuccess }) => {
     } catch (error) {
       // Xử lý lỗi từ Backend trả về
       const errorMsg = error.response?.data?.error || error.message || "Có lỗi xảy ra, vui lòng thử lại.";
-      alert("Gửi đánh giá thất bại: " + errorMsg);
+      toastError("Gửi đánh giá thất bại: " + errorMsg);
     } finally {
       setLoading(false);
     }

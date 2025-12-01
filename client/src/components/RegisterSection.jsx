@@ -71,7 +71,7 @@ export default function RegisterSection() {
       }, 1000);
 
     } catch (err) {
-      console.error(err);
+        toastError(err);
       const message =
         err.response?.data?.error ||
         err.response?.data?.message ||

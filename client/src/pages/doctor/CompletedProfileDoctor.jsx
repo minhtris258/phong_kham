@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 import doctorService from "../../services/DoctorService";
 // 1. Import Context
 import { useAppContext } from "../../context/AppContext";
@@ -37,8 +38,7 @@ const CompletedProfileDoctor = () => {
         const res = await doctorService.getSpecialties();
         setSpecialties(res.data || res || []);
       } catch (error) {
-        console.error("Lỗi lấy chuyên khoa:", error);
-        toast.error("Không tải được danh sách chuyên khoa");
+        toastError("Lỗi lấy chuyên khoa:", error);
       }
     };
     fetchSpecialties();
@@ -68,7 +68,7 @@ const CompletedProfileDoctor = () => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB");
+      toastError("Ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB");
       return;
     }
     const previewUrl = URL.createObjectURL(file);
@@ -86,12 +86,12 @@ const CompletedProfileDoctor = () => {
     setLoading(true);
 
     if (!formData.specialty_id) {
-      toast.warning("Vui lòng chọn chuyên khoa!");
+      toastWarning("Vui lòng chọn chuyên khoa!");
       setLoading(false);
       return;
     }
     if (!formData.phone) {
-        toast.warning("Vui lòng nhập số điện thoại!");
+        toastWarning("Vui lòng nhập số điện thoại!");
         setLoading(false);
         return;
     }
@@ -122,10 +122,10 @@ const CompletedProfileDoctor = () => {
           setAuthToken(newToken);
           await loadCurrentUser(newToken);
       } else {
-          console.warn("Không thấy token mới từ server.");
+          toastWarning("Không thấy token mới từ server.");
       }
       
-      toast.success("Cập nhật hồ sơ thành công!");
+      toastSuccess("Cập nhật hồ sơ thành công!");
       
       // Chuyển hướng
       setTimeout(() => {
@@ -135,7 +135,7 @@ const CompletedProfileDoctor = () => {
     } catch (error) {
       console.error(error);
       const msg = error.response?.data?.error || "Có lỗi xảy ra khi cập nhật hồ sơ.";
-      toast.error(msg);
+      toastError(msg);
     } finally {
       setLoading(false);
     }

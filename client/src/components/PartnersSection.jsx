@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../utils/toast";
 import partnerService from "../services/partnersService"; 
 
 const PartnersSection = () => {
@@ -17,7 +18,7 @@ const PartnersSection = () => {
         const items = Array.isArray(res.data) ? res.data : res.data.data || [];
         setPartners(items);
       } catch (err) {
-        console.error("Lỗi load partners:", err);
+        toastError("Lỗi load partners:", err);
         setError("Không thể tải danh sách đối tác");
       } finally {
         setLoading(false);

@@ -36,7 +36,7 @@ export default function LoginSection() {
       toastSuccess("Đăng nhập thành công!");
       window.location.href = res.next || "/";
     } catch (err) {
-      console.error(err);
+      toastError(err);
       const message = err.response?.data?.error || err.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại.";
       toastError(message);
     } finally {

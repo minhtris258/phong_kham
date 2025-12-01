@@ -1,6 +1,7 @@
 // src/components/patient/BookingModal.jsx
 import React, { useState } from 'react';
 import { Upload, Calendar, Clock, User, FileText, Loader2 } from 'lucide-react';
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 import appointmentsService from '../../services/AppointmentsService';
 import Modal from '../Modal'; // Import Modal có sẵn
 
@@ -14,7 +15,7 @@ export default function BookingModal({ doctor, selectedDate, selectedSlot, onClo
     // Xử lý logic đặt lịch
     const handleConfirmBooking = async () => {
         if (!reason.trim()) {
-            alert("Vui lòng nhập lý do khám.");
+            toastWarning("Vui lòng nhập lý do khám.");
             return;
         }
 
@@ -22,7 +23,7 @@ export default function BookingModal({ doctor, selectedDate, selectedSlot, onClo
         const timeslotId = selectedSlot._id || selectedSlot.id || selectedSlot.timeslot_id;
 
         if (!timeslotId) {
-            alert("Lỗi dữ liệu: Không tìm thấy ID của lịch khám này.");
+            toastError("Lỗi dữ liệu: Không tìm thấy ID của lịch khám này.");
             console.error("Selected Slot thiếu ID:", selectedSlot);
             return;
         }
@@ -36,12 +37,12 @@ export default function BookingModal({ doctor, selectedDate, selectedSlot, onClo
 
             await appointmentsService.bookAppointment(payload);
             
-            alert("Đặt lịch thành công!");
+            toastSuccess("Đặt lịch thành công!");
             onClose(); // Đóng modal sau khi thành công
         } catch (error) {
-            console.error("Booking Error:", error);
+            toastError("Booking Error:", error);
             const msg = error.response?.data?.message || "Lỗi khi đặt lịch.";
-            alert(msg);
+            toastError(msg);
         } finally {
             setIsSubmitting(false);
         }

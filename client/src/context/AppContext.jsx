@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import axios from "axios";
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../utils/toast";
 import { useSocket } from "./SocketContext";
 
 // ----------------------------------------------------
@@ -111,7 +112,7 @@ export const AppProvider = ({ children }) => {
             const profileResponse = await apiClient.get(profileEndpoint);
             fullProfile = profileResponse.data.profile || profileResponse.data;
           } catch (err) {
-            console.warn("Chưa lấy được profile chi tiết:", err);
+            toastError("Chưa lấy được profile chi tiết:", err);
             // Không throw lỗi ở đây để vẫn giữ login thành công
           }
         }
@@ -131,7 +132,7 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem("profileCompleted", isCompleted);
 
       } catch (error) {
-        console.error("Lỗi tải thông tin người dùng:", error);
+        toastError("Lỗi tải thông tin người dùng:", error);
         // Nếu lỗi 401 (Token hết hạn/sai) -> Logout ngay
         if (error.response && error.response.status === 401) {
             setAuthToken(null);
@@ -194,19 +195,47 @@ export const AppProvider = ({ children }) => {
   }, [token, loadCurrentUser]);
 
   // Socket logic
-  useEffect(() => {
-    if (!socket || !token) return;
+ useEffect(() => {
+    if (!socket || !user) return;
+
+    // Hàm join room
+    const handleJoinRoom = () => {
+      // 👇 LOGIC QUAN TRỌNG: Ưu tiên lấy user_id (Account ID) nếu có
+      // Vì bảng Patient có trường user_id trỏ về Account, còn _id là ID hồ sơ.
+      // Notification được gửi về Account ID.
+      const roomId = user.user_id || user._id; 
+      
+      const userName = user.fullName || user.name || "User";
+
+      console.log(`🔌 [Socket] User ${userName} đang xin vào room: ${roomId}`);
+      
+      // Join vào đúng Room ID của tài khoản
+      socket.emit("join_room", roomId);
+    };
+
+    // A. Join ngay lập tức
+    handleJoinRoom();
+
+    // B. Tự động Join lại khi mất mạng/server restart
+    socket.on("connect", () => {
+        console.log("🔄 Socket đã kết nối lại -> Join room lại...");
+        handleJoinRoom();
+    });
+
     const handleProfileUpdate = (data) => {
       console.log("🔔 Socket: Nhận tín hiệu profile_updated", data);
       loadCurrentUser();
     };
+
     socket.on("profile_updated", handleProfileUpdate);
     socket.on("user_updated", handleProfileUpdate);
+
     return () => {
+      socket.off("connect"); 
       socket.off("profile_updated", handleProfileUpdate);
       socket.off("user_updated", handleProfileUpdate);
     };
-  }, [socket, token, loadCurrentUser]);
+  }, [socket, user, loadCurrentUser]);
 
   const contextValue = {
     isAuthenticated,

@@ -42,7 +42,7 @@ export default function DoctorSchedule() {
             const data = res.data || res;
             setScheduleData(data.schedule || data); 
         } catch (err) {
-            console.error("Lỗi tải lịch:", err);
+            toastError("Lỗi tải lịch:", err);
         } finally {
             setLoading(false);
         }

@@ -1,6 +1,7 @@
 // src/components/SpecialtySection.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../utils/toast";
 import axios from "axios";
 import "../index.css";
 
@@ -66,7 +67,7 @@ export default function SpecialtySection({
           setSpecialties(Array.isArray(list) ? list : []);
         }
       } catch (e) {
-        console.error("Fetch specialties failed:", e);
+        toastError("Fetch specialties failed:", e);
         if (!cancelled) {
           setSpecialties([]);
         }
