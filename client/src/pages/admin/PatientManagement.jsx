@@ -138,9 +138,9 @@ const PatientManagement = () => {
       setIsImagePending(false);
     };
     reader.onerror = (error) => {
-      console.error("Lỗi đọc file:", error);
+      toastError("Lỗi đọc file:", error);
       setIsImagePending(false);
-      alert("Lỗi tải ảnh cục bộ. Vui lòng thử lại.");
+      toastError("Lỗi tải ảnh cục bộ. Vui lòng thử lại.");
     };
   };
 

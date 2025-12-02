@@ -232,11 +232,13 @@ export const updatePatientAdmin = async (req, res, next) => {
   }
 };
 // POST /onboarding/patient-profile
+// POST /onboarding/patient-profile
 export const completePatientProfile = async (req, res, next) => {
   try {
     const userId = req.user?._id;
     const role = req.user?.role || req.user?.role?.name;
     
+    // 1. Kiểm tra Token & Role
     if (!userId) return res.status(401).json({ error: "Thiếu hoặc sai token." });
     if (role !== "patient") {
       return res.status(403).json({ error: "Chỉ tài khoản bệnh nhân mới được hoàn tất hồ sơ." });
@@ -244,32 +246,25 @@ export const completePatientProfile = async (req, res, next) => {
 
     const { fullName, dob, gender, phone, address, note } = req.body;
 
-    // 1. Validate dữ liệu đầu vào
+    // 2. Validate dữ liệu
     if (!fullName || !dob || !gender || !phone || !address) {
-      return res.status(400).json({ error: "Thiếu thông tin bắt buộc: fullName, dob, gender, phone, address." });
+      return res.status(400).json({ error: "Thiếu thông tin bắt buộc." });
     }
 
-    const allowedGender = ["male", "female", "other"];
-    if (!allowedGender.includes(gender)) {
-      return res.status(400).json({ error: "Giới tính không hợp lệ." });
-    }
+    const dobDate = parseDob(dob); // Đảm bảo hàm parseDob đã được import/khai báo bên trên
+    if (!dobDate) return res.status(400).json({ error: "Ngày sinh không hợp lệ." });
 
-    const dobDate = parseDob(dob);
-    if (!dobDate) {
-      return res.status(400).json({ error: "Ngày sinh không hợp lệ." });
-    }
-
-    // 2. Kiểm tra SĐT trùng (trừ chính user này ra, phòng trường hợp update lại)
+    // 3. Kiểm tra SĐT trùng
     const phoneTaken = await Patient.findOne({ 
         phone: phone, 
         user_id: { $ne: userId } 
     }).lean();
     
     if (phoneTaken) {
-      return res.status(409).json({ error: "Số điện thoại đã được dùng cho hồ sơ khác." });
+      return res.status(409).json({ error: "Số điện thoại đã được dùng." });
     }
 
-    // 3. Thực hiện Update (hoặc Insert nếu chưa có - upsert)
+    // 4. Update bảng PATIENT (Thông tin chi tiết)
     const updatedProfile = await Patient.findOneAndUpdate(
       { user_id: userId }, 
       {
@@ -280,38 +275,62 @@ export const completePatientProfile = async (req, res, next) => {
           phone: phone.trim(),
           address: address.trim(),
           note: note || "",
-          status: "active", // Kích hoạt hồ sơ
+          status: "active", 
         }
       },
       { new: true, upsert: true } 
     );
 
-    // 4. Cập nhật trạng thái User gốc (để lần sau login không bắt onboarding nữa)
-    await User.findByIdAndUpdate(userId, {
-        profile_completed: true,
-        status: "active"
-    });
+    // ============================================================
+    // 5. Update bảng USER (Quan trọng: Phải dùng Model User)
+    // ============================================================
+    const userUpdated = await User.findByIdAndUpdate(
+        userId, 
+        {
+            profile_completed: true, // <--- Key chốt để AppContext nhận diện
+            status: "active"
+        },
+        { new: true } // Trả về user mới nhất sau khi update
+    );
 
-    // === SOCKET.IO: Gửi thông báo realtime để Frontend tự động refresh ===
+    // Kiểm tra nếu update thất bại
+    if (!userUpdated) {
+        return res.status(500).json({ error: "Lỗi hệ thống: Không cập nhật được User." });
+    }
+
+    // 6. Tạo Token mới chứa thông tin đã update
+    const newToken = jwt.sign(
+      {
+        _id: userUpdated._id,
+        email: userUpdated.email,
+        role: "patient", 
+        status: userUpdated.status,          // "active"
+        profile_completed: true              // true
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // 7. Gửi Socket cập nhật (nếu có)
     const io = req.app.get("io");
     if (io) {
-      const targetRoom = userId.toString();
-      console.log(`[Socket] Profile completed. Emitting 'profile_updated' to room: ${targetRoom}`);
-      io.to(targetRoom).emit("profile_updated", {
+      io.to(userId.toString()).emit("profile_updated", {
           userId: userId,
           profile_completed: true,
           status: "active"
       });
     }
-    // ====================================================================
 
+    // 8. Trả về kết quả
     return res.status(200).json({
       message: "Hoàn tất hồ sơ thành công.",
       profile: updatedProfile,
-      next: "/dashboard" // Chuyển hướng vào trang chính
+      token: newToken, // Frontend sẽ dùng token này để setAuthToken
+      next: "/" 
     });
 
   } catch (e) {
+    console.error("Error completePatientProfile:", e);
     next(e);
   }
 };

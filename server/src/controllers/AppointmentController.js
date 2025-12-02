@@ -172,6 +172,8 @@ export const bookAppointment = async (req, res, next) => {
   }
 };
 
+// file: controllers/AppointmentController.js
+
 export const cancelAppointment = async (req, res, next) => {
   const session = await mongoose.startSession();
   try {
@@ -185,9 +187,23 @@ export const cancelAppointment = async (req, res, next) => {
       appt = await Appointment.findById(id).session(session);
       if (!appt) throw new Error("NOT_FOUND");
 
-      if (!(role === "admin" || String(appt.patient_id) === String(req.user._id))) {
+      // --- 👇 1. FIX CHECK QUYỀN (QUAN TRỌNG) ---
+      // Phải tìm hồ sơ bệnh nhân của user đang đăng nhập để so sánh đúng ID
+      let isOwner = false;
+      if (role === 'admin') {
+          isOwner = true;
+      } else {
+          // Tìm hồ sơ patient gắn với user này
+          const myPatientProfile = await Patient.findOne({ user_id: req.user._id }).session(session);
+          if (myPatientProfile && String(appt.patient_id) === String(myPatientProfile._id)) {
+              isOwner = true;
+          }
+      }
+
+      if (!isOwner) {
         throw new Error("FORBIDDEN");
       }
+      // ------------------------------------------
 
       if (appt.status === "cancelled") {
         return res.json({ message: "Đã huỷ trước đó." });
@@ -197,42 +213,55 @@ export const cancelAppointment = async (req, res, next) => {
       await appt.save({ session });
 
       await TimeSlot.updateOne(
-        { _id: appt.timeslot_id, appointment_id: appt._id },
+        { _id: appt.timeslot_id },
         { $set: { status: "free", appointment_id: null } },
         { session }
       );
 
-      // Thông báo hủy
-      const doctor = await User.findById(appt.doctor_id).select('fullName').lean();
-      const notificationPayload = {
-        user_id: appt.patient_id,
-        type: "appointment",
-        title: "Lịch Hẹn Đã Bị Hủy",
-        body: `Lịch hẹn khám với Bác sĩ ${doctor?.fullName || "Doctor"} vào lúc ${appt.start} ngày ${new Date(appt.date).toLocaleDateString('vi-VN')} đã bị hủy.`,
-        appointment_id: appt._id,
-        channels: ["in-app"],
-        sent_at: new Date(),
-        status: "unread",
-      };
-      const savedNotification = await Notification.create(notificationPayload);
+      // --- 👇 2. FIX LOGIC THÔNG BÁO (QUAN TRỌNG) ---
+      
+      // Lấy thông tin User ID đích thực để gửi thông báo
+      // (Vì appt.patient_id là ID hồ sơ, không phải ID tài khoản để nhận socket)
+      const patientProfile = await Patient.findById(appt.patient_id).session(session);
+      
+      if (patientProfile) {
+          const targetUserId = patientProfile.user_id; // Đây mới là ID tài khoản
+          const doctor = await User.findById(appt.doctor_id).select('fullName').lean(); // Hoặc Doctor Model tùy thiết kế
+          
+          // Nếu doctor_id trong Appointment trỏ tới bảng Doctor, hãy dùng dòng này:
+          // const doctor = await Doctor.findById(appt.doctor_id).select('fullName');
 
-      if (io) {
-        io.to(appt.patient_id.toString()).emit('new_notification', {
-          message: savedNotification.title,
-          notification: savedNotification,
-        });
-        io.to(appt.doctor_id.toString()).emit('appointment_cancelled', {
-          message: "Một lịch hẹn đã bị hủy.",
-          appointmentId: appt._id,
-          timeslotId: appt.timeslot_id,
-        });
+          const notificationPayload = {
+            user_id: targetUserId, // 👈 Gửi về Account ID
+            type: "appointment",
+            title: "Lịch Hẹn Đã Bị Hủy",
+            body: `Lịch hẹn khám vào lúc ${appt.start} ngày ${new Date(appt.date).toLocaleDateString('vi-VN')} đã hủy thành công.`,
+            appointment_id: appt._id,
+            channels: ["in-app"],
+            sent_at: new Date(),
+            status: "unread",
+          };
+          
+          const savedNotification = await Notification.create([notificationPayload], { session });
+
+          if (io) {
+            // Gửi cho Bệnh nhân (Target User)
+            console.log(`📡 Hủy lịch: Bắn socket tới User ${targetUserId}`);
+            io.to(targetUserId.toString()).emit('new_notification', {
+              message: notificationPayload.title,
+              data: savedNotification[0], // Vì create trong transaction trả về mảng
+            });
+            
+            // Gửi cho Bác sĩ (Nếu cần - cần tìm UserID của bác sĩ)
+            // io.to(...).emit(...)
+          }
       }
-
-      return res.json({ message: "Huỷ lịch thành công." });
     });
+
+    return res.json({ message: "Huỷ lịch thành công." });
   } catch (e) {
     if (e.message === "NOT_FOUND") return res.status(404).json({ error: "Không tìm thấy lịch hẹn." });
-    if (e.message === "FORBIDDEN") return res.status(403).json({ error: "Không đủ quyền." });
+    if (e.message === "FORBIDDEN") return res.status(403).json({ error: "Bạn không có quyền hủy lịch hẹn này." });
     next(e);
   } finally {
     session.endSession();

@@ -11,6 +11,7 @@ import {
 } from "lucide-react"; 
 import doctorService from "../../services/DoctorService";
 import specialtyService from "../../services/SpecialtyService";
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 
 const formatVND = (value) => {
   if (value === null || value === undefined || value === "") return "—";
@@ -38,7 +39,7 @@ export default function DoctorsDirectory() {
         const specialtyList = specialtyRes.data || [];
         setSpecialties(specialtyList);
       } catch (err) {
-        console.error("Lỗi tải dữ liệu:", err);
+        toastError("Lỗi tải dữ liệu:", err);
       } finally {
         setLoading(false);
       }

@@ -1,17 +1,20 @@
-// src/pages/patient/ProfileCompletion.jsx
 import React, { useState } from "react";
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 import { useNavigate } from "react-router-dom";
 import patientService from "../../services/PatientService";
+import { useAppContext } from "../../context/AppContext";
 
 const ProfileCompletion = () => {
   const navigate = useNavigate();
+
+  const { setAuthToken, loadCurrentUser } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Dữ liệu form
   const [formData, setFormData] = useState({
     fullName: "",
-    gender: "", // Để rỗng để bắt buộc chọn -> thanh mới bắt đầu từ 50% chuẩn
+    gender: "", 
     dob: "",
     phone: "",
     address: "",
@@ -20,21 +23,14 @@ const ProfileCompletion = () => {
   // --- LOGIC TÍNH % TIẾN ĐỘ ---
   const calculateProgress = () => {
     const requiredFields = ["fullName", "gender", "dob", "phone", "address"];
-    
-    // Đếm số trường đã được điền (không rỗng)
     const filledCount = requiredFields.reduce((count, field) => {
-      // Kiểm tra có dữ liệu không
       return count + (formData[field] && formData[field].trim() !== "" ? 1 : 0);
     }, 0);
-
-    // Công thức: 50% (cơ bản) + (Số trường đã điền / Tổng trường) * 50%
     const percentage = 50 + (filledCount / requiredFields.length) * 50;
-    
     return Math.round(percentage);
   };
 
   const progress = calculateProgress();
-  // -----------------------------
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -43,21 +39,40 @@ const ProfileCompletion = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
 
     try {
-      if (progress < 100) {
-        throw new Error("Vui lòng điền đầy đủ tất cả thông tin để đạt 100%.");
+      if (progress < 100) throw new Error("Vui lòng điền đủ thông tin.");
+
+      // 1. Gọi API
+      const res = await patientService.completePatientProfile(formData);
+      
+      // LOG ĐỂ KIỂM TRA RESPONSE TRẢ VỀ
+      console.log("Response từ server:", res);
+
+      // 2. === SỬA LẠI ĐOẠN NÀY ===
+      // Axios thường trả về dữ liệu trong res.data
+      // Kiểm tra cả 2 trường hợp để chắc chắn
+      const newToken = res.token || res.data?.token;
+
+      if (newToken) {
+          console.log("Đã nhận Token mới:", newToken);
+          
+          // Cập nhật Token mới ngay lập tức
+          setAuthToken(newToken); 
+          
+          // Load lại User để AppContext nhận diện profile_completed = true
+          await loadCurrentUser(newToken);
+      } else {
+          toastWarning("Không tìm thấy Token trong response!");
       }
 
-      await patientService.completePatientProfile(formData);
-      alert("Cập nhật hồ sơ thành công!");
-      navigate("/"); 
+      toastSuccess("Hồ sơ đã hoàn tất!");
+      navigate("/");
+
     } catch (err) {
-      console.error("Lỗi:", err);
-      const msg = err.response?.data?.error || err.message || "Có lỗi xảy ra.";
-      setError(msg);
+      toastError(err.response?.data?.error || err.message || "Có lỗi xảy ra.");
+      setError(err.response?.data?.error || err.message || "Có lỗi xảy ra.");
     } finally {
       setLoading(false);
     }
@@ -75,7 +90,6 @@ const ProfileCompletion = () => {
               Bạn đã hoàn thành bước đăng ký. Hãy bổ sung thông tin cá nhân để hoàn tất.
             </p>
             
-            {/* Thanh Progress Bar Động */}
             <div className="relative pt-1">
               <div className="flex mb-2 items-center justify-between">
                 <div>
@@ -93,16 +107,13 @@ const ProfileCompletion = () => {
                 <div
                   style={{ width: `${progress}%`, transition: "width 0.5s ease-in-out" }}
                   className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
-                    progress === 100 ? "bg-green-400" : "bg-white/80" // Đổi màu xanh lá khi 100%
+                    progress === 100 ? "bg-green-400" : "bg-white/80"
                   }`}
                 ></div>
               </div>
             </div>
-
             <p className="text-xs mt-2 text-indigo-200 italic">
-              {progress === 100 
-                ? "Tuyệt vời! Bạn đã sẵn sàng." 
-                : "Vui lòng điền đủ các trường bên phải."}
+              {progress === 100 ? "Tuyệt vời! Bạn đã sẵn sàng." : "Vui lòng điền đủ các trường bên phải."}
             </p>
           </div>
 
@@ -118,7 +129,6 @@ const ProfileCompletion = () => {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               
-              {/* Họ tên */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Họ và tên <span className="text-red-500">*</span>
@@ -133,7 +143,6 @@ const ProfileCompletion = () => {
                 />
               </div>
 
-              {/* SĐT & Ngày sinh */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -162,7 +171,6 @@ const ProfileCompletion = () => {
                 </div>
               </div>
 
-              {/* Giới tính */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Giới tính <span className="text-red-500">*</span>
@@ -186,7 +194,6 @@ const ProfileCompletion = () => {
                 </div>
               </div>
 
-              {/* Địa chỉ */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Địa chỉ <span className="text-red-500">*</span>
@@ -201,11 +208,10 @@ const ProfileCompletion = () => {
                 />
               </div>
 
-              {/* Nút bấm */}
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={loading || progress < 100} // Disable nếu chưa đủ 100%
+                  disabled={loading || progress < 100} 
                   className={`w-full py-2.5 rounded-lg text-white font-medium text-sm transition duration-300
                     ${loading || progress < 100 
                         ? 'bg-slate-400 cursor-not-allowed' 

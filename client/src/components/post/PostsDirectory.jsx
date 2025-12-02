@@ -1,6 +1,7 @@
 // src/components/PostsDirectory.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 import axios from "axios";
 
 // ==== URL API (chỉnh lại cho đúng backend của bạn) ====
@@ -44,7 +45,7 @@ export default function PostsDirectory() {
 
         setPosts(postList);
       } catch (err) {
-        console.error(err);
+        toastError("Không tải được danh sách bài viết. Vui lòng thử lại sau.");
         setError("Không tải được danh sách bài viết. Vui lòng thử lại sau.");
       } finally {
         setLoading(false);

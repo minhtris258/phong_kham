@@ -1,69 +1,105 @@
+// file: services/aiService.js
+import mongoose from "mongoose"; // 👈 Bắt buộc để ép kiểu ID
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Doctor from "../models/DoctorModel.js";
-import { getAvailableSlots } from "../utils/scheduler.js"; 
+import Appointment from "../models/AppointmentModel.js";
+import TimeSlot from "../models/TimeslotModel.js";
+import Notification from "../models/NotificationModel.js";
+import Patient from "../models/PatientModel.js"; // 👈 Model Patient để tìm hồ sơ
+import User from "../models/UserModel.js";
+import { getAvailableSlots, findNextAvailableSlot } from "../utils/scheduler.js"; 
 import "dotenv/config";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 export const chatSessions = new Map();
 
-// 1. ĐỊNH NGHĨA TOOL (Thêm cảnh báo gắt hơn)
+// --- 1. ĐỊNH NGHĨA TOOLS ---
 const tools = [
   {
     functionDeclarations: [
+      // Tool 1: Tìm bác sĩ
       {
         name: "search_doctors",
-        description: "Tìm kiếm bác sĩ để lấy ID. BẮT BUỘC DÙNG KHI KHÁCH NÓI TÊN.",
+        description: "Tìm kiếm bác sĩ theo tên hoặc chuyên khoa để lấy ID.",
         parameters: {
           type: "OBJECT",
           properties: { keyword: { type: "STRING" } },
           required: ["keyword"],
         },
       },
+      // Tool 2: Check lịch ngày cụ thể
       {
         name: "check_availability",
-        description: "Kiểm tra lịch trống. CHỈ DÙNG KHI ĐÃ CÓ 'DOCTOR_ID' CHUẨN (24 KÝ TỰ).",
+        description: "Kiểm tra các khung giờ trống của bác sĩ trong một ngày cụ thể.",
         parameters: {
           type: "OBJECT",
           properties: {
-            doctorId: { type: "STRING", description: "ID 24 ký tự lấy từ tool search_doctors. KHÔNG ĐƯỢC DÙNG TÊN." },
-            date: { type: "STRING" },
+            doctorId: { type: "STRING" },
+            date: { type: "STRING", description: "Format YYYY-MM-DD" },
           },
           required: ["doctorId", "date"],
+        },
+      },
+      // Tool 3: Tìm ngày gần nhất
+      {
+        name: "find_next_available",
+        description: "Tìm các ngày có lịch trống GẦN NHẤT. Dùng khi khách hỏi 'khi nào rảnh', 'lịch sớm nhất' mà không nói ngày.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            doctorId: { type: "STRING" },
+          },
+          required: ["doctorId"],
+        },
+      },
+      // Tool 4: Đặt lịch
+      {
+        name: "book_appointment",
+        description: "Thực hiện hành động đặt lịch khám. CHỈ GỌI KHI KHÁCH ĐÃ CHỐT GIỜ.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            doctorId: { type: "STRING" },
+            date: { type: "STRING", description: "Format YYYY-MM-DD" },
+            time: { type: "STRING", description: "Format HH:mm" },
+          },
+          required: ["doctorId", "date", "time"],
         },
       },
     ],
   },
 ];
 
-export const handleAIChat = async (userMessage, socketId) => {
+// --- 2. HÀM XỬ LÝ CHÍNH ---
+export const handleAIChat = async (userMessage, socketId, userId, io) => {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash", tools: tools });
     const today = new Date().toLocaleDateString("en-CA"); 
 
-    // Reset session nếu AI bắt đầu nói linh tinh
+    // Khởi tạo session chat nếu chưa có
     if (!chatSessions.has(socketId)) {
         const newChat = model.startChat({
             history: [
                 {
                     role: "user",
                     parts: [{ text: `
-                    Bạn là trợ lý đặt lịch phòng khám thông minh. Hôm nay là ngày ${today}.
+                    Bạn là trợ lý ảo của phòng khám. Hôm nay là ngày ${today}.
                     
-                    QUY TRÌNH XỬ LÝ TUYỆT ĐỐI (KHÔNG ĐƯỢC BỎ BƯỚC):
-                    1. Khách nhắc đến tên bác sĩ (vd: "doctors22", "Nam") -> GỌI NGAY tool "search_doctors".
-                    2. Lấy được ID từ kết quả tìm kiếm -> GỌI TIẾP tool "check_availability" với ID đó.
-                    3. Tuyệt đối KHÔNG tự ý check lịch bằng Tên.
-                    4. Nếu tool check lịch trả về kết quả, hãy liệt kê giờ và mời khách đặt.
-                    5. KHÔNG BAO GIỜ NÓI "TÔI KHÔNG CÓ CHỨC NĂNG NÀY". Bạn CÓ chức năng này thông qua các tool tôi cung cấp.
+                    QUY TRÌNH HỖ TRỢ (TUÂN THỦ TUYỆT ĐỐI):
+                    1. Khách hỏi bác sĩ -> Dùng "search_doctors".
+                    2. Khách hỏi lịch ngày X -> Dùng "check_availability".
+                    3. Khách hỏi "khi nào rảnh" (không rõ ngày) -> Dùng "find_next_available".
+                    4. Khách chốt đặt lịch (vd: "ok đặt giờ này") -> Dùng "book_appointment".
                     
-                    MẪU TRẢ LỜI KHI CÓ LỊCH TRỐNG:
-                    "Bác sĩ [TÊN] còn trống các khung giờ: [DANH SÁCH GIỜ].
-                    Bạn muốn đặt giờ nào để mình gửi link ạ?"
+                    LƯU Ý QUAN TRỌNG:
+                    - Nếu khách chưa đăng nhập (userId bị thiếu), hãy nhắc khách đăng nhập.
+                    - Khi đặt lịch thành công, hãy báo lại rõ ràng ngày giờ và bác sĩ.
+                    - Luôn trả lời ngắn gọn, lịch sự, thân thiện.
                     ` }],
                 },
                 {
                     role: "model",
-                    parts: [{ text: "Đã rõ. Tôi sẽ luôn Tìm kiếm ID trước -> Check lịch sau -> Không bao giờ từ chối yêu cầu đặt lịch." }],
+                    parts: [{ text: "Đã rõ. Tôi sẽ hỗ trợ theo quy trình: Tìm kiếm -> Check lịch -> Đặt lịch." }],
                 },
             ],
         });
@@ -71,50 +107,170 @@ export const handleAIChat = async (userMessage, socketId) => {
     }
 
     const chat = chatSessions.get(socketId);
-    console.log(`📤 [User ${socketId}]:`, userMessage);
+    console.log(`📤 [User ${socketId} | ID: ${userId}]: ${userMessage}`);
     
     let result = await chat.sendMessage(userMessage);
     let response = result.response;
     let call = response.functionCalls();
 
-    // VÒNG LẶP XỬ LÝ (GIỮ NGUYÊN)
+    // --- VÒNG LẶP XỬ LÝ TOOL ---
     while (call) {
       const functionName = call[0].name;
       const args = call[0].args;
       let toolResult = null;
+      console.log(`🤖 AI gọi Tool: ${functionName}`);
 
-      console.log(`🤖 AI gọi Tool: ${functionName} (Args: ${JSON.stringify(args)})`);
-
+      // 1. Tool Tìm Bác Sĩ
       if (functionName === "search_doctors") {
         try {
             const doctors = await Doctor.find({
                 fullName: { $regex: args.keyword, $options: 'i' }, status: 'active'
-            }).select('_id fullName').lean();
+            }).select('_id fullName specialty').lean();
             
-            // 👇 QUAN TRỌNG: Nếu tìm thấy, báo rõ cho AI biết ID là gì
-            if (doctors.length > 0) {
-                toolResult = { 
-                    status: "success", 
-                    message: "Tìm thấy bác sĩ. Hãy dùng ID này để check lịch ngay.",
-                    data: doctors // AI sẽ tự đọc _id trong này
-                };
-            } else {
-                toolResult = { status: "failed", message: "Không tìm thấy bác sĩ nào tên như vậy. Hãy hỏi lại khách." };
-            }
-        } catch (err) { toolResult = { error: "Lỗi DB" }; }
+            toolResult = doctors.length > 0 
+                ? { status: "success", data: doctors } 
+                : { status: "failed", message: "Không tìm thấy bác sĩ phù hợp." };
+        } catch (err) { toolResult = { error: "Lỗi truy vấn DB." }; }
       }
 
+      // 2. Tool Check Lịch Ngày Cụ Thể
       else if (functionName === "check_availability") {
-        // 👇 Chặn ngay tại đây nếu AI vẫn cố chấp gửi ID rác
-        if (!args.doctorId.match(/^[0-9a-fA-F]{24}$/)) {
-             toolResult = { 
-                status: "error", 
-                message: "LỖI: Bạn đang dùng Tên để check lịch. Hãy quay lại bước gọi tool 'search_doctors' để lấy ID thật ngay!" 
-             };
+        if (!mongoose.Types.ObjectId.isValid(args.doctorId)) {
+             toolResult = { status: "error", message: "ID bác sĩ không hợp lệ." };
         } else {
              const slots = await getAvailableSlots(args.doctorId, args.date);
              toolResult = { available_slots: slots };
         }
+      }
+
+      // 3. Tool Tìm Ngày Gần Nhất
+      else if (functionName === "find_next_available") {
+        if (!mongoose.Types.ObjectId.isValid(args.doctorId)) {
+             toolResult = { status: "error", message: "ID bác sĩ không hợp lệ." };
+        } else {
+             const availableDays = await findNextAvailableSlot(args.doctorId);
+             toolResult = availableDays.length > 0 
+                ? { status: "success", data: availableDays }
+                : { status: "empty", message: "Bác sĩ đã kín lịch trong 7 ngày tới." };
+        }
+      }
+
+      // 4. Tool Đặt Lịch (Logic quan trọng nhất)
+      else if (functionName === "book_appointment") {
+          if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+              toolResult = { status: "error", message: "Bạn cần đăng nhập để đặt lịch." };
+          } else {
+              try {
+                  // --- LOGIC MỚI: TỰ ĐỘNG NHẬN DIỆN ID LÀ USER HAY PATIENT ---
+                  let userAccount = null;
+                  let patientProfile = null;
+                  let realAccountId = null; // ID dùng để gửi socket/notification
+
+                  // 1. Thử tìm trong bảng User trước
+                  userAccount = await User.findById(userId);
+
+                  if (userAccount) {
+                      // Nếu tìm thấy User -> userId chính là AccountID
+                      console.log("✅ ID gửi lên là User Account ID.");
+                      realAccountId = userId;
+                      // Tìm Patient theo user_id
+                      patientProfile = await Patient.findOne({ user_id: userId });
+                  } else {
+                      // 2. Nếu không thấy trong User -> Thử tìm trong bảng Patient (Trường hợp Client gửi nhầm ID hồ sơ)
+                      console.log("⚠️ Không thấy trong bảng User, thử tìm trong bảng Patient...");
+                      patientProfile = await Patient.findById(userId);
+                      
+                      if (patientProfile) {
+                          console.log("✅ ID gửi lên là Patient ID. Đang truy ngược lại User...");
+                          realAccountId = patientProfile.user_id; // Lấy Account ID thực sự từ hồ sơ
+                          userAccount = await User.findById(realAccountId);
+                      }
+                  }
+
+                  // --- KIỂM TRA KẾT QUẢ ---
+                  if (!userAccount) {
+                      toolResult = { status: "error", message: "Không tìm thấy tài khoản người dùng hợp lệ." };
+                  } else if (!patientProfile) {
+                      const userName = userAccount.fullName || "bạn";
+                      toolResult = { 
+                          status: "error", 
+                          message: `Chào ${userName}, hệ thống chưa tìm thấy Hồ sơ bệnh nhân. Vui lòng vào mục 'Hồ sơ cá nhân' cập nhật thông tin y tế trước khi đặt lịch.` 
+                      };
+                  } else {
+                      // --- NẾU TÌM THẤY CẢ 2 -> TIẾN HÀNH ĐẶT LỊCH ---
+                      
+                      const slot = await TimeSlot.findOne({
+                          doctor_id: args.doctorId,
+                          date: args.date,
+                          start: args.time,
+                          status: "free"
+                      });
+
+                      if (!slot) {
+                          toolResult = { status: "error", message: "Giờ này vừa bị người khác đặt mất rồi." };
+                      } else {
+                          // Update Slot
+                          slot.status = "booked";
+                          await slot.save();
+
+                          // Tạo Appointment (Dùng ID Bệnh Nhân)
+                          const newAppt = await Appointment.create({
+                              doctor_id: args.doctorId,
+                              patient_id: patientProfile._id, // 👈 Luôn dùng đúng ID hồ sơ
+                              timeslot_id: slot._id,
+                              date: args.date,
+                              start: args.time,
+                              status: "confirmed",
+                              paymentStatus: "unpaid",
+                              reason: "Đặt lịch qua AI Chatbot",
+                              checkinCode: Math.random().toString(36).substring(2, 10).toUpperCase()
+                          });
+
+                          slot.appointment_id = newAppt._id;
+                          await slot.save();
+
+                          // Tạo Thông báo (Dùng ID Tài khoản thực sự)
+                          const doctorInfo = await Doctor.findById(args.doctorId).select('fullName');
+                          const doctorName = doctorInfo ? doctorInfo.fullName : "Bác sĩ";
+                          const notifTitle = "✅ Đặt Lịch Thành Công";
+                          const notifBody = `Bạn đã đặt lịch với BS ${doctorName} lúc ${args.time} ngày ${args.date}.`;
+
+                          const newNotif = await Notification.create({
+                              user_id: realAccountId, // 👈 Gửi cho Account ID thực sự
+                              type: "appointment",
+                              title: notifTitle,
+                              body: notifBody,
+                              appointment_id: newAppt._id,
+                              channels: ["in-app"],
+                              status: "unread",
+                              sent_at: new Date()
+                          });
+
+                          // Gửi Socket (Dùng ID Tài khoản thực sự)
+                          if (io) {
+                              console.log(`📡 Bắn Socket tới Account: ${realAccountId}`);
+                              io.to(realAccountId.toString()).emit('new_notification', {
+                                  message: notifTitle,
+                                  data: newNotif
+                              });
+                              io.emit('slot_booked', {
+                                  timeslotId: slot._id,
+                                  doctorId: args.doctorId
+                              });
+                          }
+
+                          toolResult = { 
+                              status: "success", 
+                              message: `Đã đặt thành công! Lịch hẹn với BS ${doctorName} lúc ${args.time} ngày ${args.date} đã được lưu.`, 
+                              details: newAppt 
+                          };
+                      }
+                  }
+              } catch (err) {
+                  console.error("AI Booking Error:", err);
+                  toolResult = { status: "error", message: "Lỗi hệ thống." };
+              }
+          }
       }
 
       console.log("   📤 Gửi kết quả Tool về AI...");
@@ -129,8 +285,11 @@ export const handleAIChat = async (userMessage, socketId) => {
     return response.text();
 
   } catch (error) {
+    if (error.status === 429 || error.message?.includes('429')) {
+        return "Hệ thống đang quá tải, bạn vui lòng đợi 30 giây rồi thử lại nhé.";
+    }
     console.error("❌ AI Error:", error);
-    chatSessions.delete(socketId); // Xóa session lỗi
-    return "Xin lỗi, hệ thống đang bận. Bạn hãy thử tải lại trang và hỏi lại nhé.";
+    chatSessions.delete(socketId);
+    return "Hệ thống đang bận, vui lòng thử lại sau.";
   }
 };

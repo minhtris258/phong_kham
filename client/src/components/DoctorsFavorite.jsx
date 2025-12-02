@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Star, Users, Ticket, ArrowRight } from "lucide-react"; // Import icon
 import doctorService from "../services/DoctorService";
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../utils/toast";
 
 // ====================== UTIL ======================
 const formatVND = (n) =>
@@ -155,7 +156,7 @@ export default function DoctorsFavorite({
           setDoctors(Array.isArray(list) ? list : []);
         }
       } catch (e) {
-        console.error("Lỗi tải danh sách bác sĩ:", e);
+        toastError("Lỗi tải danh sách bác sĩ:", e);
       } finally {
         if (!cancelled) setLoading(false);
       }

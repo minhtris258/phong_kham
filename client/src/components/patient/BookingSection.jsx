@@ -1,6 +1,7 @@
 // src/components/patient/BookingSection.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 import { useNavigate } from 'react-router-dom'; 
 import BookingModal from './BookingModal.jsx'; 
 import timeslotService from '../../services/TimeslotService.js'; 
@@ -76,7 +77,7 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                 setAvailableSlots(activeSlots);
 
             } catch (error) {
-                console.error("Lỗi tải lịch khám:", error);
+                toastError("Lỗi tải lịch khám:", error);
             } finally {
                 setLoadingSlots(false);
             }
@@ -88,34 +89,53 @@ export default function BookingSection({ doctor, scheduleConfig }) {
     // ============================================================
     // [REALTIME] 3. CẬP NHẬT SLOT KHI CÓ NGƯỜI ĐẶT
     // ============================================================
-    useEffect(() => {
+   useEffect(() => {
         if (!socket) return;
 
         const handleSlotBooked = (data) => {
-            // data = { timeslotId, doctorId, bookedByUserId }
-            
             const currentDoctorId = doctor?._id || doctor?.id;
             
-            // Chỉ xử lý nếu đúng Bác sĩ đang xem
             if (data.doctorId === currentDoctorId) {
-                console.log("⚡ Slot booked realtime:", data.timeslotId);
-                
-                // Luôn cập nhật lại danh sách availableSlots (loại bỏ slot vừa bị đặt)
+                // 1. Cập nhật giao diện (Xóa slot khỏi list)
                 setAvailableSlots(prevSlots => prevSlots.filter(slot => slot._id !== data.timeslotId));
                 
-                // LOGIC QUAN TRỌNG: Xử lý Modal đang mở
+                // 2. Kiểm tra slot đang mở modal
                 if (selectedSlot && selectedSlot._id === data.timeslotId) {
                     
-                    // Nếu người đặt là chính mình (user.id trùng với bookedByUserId) -> KHÔNG LÀM GÌ CẢ
-                    // (Để luồng booking thành công tự xử lý đóng modal và thông báo thành công)
-                    if (user && user._id === data.bookedByUserId) {
-                        return; 
+                    // --- 🔥 FIX LOGIC SO SÁNH ID Ở ĐÂY 🔥 ---
+                    let myProfileId = null; // ID hồ sơ (_id)
+                    let myAccountId = null; // ID tài khoản (user_id)
+                    
+                    const storedUser = localStorage.getItem('user');
+                    if (storedUser) {
+                        try {
+                            const parsed = JSON.parse(storedUser);
+                            myProfileId = parsed._id || parsed.id;
+                            myAccountId = parsed.user_id; // <-- Lấy thêm cái này
+                        } catch (e) { toastError(e); }
                     }
 
-                    // Nếu người khác đặt -> Đóng modal và báo lỗi
+                    const bookerId = String(data.bookedByUserId); // ID server gửi về
+
+                    console.log(`🕵️ CHECK CHỦ SỞ HỮU: 
+                    - My Profile ID: ${myProfileId}
+                    - My Account ID: ${myAccountId}
+                    - Booker ID (Server): ${bookerId}`);
+
+                    // Kiểm tra xem Booker ID có trùng với BẤT KỲ ID nào của mình không
+                    const isMe = (myProfileId && String(myProfileId) === bookerId) || 
+                                 (myAccountId && String(myAccountId) === bookerId);
+
+                    if (isMe) {
+                        console.log("✅ Chính chủ đặt (Khớp ID). Bỏ qua lỗi.");
+                        return; // Thoát ngay, không báo lỗi
+                    }
+
+                    // Nếu không khớp cái nào -> Người khác đặt
+                    toastError("❌ Người khác đã cướp slot này.");
                     setOpenBooking(false);
                     setSelectedSlot(null);
-                    alert("Rất tiếc! Khung giờ này vừa có người khác đặt nhanh hơn bạn. Vui lòng chọn giờ khác.");
+                    toastError("Rất tiếc! Khung giờ này vừa có người khác đặt nhanh hơn bạn. Vui lòng chọn giờ khác.");
                 }
             }
         };
@@ -125,7 +145,7 @@ export default function BookingSection({ doctor, scheduleConfig }) {
         return () => {
             socket.off('slot_booked', handleSlotBooked);
         };
-    }, [socket, doctor, selectedSlot, user]); // Thêm user vào dependency để so sánh
+    }, [socket, doctor, selectedSlot]);
     // ============================================================
 
 

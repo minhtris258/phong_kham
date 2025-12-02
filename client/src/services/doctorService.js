@@ -17,6 +17,10 @@ const doctorService = {
         const response = await api.get('/doctors/me');
         return response.data; // Trả về { profile: { ... } }
     },
+     updateMyDoctorProfile: async (doctorData) => {
+        const response = await api.put('/doctors/me', doctorData);
+        return response;
+    },
     // TẠO MỚI BÁC SĨ (chỉ gửi name, email, password)
     createDoctor: async (doctorData) => {
     // ÉP CHẮC CHẮN CHỈ GỬI 3 TRƯỜNG – LOẠI BỎ TẤT CẢ DỮ LIỆU THỪA
@@ -51,7 +55,7 @@ const doctorService = {
     },
     completeProfile: async (profileData) => {
         // Endpoint khớp với Controller: POST /onboarding/doctor-profile
-        const response = await api.post('/onboarding/doctor-profile', profileData);
+        const response = await api.post('/doctors/onboarding/doctor-profile', profileData);
         return response;
     },
 };

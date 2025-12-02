@@ -70,7 +70,7 @@ const DoctorAppointment = () => {
       });
 
     } catch (error) {
-      console.error("Lỗi tải dữ liệu:", error);
+      toastError("Lỗi tải dữ liệu:", error);
     } finally {
       setLoading(false);
     }

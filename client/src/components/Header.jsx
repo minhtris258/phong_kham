@@ -31,7 +31,7 @@ export default function Header() {
       case 'admin':
         return '/admin';
       case 'doctor':
-        return '/doctor/appointment'; // Default doctor landing page
+        return '/doctor/appointments'; // Default doctor landing page
       default:
         return null;
     }

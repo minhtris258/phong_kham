@@ -42,7 +42,7 @@ const DoctorVisit = () => {
         setStats(res.data.stats);
       }
     } catch (error) {
-      console.error("Lỗi tải thống kê:", error);
+      toastError("Lỗi tải thống kê:", error);
     }
   };
 
@@ -56,7 +56,7 @@ const DoctorVisit = () => {
         setVisits([]);
       }
     } catch (error) {
-      console.error("Lỗi tải danh sách:", error);
+      toastError("Lỗi tải danh sách:", error);
         toastError("Không thể tải danh sách hồ sơ khám.");
     } finally {
       setLoading(false);
