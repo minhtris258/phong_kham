@@ -6,6 +6,7 @@ import SpecialtySection from '../components/SpecialtySection';
 import DownloadAppSection from '../components/DownloadAppSection';
 
 
+
 const Home = () => {
   return (
     <>
@@ -14,7 +15,7 @@ const Home = () => {
       <DoctorsFavorite />
       <SpecialtySection />
       <DownloadAppSection />
-
+      
     </>
   );
 };
