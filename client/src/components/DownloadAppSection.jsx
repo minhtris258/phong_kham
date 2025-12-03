@@ -3,7 +3,7 @@ import React from "react";
 const DownloadAppSection = () => {
   return (
     <section>
-      <div className="flex text-center items-center justify-center pt-16">
+      <div className="flex text-center items-center justify-center pt-16 pb-10">
         <h2 className="color-title lg:text-4xl text-xl font-bold py-4 mb-8 text-center">
           Tải ứng dụng Đặt khám nhanh
         </h2>

@@ -179,8 +179,6 @@ export const AppProvider = ({ children }) => {
     // 1. Gọi setAuthToken(null) để xóa LocalStorage và State
     setAuthToken(null); 
     
-    // 2. Không dùng window.location.href để tránh reload trang cứng
-    // App sẽ tự động chuyển về trang Login nhờ Router check biến isAuthenticated
   };
   
   // XÓA BỎ state `isLoggedIn` gây nhầm lẫn ở đây
