@@ -160,7 +160,7 @@ export const AppProvider = ({ children }) => {
 
   const register = async (name, email, password, confirmPassword) => {
     try {
-      const response = await apiClient.post("/auth/registerpublic", { 
+      const response = await apiClient.post("/auth/register", { 
         name, email, password, confirmPassword 
       });
       const { token } = response.data;

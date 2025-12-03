@@ -6,6 +6,8 @@ import Notification from "../models/NotificationModel.js";
 import User from "../models/UserModel.js";
 import Doctor from "../models/DoctorModel.js";
 import Patient from "../models/PatientModel.js";
+import Medicine from "../models/MedicineModel.js";
+import MedicalService from "../models/MedicalServiceModel.js";
 
 // =================================================================
 // CLIENT (PATIENT) FUNCTIONS

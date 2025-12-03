@@ -48,6 +48,8 @@ import PatientPassword from "./pages/patient/PatientPassword.jsx";
 import PatientAppointment from "./pages/patient/PatientAppointment.jsx";
 import PatientVisitDetail from "./pages/patient/PatientVisitDetail.jsx";
 import DoctorList from "./pages/doctor/DoctorList";
+import ServiceManagement from "./pages/admin/MedicalServiceManagement.jsx";
+import MedicineManagement from "./pages/admin/MedicalManagement.jsx";
 
 export default function App() {
   return (
@@ -116,6 +118,8 @@ export default function App() {
           <Route path="specialty" element={<SpecialtyManagement />} />
           <Route path="holidays" element={<HolidayManagement />} />
           <Route path="partners" element={<PartnersManagement />} />
+          <Route path="services" element={<ServiceManagement />} />
+          <Route path="medicines" element={<MedicineManagement />} />
           <Route path="profile" element={<ProfileSettings />} />
           <Route path="*" element={<NotFound />} />
         </Route>
