@@ -92,7 +92,7 @@ export default function PostsDirectory() {
             const {
               id,
               slug,
-              title,
+              title = post.name,
               thumbnail,
               cover_image,
               excerpt,
