@@ -1,12 +1,16 @@
+// src/pages/patient/PatientAppointment.jsx
 import React, { useEffect, useState } from "react";
 import appointmentsService from "../../services/AppointmentsService";
-import { Calendar, Clock, MapPin, User, AlertCircle, CheckCircle, XCircle, FileText } from "lucide-react"; 
-import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
+import { Calendar, Clock, MapPin, User, AlertCircle, CheckCircle, XCircle, FileText, ChevronLeft, ChevronRight } from "lucide-react"; 
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 import { useNavigate } from "react-router-dom"; 
+
+const ITEMS_PER_PAGE = 5; // Số lịch hẹn mỗi trang
 
 const PatientAppointment = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1); // State trang hiện tại
     const navigate = useNavigate(); 
 
     useEffect(() => {
@@ -21,11 +25,12 @@ const PatientAppointment = () => {
             const dataArray = body && body.data ? body.data : body;
 
             if (Array.isArray(dataArray)) {
-                setAppointments(dataArray);
+                // Sắp xếp giảm dần theo ngày tạo (mới nhất lên đầu)
+                const sortedData = dataArray.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                setAppointments(sortedData);
             } else {
                 setAppointments([]); 
             }
-
         } catch (error) {
             console.error("❌ Lỗi tải lịch khám:", error);
             toastError("Không thể tải danh sách lịch khám.");
@@ -47,9 +52,23 @@ const PatientAppointment = () => {
         }
     };
 
-    // --- SỬA ĐỔI Ở ĐÂY: ĐIỀU HƯỚNG RA TRANG RIÊNG ---
     const handleViewVisit = (appointmentId) => {
         navigate(`/visit-detail/${appointmentId}`);
+    };
+
+    // --- PHÂN TRANG LOGIC ---
+    const totalPages = Math.ceil(appointments.length / ITEMS_PER_PAGE);
+    const paginatedAppointments = appointments.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+            // Cuộn lên đầu danh sách khi chuyển trang
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
     const getStatusBadge = (status) => {
@@ -78,7 +97,7 @@ const PatientAppointment = () => {
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-full">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-full flex flex-col">
             <div className="px-6 py-5 border-b border-gray-100 bg-white">
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                     <Calendar className="text-indigo-600" /> Lịch Khám Bệnh
@@ -86,72 +105,108 @@ const PatientAppointment = () => {
                 <p className="text-sm text-gray-500 mt-1">Danh sách các cuộc hẹn khám bệnh của bạn</p>
             </div>
 
-            <div className="p-6">
+            <div className="p-6 flex-1">
                 {appointments.length === 0 ? (
                     <div className="text-center py-10 text-gray-500">
                         <Calendar size={48} className="mx-auto mb-3 text-gray-300" />
                         <p>Bạn chưa có lịch khám nào.</p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {appointments.map((apt) => (
-                            <div key={apt._id} className="border border-gray-100 rounded-xl p-5 hover:shadow-md transition bg-white">
-                                <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
-                                    <div className="flex-1">
-                                        <div className="flex flex-wrap items-center gap-3 mb-2">
-                                            <h4 className="text-lg font-bold text-gray-900">
-                                                BS. {apt.doctor_id?.fullName || "Bác sĩ"}
-                                            </h4>
-                                            {getStatusBadge(apt.status)}
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm text-gray-600 mt-3">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar size={16} className="text-indigo-500" />
-                                                <span>Ngày: <span className="font-medium text-gray-800">{new Date(apt.date).toLocaleDateString('vi-VN')}</span></span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Clock size={16} className="text-indigo-500" />
-                                                <span>Giờ: <span className="font-medium text-gray-800">{apt.start}</span></span>
+                    <>
+                        <div className="space-y-4">
+                            {/* Render danh sách đã phân trang */}
+                            {paginatedAppointments.map((apt) => (
+                                <div key={apt._id} className="border border-gray-100 rounded-xl p-5 hover:shadow-md transition bg-white">
+                                    <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
+                                        <div className="flex-1">
+                                            <div className="flex flex-wrap items-center gap-3 mb-2">
+                                                <h4 className="text-lg font-bold text-gray-900">
+                                                    BS. {apt.doctor_id?.fullName || "Bác sĩ"}
+                                                </h4>
+                                                {getStatusBadge(apt.status)}
                                             </div>
                                             
-                                            {apt.doctor_id?.specialty && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm text-gray-600 mt-3">
                                                 <div className="flex items-center gap-2">
-                                                    <User size={16} className="text-indigo-500" />
-                                                    <span>Chuyên khoa: {apt.doctor_id.specialty}</span>
+                                                    <Calendar size={16} className="text-indigo-500" />
+                                                    <span>Ngày: <span className="font-medium text-gray-800">{new Date(apt.date).toLocaleDateString('vi-VN')}</span></span>
                                                 </div>
-                                            )}
-                                            
-                                             <div className="flex items-start gap-2 col-span-1 sm:col-span-2">
-                                                <AlertCircle size={16} className="text-indigo-500 mt-0.5" />
-                                                <span className="text-gray-500 italic">Ghi chú: {renderReason(apt.reason)}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <Clock size={16} className="text-indigo-500" />
+                                                    <span>Giờ: <span className="font-medium text-gray-800">{apt.start}</span></span>
+                                                </div>
+                                                
+                                                {apt.doctor_id?.specialty && (
+                                                    <div className="flex items-center gap-2">
+                                                        <User size={16} className="text-indigo-500" />
+                                                        <span>Chuyên khoa: {apt.doctor_id.specialty}</span>
+                                                    </div>
+                                                )}
+                                                
+                                                 <div className="flex items-start gap-2 col-span-1 sm:col-span-2">
+                                                    <AlertCircle size={16} className="text-indigo-500 mt-0.5" />
+                                                    <span className="text-gray-500 italic">Ghi chú: {renderReason(apt.reason)}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="flex flex-col gap-2 items-end">
-                                        {(apt.status === 'pending' || apt.status === 'confirmed') && (
-                                            <button 
-                                                onClick={() => handleCancel(apt._id)}
-                                                className="px-4 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-medium transition whitespace-nowrap"
-                                            >
-                                                Hủy lịch
-                                            </button>
-                                        )}
+                                        <div className="flex flex-col gap-2 items-end">
+                                            {(apt.status === 'pending' || apt.status === 'confirmed') && (
+                                                <button 
+                                                    onClick={() => handleCancel(apt._id)}
+                                                    className="px-4 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-medium transition whitespace-nowrap"
+                                                >
+                                                    Hủy lịch
+                                                </button>
+                                            )}
 
-                                        {apt.status === 'completed' && (
-                                            <button 
-                                                onClick={() => handleViewVisit(apt._id)}
-                                                className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg font-medium transition whitespace-nowrap shadow-sm"
-                                            >
-                                                <FileText size={16} /> Xem kết quả
-                                            </button>
-                                        )}
+                                            {apt.status === 'completed' && (
+                                                <button 
+                                                    onClick={() => handleViewVisit(apt._id)}
+                                                    className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg font-medium transition whitespace-nowrap shadow-sm"
+                                                >
+                                                    <FileText size={16} /> Xem kết quả
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
+                            ))}
+                        </div>
+
+                        {/* --- PAGINATION CONTROL --- */}
+                        {totalPages > 1 && (
+                            <div className="flex justify-center items-center gap-4 mt-8 pt-4 border-t border-gray-100">
+                                <button
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className={`p-2 rounded-lg border transition ${
+                                        currentPage === 1 
+                                            ? 'text-gray-300 border-gray-200 cursor-not-allowed' 
+                                            : 'text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-indigo-600'
+                                    }`}
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+                                
+                                <span className="text-sm font-medium text-gray-700">
+                                    Trang <span className="text-indigo-600 font-bold">{currentPage}</span> / {totalPages}
+                                </span>
+
+                                <button
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className={`p-2 rounded-lg border transition ${
+                                        currentPage === totalPages 
+                                            ? 'text-gray-300 border-gray-200 cursor-not-allowed' 
+                                            : 'text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-indigo-600'
+                                    }`}
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
                             </div>
-                        ))}
-                    </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

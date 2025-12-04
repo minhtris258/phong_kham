@@ -24,8 +24,13 @@ function calcTotals(fee, items) {
  */
 export const createVisit = async (req, res, next) => {
   const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const io = req.app.get('io'); 
+    
+    // Log request body để debug
+    console.log("👉 CREATE VISIT BODY:", req.body);
 
     const {
       appointment_id,
@@ -34,177 +39,181 @@ export const createVisit = async (req, res, next) => {
       notes = "",
       advice = "",
       next_visit_timeslot_id = null,
-      
-      // Mảng thuốc: [{ drug, dosage, frequency, quantity, unit, ... }]
       prescriptions = [],
-      
-      // Mảng ID dịch vụ: ["id_sieu_am", "id_xet_nghiem"]
       serviceIds = [] 
     } = req.body || {};
 
-    // 1. Validate cơ bản
+    // 1. Validate dữ liệu đầu vào
     if (!appointment_id || !symptoms) {
-      return res.status(400).json({ error: "Thiếu thông tin lịch hẹn hoặc triệu chứng." });
+      throw new Error("MISSING_FIELDS");
     }
 
+    if (!mongoose.Types.ObjectId.isValid(appointment_id)) {
+        throw new Error("INVALID_APPOINTMENT_ID");
+    }
+
+    // 2. Lấy thông tin bác sĩ
     const myDoctorId = await getDoctorIdFromUser(req.user._id);
-    if (!myDoctorId) return res.status(403).json({ error: "Không tìm thấy hồ sơ bác sĩ." });
+    if (!myDoctorId) throw new Error("DOCTOR_NOT_FOUND");
 
-    await session.withTransaction(async () => {
-        // 2. Kiểm tra Appointment gốc
-        const appt = await Appointment.findById(appointment_id).session(session);
-        if (!appt) throw new Error("APPT_NOT_FOUND");
-        if (String(appt.doctor_id) !== String(myDoctorId)) throw new Error("FORBIDDEN");
+    // 3. Kiểm tra Appointment
+    const appt = await Appointment.findById(appointment_id).session(session);
+    if (!appt) throw new Error("APPT_NOT_FOUND");
+    
+    // Check quyền sở hữu
+    if (String(appt.doctor_id) !== String(myDoctorId)) throw new Error("FORBIDDEN");
+    
+    // Check đã khám chưa
+    const existed = await Visit.findOne({ appointment_id: appt._id }).session(session);
+    if (existed) throw new Error("VISIT_EXISTS");
+
+    // 4. Xử lý Dịch vụ (Medical Service)
+    let billItems = [];
+    if (Array.isArray(serviceIds) && serviceIds.length > 0) {
+        const validServiceIds = serviceIds.filter(id => mongoose.Types.ObjectId.isValid(id));
         
-        // Kiểm tra trùng lặp
-        const existed = await Visit.findOne({ appointment_id: appt._id }).session(session);
-        if (existed) throw new Error("VISIT_EXISTS");
-
-        // 3. Lấy giá khám snapshot
-        const doc = await Doctor.findById(myDoctorId).session(session);
-        const consultationFee = Math.max(Number(doc?.consultation_fee || 0), 0);
-
-        // 4. Xử lý Dịch vụ (Bill Items) - Tra cứu từ DB để lấy giá chuẩn
-        let billItems = [];
-        if (serviceIds && serviceIds.length > 0) {
-            const services = await MedicalService.find({ _id: { $in: serviceIds } }).session(session);
-            
+        if (validServiceIds.length > 0) {
+            const services = await MedicalService.find({ _id: { $in: validServiceIds } }).session(session);
             billItems = services.map(svc => ({
                 service_id: svc._id,
                 name: svc.name,
-                quantity: 1,      // Mặc định số lượng là 1
-                price: svc.price  // Lấy giá từ DB
+                quantity: 1,
+                price: svc.price
             }));
         }
+    }
 
-        // 5. Xử lý Thuốc (Map đúng Quantity và Unit)
-        const formattedPrescriptions = prescriptions.map(p => ({
-            medicine_id: p.medicine_id || null, // ID thuốc (nếu có)
-            drug: p.drug,                       // Tên thuốc
-            
-            dosage: p.dosage || "",             // Liều dùng (vd: 1 viên)
-            frequency: p.frequency || "",       // Tần suất (vd: Sáng/Tối)
-            duration: p.duration || "",
-            note: p.note || "",
-            
-            // QUAN TRỌNG: Lưu số lượng mua và đơn vị
-            quantity: Number(p.quantity) || 1, 
-            unit: p.unit || "Viên"
-        }));
+    // 5. Xử lý Thuốc
+    const formattedPrescriptions = Array.isArray(prescriptions) ? prescriptions.map(p => ({
+        medicine_id: (p.medicine_id && mongoose.Types.ObjectId.isValid(p.medicine_id)) ? p.medicine_id : null,
+        drug: p.drug || "Thuốc kê ngoài",
+        dosage: p.dosage || "",
+        frequency: p.frequency || "",
+        duration: p.duration || "",
+        note: p.note || "",
+        quantity: Number(p.quantity) || 1,
+        unit: p.unit || "Viên"
+    })) : [];
 
-        // 6. Xử lý Tái khám (Nếu có chọn Slot)
-        let nextVisitDate = null;
-        let followupInfo = { scheduled: false };
+    // 6. Xử lý Tái khám
+    let nextVisitDate = null;
+    let followupInfo = { scheduled: false };
 
-        if (next_visit_timeslot_id && mongoose.Types.ObjectId.isValid(next_visit_timeslot_id)) {
-            const targetSlot = await Timeslot.findOne({
-                _id: next_visit_timeslot_id,
-                status: "free"
-            }).session(session);
+    if (next_visit_timeslot_id && mongoose.Types.ObjectId.isValid(next_visit_timeslot_id)) {
+        const targetSlot = await Timeslot.findOne({
+            _id: next_visit_timeslot_id,
+            status: "free"
+        }).session(session);
 
-            if (targetSlot) {
-                // Tạo lịch hẹn tái khám
-                const newAppt = await Appointment.create([{
-                    patient_id: appt.patient_id,
-                    doctor_id: myDoctorId,
-                    timeslot_id: targetSlot._id,
-                    date: targetSlot.date,
-                    start: targetSlot.start,
-                    status: "confirmed",
-                    reason: `Tái khám: ${diagnosis || symptoms}`.substring(0, 100)
-                }], { session });
-
-                // Update Slot
-                targetSlot.status = "booked";
-                targetSlot.appointment_id = newAppt[0]._id;
-                await targetSlot.save({ session });
-
-                nextVisitDate = targetSlot.date;
-                followupInfo = { 
-                    scheduled: true, 
-                    date: targetSlot.date, 
-                    start: targetSlot.start 
-                };
-            }
-        }
-
-        // 7. Tạo Visit & Tính tổng tiền
-        const totalAmount = calcTotals(consultationFee, billItems);
-
-        const [createdVisit] = await Visit.create([{
-            appointment_id: appt._id,
-            patient_id: appt.patient_id,
-            doctor_id: myDoctorId,
-            
-            symptoms,
-            diagnosis,
-            notes,
-            advice,
-            
-            next_visit_timeslot_id: nextVisitDate ? next_visit_timeslot_id : null, 
-            next_visit_date: nextVisitDate, 
-            
-            prescriptions: formattedPrescriptions,
-            
-            consultation_fee_snapshot: consultationFee,
-            bill_items: billItems,
-            total_amount: totalAmount
-        }], { session });
-
-        // 8. Hoàn tất Appointment cũ
-        appt.status = "completed";
-        await appt.save({ session });
-
-        // 9. Gửi Thông báo
-        const patientProfile = await Patient.findById(appt.patient_id).session(session);
-        if (patientProfile && patientProfile.user_id) {
-            const targetUserId = patientProfile.user_id;
-            
-            let visitBody = `Chẩn đoán: ${diagnosis || symptoms}. Tổng chi phí dịch vụ: ${totalAmount.toLocaleString('vi-VN')} đ.`;
-            if (followupInfo.scheduled) {
-                 visitBody += " Có lịch tái khám mới.";
-            }
-
-            const notif = await Notification.create([{
-                user_id: targetUserId,
-                type: "visit",
-                title: "✅ Kết Quả Khám Bệnh",
-                body: visitBody,
-                appointment_id: appt._id,
-                data: { visit_id: createdVisit._id },
-                channels: ["in-app"],
-                status: "unread",
-                sent_at: new Date()
+        if (targetSlot) {
+            const newAppt = await Appointment.create([{
+                patient_id: appt.patient_id,
+                doctor_id: myDoctorId,
+                timeslot_id: targetSlot._id,
+                date: targetSlot.date,
+                start: targetSlot.start,
+                status: "confirmed",
+                reason: `Tái khám: ${diagnosis}`.substring(0, 100)
             }], { session });
 
-            if (io) {
-                io.to(targetUserId.toString()).emit('new_notification', {
-                    message: notif[0].title,
-                    data: notif[0]
-                });
-            }
+            targetSlot.status = "booked";
+            targetSlot.appointment_id = newAppt[0]._id;
+            await targetSlot.save({ session });
+
+            nextVisitDate = targetSlot.date;
+            followupInfo = { scheduled: true, date: targetSlot.date };
+        }
+    }
+
+    // 7. Tính tiền & Tạo Visit
+    const doc = await Doctor.findById(myDoctorId).session(session);
+    const consultationFee = Math.max(Number(doc?.consultation_fee || 0), 0);
+    const totalAmount = calcTotals(consultationFee, billItems);
+
+    const [createdVisit] = await Visit.create([{
+        appointment_id: appt._id,
+        patient_id: appt.patient_id,
+        doctor_id: myDoctorId,
+        symptoms,
+        diagnosis,
+        notes,
+        advice,
+        next_visit_timeslot_id: followupInfo.scheduled ? next_visit_timeslot_id : null,
+        next_visit_date: nextVisitDate,
+        prescriptions: formattedPrescriptions,
+        consultation_fee_snapshot: consultationFee,
+        bill_items: billItems,
+        total_amount: totalAmount
+    }], { session });
+
+    // 8. Cập nhật trạng thái lịch hẹn cũ
+    appt.status = "completed";
+    await appt.save({ session });
+
+    // 9. Gửi thông báo (Tạo trong transaction)
+    let notifData = null;
+    let targetUserIdStr = null;
+
+    const patientProfile = await Patient.findById(appt.patient_id).session(session);
+    if (patientProfile && patientProfile.user_id) {
+        const targetUserId = patientProfile.user_id;
+        targetUserIdStr = targetUserId.toString();
+        
+        let visitBody = `Chẩn đoán: ${diagnosis || symptoms}. Tổng chi phí dịch vụ: ${totalAmount.toLocaleString('vi-VN')} đ.`;
+        if (followupInfo.scheduled) {
+             visitBody += " Có lịch tái khám mới.";
         }
 
-        // Return response
-        res.status(201).json({
-            message: "Tạo hồ sơ khám thành công.",
-            visit: createdVisit,
-            followup: followupInfo
+        // Lưu ý: create trong transaction trả về mảng [doc]
+        const [newNotif] = await Notification.create([{
+            user_id: targetUserId,
+            type: "visit",
+            title: "✅ Kết Quả Khám Bệnh",
+            body: visitBody,
+            appointment_id: appt._id,
+            data: { visit_id: createdVisit._id },
+            channels: ["in-app"],
+            status: "unread",
+            sent_at: new Date()
+        }], { session });
+        
+        notifData = newNotif;
+    }
+
+    // 10. Commit Transaction
+    await session.commitTransaction(); 
+
+    // 11. Gửi Socket (Sau khi commit thành công)
+    if (io && notifData && targetUserIdStr) {
+        io.to(targetUserIdStr).emit('new_notification', {
+            message: notifData.title,
+            data: notifData
         });
+    }
+
+    return res.status(201).json({
+        message: "Tạo hồ sơ khám thành công.",
+        visit: createdVisit,
+        followup: followupInfo
     });
 
   } catch (e) {
-    if (e.message === "APPT_NOT_FOUND") return res.status(404).json({ error: "Không tìm thấy lịch hẹn gốc." });
-    if (e.message === "FORBIDDEN") return res.status(403).json({ error: "Bạn không phụ trách lịch hẹn này." });
-    if (e.message === "VISIT_EXISTS") return res.status(409).json({ error: "Hồ sơ khám đã tồn tại." });
+    await session.abortTransaction(); 
+    console.error("❌ CREATE VISIT ERROR:", e); 
+
+    if (e.message === "MISSING_FIELDS") return res.status(400).json({ error: "Thiếu thông tin bắt buộc." });
+    if (e.message === "APPT_NOT_FOUND") return res.status(404).json({ error: "Không tìm thấy lịch hẹn." });
+    if (e.message === "FORBIDDEN") return res.status(403).json({ error: "Bạn không có quyền xử lý lịch hẹn này." });
+    if (e.message === "VISIT_EXISTS") return res.status(409).json({ error: "Hồ sơ khám cho lịch này đã tồn tại." });
     
-    console.error("CREATE VISIT ERROR:", e);
-    return res.status(500).json({ error: "Lỗi Server khi tạo hồ sơ khám." });
+    return res.status(500).json({ 
+        error: "Lỗi Server.", 
+        details: e.message 
+    });
   } finally {
     session.endSession();
   }
 };
-
 // ... CÁC HÀM GET GIỮ NGUYÊN NHƯ CŨ ...
 
 export const getVisitById = async (req, res, next) => {

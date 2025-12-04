@@ -22,6 +22,7 @@ import HolidayRoutes from "./routes/HolidayRoutes.js";
 import PartnerRoutes from "./routes/PartnerRoutes.js";
 import MedicalServiceRoutes from "./routes/MedicalServicerRoutes.js";
 import MedicineRoutes from "./routes/MedicineRoutes.js";
+import dashboardRoutes from "./routes/DashboardRoutes.js";
 
 // Load biến môi trường
 dotenv.config();
@@ -66,6 +67,7 @@ app.use("/api/holidays", HolidayRoutes);
 app.use("/api/partners", PartnerRoutes);
 app.use("/api/services", MedicalServiceRoutes);
 app.use("/api/medicines", MedicineRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // 404 fallback
 app.use((_req, res) => res.status(404).json({ message: "Endpoint not found" }));

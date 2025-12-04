@@ -8,16 +8,29 @@ const NotificationItem = ({ notification, onClick, onDelete }) => {
   const isUnread = status === "unread";
 
   // Icon theo loại
-  const getIcon = () => {
+const getIcon = () => {
     switch (type) {
+      // 👇 1. Thêm case cho "visit" (Kết quả khám bệnh)
+      case "visit": 
+        return <FileText className="w-5 h-5 text-purple-600" />;
+
       case "appointment": 
-        // Nếu tiêu đề chứa "Kết quả", hiển thị icon File
+        // (Tùy chọn) Vẫn giữ logic cũ để hỗ trợ các thông báo cũ
         if (title.toLowerCase().includes("kết quả")) return <FileText className="w-5 h-5 text-indigo-600" />;
         return <Calendar className="w-5 h-5 text-blue-600" />;
-      case "rating_request": return <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />; // Icon đánh giá
-      case "reminder": return <Clock className="w-5 h-5 text-orange-600" />;
-      case "general": return <Bell className="w-5 h-5 text-green-600" />;
-      default: return <Bell className="w-5 h-5 text-gray-600" />;
+
+      case "rating_request": 
+        return <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />;
+
+      case "reminder": 
+        return <Clock className="w-5 h-5 text-orange-600" />;
+
+      case "general": 
+      case "system": // Thêm system nếu backend bạn dùng type này
+        return <Bell className="w-5 h-5 text-green-600" />;
+
+      default: 
+        return <Bell className="w-5 h-5 text-gray-600" />;
     }
   };
 

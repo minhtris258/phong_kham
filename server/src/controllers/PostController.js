@@ -152,7 +152,7 @@ export async function getPostBySlug(req, res) {
     const { slug } = req.params;
     const post = await Post.findOneAndUpdate(
       { slug, status: "published" },
-      { $inc: { view_count: 1 } },
+      { $inc: { views_count: 1 } },
       { new: true }
     ).populate("author", "fullName email role");
 

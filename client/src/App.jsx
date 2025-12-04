@@ -9,6 +9,7 @@ import UserLayout from "./layouts/UserLayout";
 import DoctorLayout from "./layouts/DoctorLayout";
 import Chatbox from "./components/Chatbox";
 import RequireProfile from "./components/RequireProfile"; // <--- IMPORT MỚI
+import ScrollToTop from "./components/ScrollToTop";
 
 // Admin Pages
 import AdminRoute from "./components/AdminRoute.jsx";
@@ -50,10 +51,12 @@ import PatientVisitDetail from "./pages/patient/PatientVisitDetail.jsx";
 import DoctorList from "./pages/doctor/DoctorList";
 import ServiceManagement from "./pages/admin/MedicalServiceManagement.jsx";
 import MedicineManagement from "./pages/admin/MedicalManagement.jsx";
+import VisitManagement from "./pages/admin/VisitManagement.jsx";
 
 export default function App() {
   return (
     <BrowserRouter>
+    <ScrollToTop />
       <Routes>
         
         {/* ==================== USER LAYOUT ==================== */}
@@ -120,6 +123,7 @@ export default function App() {
           <Route path="partners" element={<PartnersManagement />} />
           <Route path="services" element={<ServiceManagement />} />
           <Route path="medicines" element={<MedicineManagement />} />
+          <Route path="visits" element={<VisitManagement />} />
           <Route path="profile" element={<ProfileSettings />} />
           <Route path="*" element={<NotFound />} />
         </Route>
