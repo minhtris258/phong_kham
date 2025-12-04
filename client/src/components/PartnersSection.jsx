@@ -39,8 +39,8 @@ const PartnersSection = () => {
   };
 
   return (
-    <section className="container py-12 mt-8">
-      <h2 className="lg:text-4xl text-2xl font-bold py-4 mb-8 color-title text-center">
+    <section className="container py-16 mt-26">
+      <h2 className="lg:text-4xl text-2xl font-bold py-4 mb-8 mt-16 color-title text-center">
         Được tin tưởng hợp tác và đồng hành
       </h2>
 
