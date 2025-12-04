@@ -65,7 +65,7 @@ export default function Hero() {
               </p>
 
               <a
-                href="#"
+                href="/doctors"
                 className="inline-block mt-4 px-6 py-3 btn-color rounded transition"
               >
                 Đặt Lịch Ngay
