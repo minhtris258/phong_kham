@@ -455,30 +455,79 @@ export const updateMyPatientProfile = async (req, res, next) => {
   }
 };
 export const getAllPatients = async (req, res, next) => {
-  try {
-    const patients = await Patient.find()
-      .populate({ 
-        path: 'user_id', // Giả định trường liên kết là user_id
-        select: 'email profile_completed status' // Chỉ lấy các trường cần thiết từ User
-      })
-      .select("-__v")
-      .lean();
+  try {
+    // 1. Lấy tham số
+    const { page = 1, limit = 10, search = "", status = "" } = req.query;
+    console.log("👉 FILTER RECEIVE:", { search, status });
 
-    // Dữ liệu trả về sẽ có User embedded trong trường user_id
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
 
-    // Tái cấu trúc dữ liệu để hiển thị dễ dàng hơn
-    const formattedPatients = patients.map(p => ({
-        ...p,
-        email: p.user_id?.email, // Lấy email từ User
-        profile_completed: p.user_id?.profile_completed, // Lấy trạng thái từ User
-        status: p.user_id?.status, // Lấy status từ User
-        // Giữ lại ID User nếu cần (p.user_id._id)
+    let query = {};
+
+    // =========================================================
+    // 🔴 SỬA ĐỔI: LỌC THEO STATUS CỦA BẢNG USER 🔴
+    // =========================================================
+    if (status) {
+      // Bước 1: Tìm tất cả User có status trùng khớp (active hoặc pending_profile)
+      const usersWithStatus = await User.find({ status: status }).select('_id');
+      
+      // Bước 2: Lấy ra mảng các _id
+      const userIds = usersWithStatus.map(u => u._id);
+
+      // Bước 3: Gán điều kiện vào query của Patient
+      // "Lấy những bệnh nhân mà user_id của họ nằm trong danh sách IDs vừa tìm được"
+      query.user_id = { $in: userIds };
+    }
+    // =========================================================
+
+    // Tìm kiếm theo Tên hoặc Số điện thoại (giữ nguyên)
+    if (search) {
+      query.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // 3. Thực hiện truy vấn
+    const [totalDocs, patients] = await Promise.all([
+      Patient.countDocuments(query), 
+      Patient.find(query)
+        .populate({
+          path: "user_id",
+          select: "email profile_completed status", // Populate để hiển thị thông tin User
+        })
+        .select("-__v")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNumber)
+        .lean(),
+    ]);
+
+    // 4. Format dữ liệu trả về
+    const formattedPatients = patients.map((p) => ({
+      ...p,
+      email: p.user_id?.email,
+      profile_completed: p.user_id?.profile_completed,
+      status: p.user_id?.status, // Trả về status của User cho Frontend hiển thị
     }));
-    
-    return res.status(200).json({ patients: formattedPatients });
-  } catch (e) {
-    next(e);
-  }
+
+    // 5. Trả về kết quả
+    return res.status(200).json({
+      patients: formattedPatients,
+      pagination: {
+        totalDocs,
+        limit: limitNumber,
+        totalPages: Math.ceil(totalDocs / limitNumber),
+        page: pageNumber,
+        hasNextPage: pageNumber < Math.ceil(totalDocs / limitNumber),
+        hasPrevPage: pageNumber > 1,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
 };
 export const deletePatientById = async (req, res, next) => {
   try {

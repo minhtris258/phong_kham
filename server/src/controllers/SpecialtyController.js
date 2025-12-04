@@ -13,38 +13,83 @@ const isBase64Image = (str) => {
 // GET /api/specialties (Giữ nguyên)
 export const listSpecialties = async (req, res, next) => {
   try {
-    const items = await specialties.aggregate([
+    // 1. Lấy tham số từ query
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    // 2. Tạo điều kiện tìm kiếm (Match Stage)
+    let matchStage = {};
+    if (search) {
+      matchStage = { 
+        name: { $regex: search, $options: "i" } // Tìm theo tên, không phân biệt hoa thường
+      };
+    }
+
+    // 3. Sử dụng Aggregation với $facet để lấy cả Data và Total Count trong 1 lần truy vấn
+    const result = await specialties.aggregate([
+      // Bước A: Lọc theo tên trước (nếu có search)
+      { $match: matchStage },
+      
       {
-        $lookup: {
-          from: "doctors",
-          localField: "_id",
-          foreignField: "specialty_id",
-          as: "doctors",
-        },
-      },
-      {
-        $addFields: {
-          doctor_count: { $size: "$doctors" },
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          thumbnail: 1, 
-          code: 1,
-          doctor_count: 1,
-        },
-      },
-      { $sort: { name: 1 } },
+        $facet: {
+          // Luồng 1: Đếm tổng số bản ghi (metadata)
+          metadata: [{ $count: "total" }],
+          
+          // Luồng 2: Lấy dữ liệu chi tiết
+          data: [
+            // Lookup để đếm số bác sĩ (giữ nguyên logic cũ)
+            {
+              $lookup: {
+                from: "doctors",
+                localField: "_id",
+                foreignField: "specialty_id",
+                as: "doctors",
+              },
+            },
+            {
+              $addFields: {
+                doctor_count: { $size: "$doctors" },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                thumbnail: 1, 
+                code: 1,
+                doctor_count: 1,
+              },
+            },
+            { $sort: { name: 1 } }, // Sắp xếp tên A-Z
+            { $skip: skip },        // Bỏ qua n phần tử
+            { $limit: limitNumber } // Lấy limit phần tử
+          ]
+        }
+      }
     ]);
 
-    res.json(items);
+    // 4. Xử lý kết quả trả về
+    const data = result[0].data;
+    const totalDocs = result[0].metadata[0] ? result[0].metadata[0].total : 0;
+
+    res.json({
+      specialties: data,
+      pagination: {
+        totalDocs,
+        limit: limitNumber,
+        totalPages: Math.ceil(totalDocs / limitNumber),
+        page: pageNumber,
+        hasNextPage: pageNumber < Math.ceil(totalDocs / limitNumber),
+        hasPrevPage: pageNumber > 1,
+      },
+    });
+
   } catch (e) {
     next(e);
   }
 };
-
 // GET /api/specialties/:id (Giữ nguyên)
 export const getSpecialtyById = async (req, res, next) => {
   try {

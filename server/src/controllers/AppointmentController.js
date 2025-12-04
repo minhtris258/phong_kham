@@ -446,9 +446,10 @@ export const getDoctorAppointments = async (req, res, next) => {
     const { 
       status, 
       page = 1, 
-      limit = 50,        // Tăng limit mặc định vì trong 1 tuần ít khi quá 50 cuộc
-      startDate,         // YYYY-MM-DD
-      endDate            // YYYY-MM-DD
+      limit = 10,  // Mặc định 10 items/trang
+      startDate,         
+      endDate,
+      search // Thêm tham số tìm kiếm
     } = req.query;
 
     // 1. Kiểm tra quyền bác sĩ
@@ -457,55 +458,86 @@ export const getDoctorAppointments = async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Chỉ bác sĩ mới có quyền." });
     }
 
-    // 2. Lấy doctor_id thực sự từ user_id
+    // 2. Lấy doctor_id
     const doctorProfile = await Doctor.findOne({ user_id: _id });
     if (!doctorProfile) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Không tìm thấy hồ sơ bác sĩ liên kết với tài khoản này." 
-      });
+      return res.status(404).json({ success: false, message: "Không tìm thấy hồ sơ bác sĩ." });
     }
-
     const doctorId = doctorProfile._id;
 
     // 3. Xây dựng query
     const query = { doctor_id: doctorId };
 
-    // Lọc theo trạng thái (nếu có)
-    if (status) {
-      // Hỗ trợ cả dạng "confirmed" và "confirmed,pending"
+    // Lọc theo trạng thái
+    if (status && status !== 'all') {
       const statusArray = status.includes(',') ? status.split(',') : [status];
       query.status = { $in: statusArray };
     }
 
-    // QUAN TRỌNG: Lọc theo khoảng ngày (chỉ lấy trong tuần hiện tại)
+    // Lọc theo ngày
     if (startDate && endDate) {
       query.date = {
-        $gte: new Date(startDate),                    // >= startDate 00:00:00
-        $lte: new Date(`${endDate}T23:59:59.999Z`)    // <= endDate 23:59:59
+        $gte: new Date(startDate),
+        $lte: new Date(`${endDate}T23:59:59.999Z`)
       };
     }
 
+    // Tìm kiếm (theo tên bệnh nhân hoặc SĐT - Cần aggregate hoặc populate trước để search)
+    // Cách đơn giản nhất là tìm trong bảng Appointment nếu có lưu thông tin, 
+    // hoặc dùng $lookup trong aggregate. Ở đây ta dùng cách đơn giản trước:
+    // Lưu ý: Tìm kiếm trên field populate cần aggregate, code dưới đây chỉ tìm trên field có sẵn trong Appointment (nếu có).
+    // Nếu muốn tìm tên bệnh nhân, tốt nhất nên dùng Aggregation Pipeline.
+    
     const skip = (page - 1) * parseInt(limit);
 
-    const [total, appointments] = await Promise.all([
-      Appointment.countDocuments(query),
-      Appointment.find(query)
-        .populate("patient_id", "fullName email phone avatar")
-        .sort({ date: 1, start: 1 })  // Sắp xếp theo ngày + giờ để dễ map
-        .skip(skip)
-        .limit(parseInt(limit))
-        .lean()
-    ]);
+    // Dùng Aggregation để vừa filter, vừa sort, vừa phân trang và populate
+    const pipeline = [
+        { $match: query },
+        {
+            $lookup: {
+                from: "patients",
+                localField: "patient_id",
+                foreignField: "_id",
+                as: "patient"
+            }
+        },
+        { $unwind: "$patient" }, // Bung mảng patient ra object
+        // Thêm điều kiện tìm kiếm nếu có
+        ...(search ? [{
+            $match: {
+                $or: [
+                    { "patient.fullName": { $regex: search, $options: "i" } },
+                    { "patient.phone": { $regex: search, $options: "i" } }
+                ]
+            }
+        }] : []),
+        
+        // Facet để đếm tổng và lấy data
+        {
+            $facet: {
+                metadata: [{ $count: "total" }],
+                data: [
+                    { $sort: { date: 1, start: 1 } }, // Sắp xếp
+                    { $skip: skip },
+                    { $limit: parseInt(limit) }
+                ]
+            }
+        }
+    ];
+
+    const result = await Appointment.aggregate(pipeline);
+    
+    const data = result[0].data;
+    const total = result[0].metadata[0] ? result[0].metadata[0].total : 0;
 
     return res.status(200).json({
       success: true,
-      data: appointments,
+      data: data.map(app => ({ ...app, patient_id: app.patient })), // Map lại structure cũ để frontend đỡ sửa nhiều
       pagination: {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / parseInt(limit))
       }
     });
 

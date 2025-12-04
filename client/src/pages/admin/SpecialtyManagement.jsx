@@ -1,36 +1,59 @@
 // src/pages/admin/SpecialtyManagement.jsx
 import React, { useState, useEffect } from 'react';
 import specialtyService from '../../services/SpecialtyService'; 
-import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
-// Import components con
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
+
+// Components
 import SpecialtyList from './../../components/admin/specialty/SpecialtyList';
 import SpecialtyFormModal from './../../components/admin/specialty/SpecialtyFormModal';
 import SpecialtyDoctorsModal from './../../components/admin/specialty/SpecialtyDoctorsModal';
 import SpecialtyDeleteModal from './../../components/admin/specialty/SpecialtyDeleteModal';
 
-
 const SpecialtyManagement = () => {
-    // ... (Giữ nguyên các State cũ) ...
+    // State dữ liệu
     const [specialtys, setSpecialtys] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // === STATE MỚI: Phân trang & Tìm kiếm ===
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+        totalDocs: 0
+    });
+    const [searchTerm, setSearchTerm] = useState("");
+
+    // State Modals (Giữ nguyên)
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSpecialty, setEditingSpecialty] = useState(null); 
     const [formData, setFormData] = useState({});
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-
     const [isViewDoctorsModalOpen, setIsViewDoctorsModalOpen] = useState(false);
     const [currentSpecialtyDoctors, setCurrentSpecialtyDoctors] = useState({ specialtyName: '', doctors: [] });
     const [isViewDoctorsLoading, setIsViewDoctorsLoading] = useState(false);
 
-    // === LOGIC FETCH (Giữ nguyên) ===
+    // === 1. FETCH DATA (CẬP NHẬT) ===
     const fetchSpecialties = async () => {
         setLoading(true);
         try {
-            const response = await specialtyService.getAllSpecialties();
-            const list = response.data?.specialties || response.data || [];
+            // Truyền params: page, limit, search
+            const response = await specialtyService.getAllSpecialties({
+                page: pagination.page,
+                limit: pagination.limit,
+                search: searchTerm
+            });
+
+            // Backend trả về: { specialties: [...], pagination: {...} }
+            const list = response.data?.specialties || [];
+            const pageInfo = response.data?.pagination || {};
+
             setSpecialtys(list);
+            setPagination(prev => ({
+                ...prev,
+                totalPages: pageInfo.totalPages || 1,
+                totalDocs: pageInfo.totalDocs || 0
+            }));
             setError(null);
         } catch (err) {
             console.error("Lỗi tải chuyên khoa:", err);
@@ -40,116 +63,82 @@ const SpecialtyManagement = () => {
         }
     };
 
-    useEffect(() => { 
-        fetchSpecialties(); 
-    }, []);
+    // Debounce Search & Fetch khi page đổi
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchSpecialties();
+        }, 500); // Đợi 500ms sau khi gõ phím mới gọi API
+        return () => clearTimeout(timer);
+    }, [pagination.page, searchTerm]);
 
-
-    // === 2. HÀM INPUT & ADD/EDIT (CÓ SỬA ĐỔI) ===
-    
-    // 1. Xử lý Input Text thông thường
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+    // === HANDLERS PHÂN TRANG ===
+    const handlePageChange = (newPage) => {
+        if (newPage > 0 && newPage <= pagination.totalPages) {
+            setPagination(prev => ({ ...prev, page: newPage }));
+        }
     };
 
-    // 2. [MỚI] Xử lý Input File (Chuyển sang Base64)
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+        setPagination(prev => ({ ...prev, page: 1 })); // Reset về trang 1 khi tìm kiếm
+    };
+
+    // ... (Giữ nguyên handleInputChange, handleFileChange, handleAddEdit) ...
+    const handleInputChange = (e) => { const { name, value } = e.target; setFormData({ ...formData, [name]: value }); };
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.readAsDataURL(file); // Đọc file dưới dạng chuỗi Base64
-            reader.onloadend = () => {
-                // Khi đọc xong, set vào formData.thumbnail
-                setFormData(prev => ({
-                    ...prev,
-                    thumbnail: reader.result
-                }));
-            };
+            reader.readAsDataURL(file);
+            reader.onloadend = () => setFormData(prev => ({ ...prev, thumbnail: reader.result }));
         }
     };
-
     const handleAddEdit = (specialty) => {
         setEditingSpecialty(specialty);
-        // Khởi tạo formData (thêm trường thumbnail)
-        setFormData(specialty ? 
-            { 
-                _id: specialty._id || specialty.id, 
-                name: specialty.name, 
-                thumbnail: specialty.thumbnail || '' // Load ảnh cũ nếu có
-            } : 
-            { name: '', thumbnail: '' }
-        );
+        setFormData(specialty ? { _id: specialty._id || specialty.id, name: specialty.name, thumbnail: specialty.thumbnail || '' } : { name: '', thumbnail: '' });
         setIsModalOpen(true);
     };
 
     const handleSave = async (e) => { 
         e.preventDefault();
-        
-        if (!formData.name) {
-            toastWarning('Vui lòng điền tên chuyên khoa.');
-            return;
-        }
+        if (!formData.name) { toastWarning('Vui lòng điền tên chuyên khoa.'); return; }
         
         try {
             if (editingSpecialty) {
-                // SỬA: formData bây giờ chứa cả name và thumbnail (nếu có thay đổi)
                 await specialtyService.updateSpecialty(editingSpecialty._id || editingSpecialty.id, formData);
                 toastSuccess("Cập nhật chuyên khoa thành công!");
             } else {
-                // THÊM MỚI
                 await specialtyService.createSpecialty(formData);
                 toastSuccess("Thêm chuyên khoa thành công!");
             }
-        } catch (err) {
-            toastError("Lỗi lưu: " + (err.response?.data?.message || err.message || "Lỗi không xác định"));
-            console.error("Lỗi lưu chuyên khoa:", err);
-        } finally {
             setIsModalOpen(false);
             setEditingSpecialty(null);
-            fetchSpecialties(); 
+            fetchSpecialties(); // Refresh danh sách
+        } catch (err) {
+            toastError("Lỗi lưu: " + (err.response?.data?.message || err.message));
         }
     };
 
-    // === 3. DELETE LOGIC (Giữ nguyên) ===
     const confirmDelete = (id) => setConfirmDeleteId(id);
-
     const handleDelete = async () => {
         try {
             await specialtyService.deleteSpecialty(confirmDeleteId);
             setConfirmDeleteId(null);
             toastSuccess("Xóa chuyên khoa thành công!");
-        } catch (err) {
-            toastError("Xóa thất bại: " + (err.response?.data?.error || "Lỗi không xác định"));
-        } finally {
             fetchSpecialties();
-        }
+        } catch (err) { toastError("Xóa thất bại"); }
     };
     
-    // === 4. VIEW DOCTORS LOGIC (Giữ nguyên) ===
+    // ... (Giữ nguyên handleViewDoctors) ...
     const handleViewDoctors = async (specialty) => {
         setIsViewDoctorsLoading(true);
         setIsViewDoctorsModalOpen(true);
         setCurrentSpecialtyDoctors({ specialtyName: specialty.name, doctors: [] });
         try {
             const response = await specialtyService.getSpecialtyWithDoctors(specialty._id || specialty.id);
-            const doctorsList = response.data?.doctors || [];
-            setCurrentSpecialtyDoctors({
-                specialtyName: response.data?.name || specialty.name,
-                doctors: doctorsList,
-            });
-        } catch (err) {
-            console.error("Lỗi tải danh sách bác sĩ:", err);
-            toastError("Lỗi: Không thể tải danh sách bác sĩ thuộc chuyên khoa này.");
-        } finally {
-            setIsViewDoctorsLoading(false);
-        }
+            setCurrentSpecialtyDoctors({ specialtyName: response.data?.name || specialty.name, doctors: response.data?.doctors || [] });
+        } catch (err) { toastError("Lỗi: Không thể tải danh sách bác sĩ."); } finally { setIsViewDoctorsLoading(false); }
     };
-
-    // ... (Phần Loading/Error giữ nguyên) ...
-
-    if (loading) return <main className="text-center p-8 text-xl">Đang tải danh sách chuyên khoa...</main>;
-    if (error) return <main className="text-center p-8 text-red-600 text-xl">Lỗi: {error}</main>;
 
     return (
         <main className="flex-1 p-4 sm:p-8 bg-gray-50 min-h-[calc(100vh-64px)]">
@@ -157,35 +146,24 @@ const SpecialtyManagement = () => {
             
             <SpecialtyList 
                 specialtys={specialtys} 
+                loading={loading} // Thêm loading prop
+                
+                // Props mới cho Search & Pagination
+                searchTerm={searchTerm}
+                onSearchChange={handleSearchChange}
+                pagination={pagination}
+                onPageChange={handlePageChange}
+
+                // Props cũ
                 handleAddEdit={handleAddEdit}
                 confirmDelete={confirmDelete}
                 handleViewDoctors={handleViewDoctors}
             />
 
-            {/* Truyền thêm prop handleFileChange */}
-            <SpecialtyFormModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                formData={formData}
-                handleInputChange={handleInputChange}
-                handleFileChange={handleFileChange} // <-- Mới
-                handleSave={handleSave}
-                editingSpecialty={editingSpecialty}
-            />
-
-            <SpecialtyDoctorsModal
-                isOpen={isViewDoctorsModalOpen}
-                onClose={() => setIsViewDoctorsModalOpen(false)}
-                currentSpecialtyDoctors={currentSpecialtyDoctors}
-                isLoading={isViewDoctorsLoading}
-                doctorCount={currentSpecialtyDoctors.doctors.length}
-            />
-            
-            <SpecialtyDeleteModal
-                confirmDeleteId={confirmDeleteId}
-                onClose={() => setConfirmDeleteId(null)}
-                handleDelete={handleDelete}
-            />
+            {/* ... (Các Modal giữ nguyên) ... */}
+            <SpecialtyFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} formData={formData} handleInputChange={handleInputChange} handleFileChange={handleFileChange} handleSave={handleSave} editingSpecialty={editingSpecialty} />
+            <SpecialtyDoctorsModal isOpen={isViewDoctorsModalOpen} onClose={() => setIsViewDoctorsModalOpen(false)} currentSpecialtyDoctors={currentSpecialtyDoctors} isLoading={isViewDoctorsLoading} doctorCount={currentSpecialtyDoctors.doctors.length} />
+            <SpecialtyDeleteModal confirmDeleteId={confirmDeleteId} onClose={() => setConfirmDeleteId(null)} handleDelete={handleDelete} />
         </main>
     );
 };

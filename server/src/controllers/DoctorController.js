@@ -629,42 +629,83 @@ export const updateDoctorAdmin = async (req, res, next) => {
 };
 export const getAllDoctors = async (req, res, next) => {
   try {
-    // 1. Thử lấy role từ req.user (nếu Route đã qua middleware verifyToken)
-    let role = req.user?.role || req.user?.role?.name;
+    // 1. Lấy tham số từ Query String (Thêm status vào đây)
+    const { page = 1, limit = 10, search = "", specialty = "", status = "" } = req.query;
+    
+    // Chuyển đổi sang số
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
 
-    // ✨ SOFT AUTHENTICATION FIX ✨
-    // Nếu route này là PUBLIC (không có middleware), req.user sẽ undefined.
-    // Ta tự check Header để xem có phải Admin đang request không.
+    // 2. Xác định quyền hạn
+    let role = req.user?.role || req.user?.role?.name;
+    
+    // Soft Auth check
     if (!role && req.headers.authorization) {
         try {
             const token = req.headers.authorization.split(" ")[1];
             if (token) {
-                // Đảm bảo secret key khớp với file .env hoặc fallback
                 const secret = process.env.JWT_SECRET || "fallback_secret";
                 const decoded = jwt.verify(token, secret);
                 role = decoded.role || decoded.role?.name;
             }
-        } catch (err) {
-            // Token lỗi hoặc hết hạn -> cứ coi như khách vãng lai
-            // console.log("Soft auth failed:", err.message);
-        }
+        } catch (err) {}
     }
 
-    // 2. Mặc định: Chỉ lấy bác sĩ đang hoạt động (active)
-    let query = { status: "active" };
+    // 3. Xây dựng Query
+    let query = {};
 
-    // 3. Nếu là ADMIN: Bỏ điều kiện lọc status (lấy tất cả: active, inactive,...)
+    // === LOGIC LỌC TRẠNG THÁI (SỬA Ở ĐÂY) ===
     if (role === "admin") {
-      query = {}; 
+        // Nếu là Admin và có gửi status lên -> Lọc theo status đó
+        if (status) {
+            query.status = status;
+        }
+        // Nếu Admin không gửi status -> query.status rỗng -> Lấy tất cả (Active + Inactive)
+    } else {
+        // Nếu không phải Admin -> Bắt buộc chỉ lấy Active
+        query.status = "active";
     }
 
-    // 4. Thực hiện query
-    const doctors = await Doctor.find(query)
-      .populate({ path: "specialty_id", select: "name code" })
-      .select("-__v")
-      .lean();
+    // Tìm kiếm (Search)
+    if (search) {
+      query.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } }
+      ];
+    }
 
-    return res.status(200).json({ doctors });
+    // Lọc theo Chuyên khoa
+    if (specialty) {
+      query.specialty_id = specialty;
+    }
+
+    // 4. Thực hiện truy vấn
+    const [totalDocs, doctors] = await Promise.all([
+      Doctor.countDocuments(query),
+      Doctor.find(query)
+        .populate({ path: "specialty_id", select: "name code" })
+        .select("-__v")
+        .sort({ createdAt: 1 }) // Cũ nhất lên đầu (theo yêu cầu của bạn)
+        .skip(skip)
+        .limit(limitNumber)
+        .lean(),
+    ]);
+
+    // 5. Trả về kết quả
+    return res.status(200).json({
+      doctors,
+      pagination: {
+        totalDocs,
+        limit: limitNumber,
+        totalPages: Math.ceil(totalDocs / limitNumber),
+        page: pageNumber,
+        hasNextPage: pageNumber < Math.ceil(totalDocs / limitNumber),
+        hasPrevPage: pageNumber > 1,
+      },
+    });
+
   } catch (e) {
     next(e);
   }

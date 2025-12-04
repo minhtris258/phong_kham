@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search } from 'lucide-react';
-import medicalServiceService from '../../services/medicalServiceService'; // Service của bảng MedicalService
+import medicalServiceService from '../../services/medicalServiceService'; 
 import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 
 import ServiceList from '../../components/admin/service/ServiceList';
-import ServiceFormModal from '../../components/admin/service/ServiceFormModal.jsx';
+import ServiceFormModal from '../../components/admin/service/ServiceFormModal';
 import SpecialtyDeleteModal from '../../components/admin/specialty/SpecialtyDeleteModal';
 
 const ServiceManagement = () => {
@@ -17,6 +17,7 @@ const ServiceManagement = () => {
     const [formData, setFormData] = useState({});
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
+    // === FETCH DATA ===
     const fetchServices = async (search = '') => {
         setLoading(true);
         try {
@@ -31,6 +32,7 @@ const ServiceManagement = () => {
 
     useEffect(() => { fetchServices(); }, []);
 
+    // === HANDLERS ===
     const handleSearch = (e) => {
         if (e.key === 'Enter') fetchServices(searchTerm);
     };
@@ -40,9 +42,29 @@ const ServiceManagement = () => {
         setFormData({ ...formData, [name]: value });
     };
 
+    // [MỚI] Xử lý chọn file ảnh -> Chuyển sang Base64
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = () => {
+                setFormData(prev => ({
+                    ...prev,
+                    image: reader.result,      // Gửi chuỗi Base64 này xuống Backend
+                    thumbnail: reader.result   // Dùng chuỗi này để Preview ngay trong Modal
+                }));
+            };
+        }
+    };
+
     const handleAddEdit = (svc) => {
         setEditingService(svc);
-        setFormData(svc ? { ...svc } : { name: '', code: '', price: '', description: '', status: 'active' });
+        // Reset form, đảm bảo xóa thumbnail cũ nếu là thêm mới
+        setFormData(svc ? { ...svc } : { 
+            name: '', code: '', price: '', description: '', status: 'active',
+            image: '', thumbnail: '' 
+        });
         setIsModalOpen(true);
     };
 
@@ -50,6 +72,7 @@ const ServiceManagement = () => {
         e.preventDefault();
         try {
             if (editingService) {
+                // Backend Controller đã xử lý: Nếu image là Base64 thì upload, nếu là Link cũ thì giữ nguyên
                 await medicalServiceService.updateService(editingService._id, formData);
                 toastSuccess("Cập nhật dịch vụ thành công!");
             } else {
@@ -59,6 +82,7 @@ const ServiceManagement = () => {
             setIsModalOpen(false);
             fetchServices(searchTerm);
         } catch (err) {
+            console.error(err);
             toastError(err.response?.data?.error || "Lỗi lưu dịch vụ.");
         }
     };
@@ -91,13 +115,28 @@ const ServiceManagement = () => {
             </div>
 
             {loading ? <div className="text-center py-10">Đang tải...</div> : 
-                <ServiceList services={services} handleAddEdit={handleAddEdit} confirmDelete={setConfirmDeleteId} />
+                <ServiceList 
+                    services={services} 
+                    handleAddEdit={handleAddEdit} 
+                    confirmDelete={setConfirmDeleteId} 
+                />
             }
 
-            <ServiceFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} formData={formData}
-                handleInputChange={handleInputChange} handleSave={handleSave} editingService={editingService} />
+            <ServiceFormModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                formData={formData}
+                handleInputChange={handleInputChange} 
+                handleFileChange={handleFileChange} // <--- Truyền hàm này vào Modal
+                handleSave={handleSave} 
+                editingService={editingService} 
+            />
 
-            <SpecialtyDeleteModal confirmDeleteId={confirmDeleteId} onClose={() => setConfirmDeleteId(null)} handleDelete={handleDelete} />
+            <SpecialtyDeleteModal 
+                confirmDeleteId={confirmDeleteId} 
+                onClose={() => setConfirmDeleteId(null)} 
+                handleDelete={handleDelete} 
+            />
         </main>
     );
 };

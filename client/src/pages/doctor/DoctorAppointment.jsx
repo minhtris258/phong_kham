@@ -1,11 +1,16 @@
+// src/pages/doctor/DoctorAppointment.jsx
 import React, { useState, useCallback, useEffect } from "react";
-import { Plus, Loader2 } from "lucide-react"; 
-import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
+import { Plus, Loader2, Calendar as CalendarIcon, List as ListIcon } from "lucide-react"; 
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 
-// Import Hook Socket
+// Context
 import { useSocket } from "../../context/SocketContext"; 
 
-// Components (Giữ nguyên)
+// Services
+import appointmentsService from "../../services/AppointmentsService";
+import doctorService from "../../services/DoctorService";
+
+// Components
 import AppointmentCalendar from "../../components/doctor/appointment/AppointmentCalendar";
 import AppointmentListTable from "../../components/doctor/appointment/AppointmentListTable";
 import AppointmentFormModal from "../../components/doctor/appointment/AppointmentFormModal";
@@ -13,36 +18,37 @@ import AppointmentDeleteModal from "../../components/doctor/appointment/Appointm
 import AppointmentDayModal from "../../components/doctor/appointment/AppointmentDayModal";
 import VisitCreateModal from "../../components/doctor/visit/VisitCreateModal";
 
-// Services
-import appointmentsService from "../../services/AppointmentsService";
-import doctorService from "../../services/DoctorService";
-
 const DoctorAppointment = () => {
-  // === 1. State ===
+  // === STATE QUẢN LÝ DỮ LIỆU ===
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]); 
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDoctor, setCurrentDoctor] = useState(null);
 
-  // Lấy socket từ Context
-  const { socket, isConnected } = useSocket();
-
-  // ... (Giữ nguyên các state ViewMode, Modal...)
-  const [viewMode, setViewMode] = useState("calendar");
+  // === STATE GIAO DIỆN & MODAL ===
+  const [viewMode, setViewMode] = useState("calendar"); // 'calendar' | 'list'
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
-  const [selectedAppointmentForVisit, setSelectedAppointmentForVisit] = useState(null);
   const [confirmCancelId, setConfirmCancelId] = useState(null);
+  
+  // Data for Modals
   const [editingAppointment, setEditingAppointment] = useState(null);
-  const [formData, setFormData] = useState({});
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedAppointmentForVisit, setSelectedAppointmentForVisit] = useState(null);
   const [currentDayDetails, setCurrentDayDetails] = useState({ date: null, apps: [] });
+  const [formData, setFormData] = useState({});
 
-  // === 2. Fetch API ===
+  // Socket
+  const { socket, isConnected } = useSocket();
+
+  // === 1. FETCH DỮ LIỆU ===
   const fetchData = async () => {
     try {
+      // 1. Lấy thông tin bác sĩ (nếu chưa có)
       let me = currentDoctor;
       if (!me) {
           const meRes = await doctorService.getMe();
@@ -51,23 +57,19 @@ const DoctorAppointment = () => {
           setDoctors([me]);
       }
 
-      const apptRes = await appointmentsService.getDoctorAppointments({ limit: 1000 });
+      // 2. Lấy danh sách lịch hẹn (Lấy hết để Client tự filter/sort)
+      const apptRes = await appointmentsService.getDoctorAppointments({ limit: 2000 });
       const apptData = apptRes.data?.data || apptRes.data || [];
       setAppointments(apptData);
 
-      // Map patients
+      // 3. Trích xuất danh sách bệnh nhân từ lịch hẹn để làm cache
       const uniquePatients = new Map();
       apptData.forEach(app => {
           if (app.patient_id && typeof app.patient_id === 'object') {
               uniquePatients.set(app.patient_id._id, app.patient_id);
           }
       });
-      
-      setPatients(prev => {
-        const newMap = new Map(prev.map(p => [p._id, p]));
-        uniquePatients.forEach((val, key) => newMap.set(key, val));
-        return Array.from(newMap.values());
-      });
+      setPatients(Array.from(uniquePatients.values()));
 
     } catch (error) {
       toastError("Lỗi tải dữ liệu:", error);
@@ -80,27 +82,19 @@ const DoctorAppointment = () => {
     fetchData();
   }, []);
 
-  // === [QUAN TRỌNG] 3. LOGIC SOCKET REALTIME (ĐÃ SỬA) ===
+  // === 2. REALTIME SOCKET ===
   useEffect(() => {
-    // Chỉ chạy khi socket đã kết nối và đã có thông tin bác sĩ
     if (!socket || !isConnected || !currentDoctor) return;
 
-    // 1. Join Room (Quan trọng: Phải join đúng User ID của bác sĩ)
     socket.emit("join_room", currentDoctor.user_id); 
-    console.log("Socket joining room:", currentDoctor.user_id);
+    console.log("🔥 Socket joined room:", currentDoctor.user_id);
 
-    // 2. Lắng nghe: Có bệnh nhân đặt lịch mới
     const handleNewAppointment = (newAppt) => {
-        // newAppt từ server gửi về đã có populate patient_id
-        console.log("Nhận lịch hẹn mới:", newAppt);
-        
         if (newAppt.doctor_id === currentDoctor._id) {
             toastSuccess(`📅 Có lịch hẹn mới lúc ${newAppt.start}`);
-            
-            // Cập nhật State trực tiếp (Không cần gọi lại API fetchData -> Giảm tải server)
             setAppointments(prev => [newAppt, ...prev]);
             
-            // Cập nhật list Patients nếu bệnh nhân này chưa có trong list
+            // Cập nhật cache bệnh nhân nếu mới
             if (newAppt.patient_id && typeof newAppt.patient_id === 'object') {
                 setPatients(prev => {
                     const exists = prev.find(p => p._id === newAppt.patient_id._id);
@@ -110,17 +104,15 @@ const DoctorAppointment = () => {
         }
     };
 
-    // 3. Lắng nghe: Lịch bị hủy (Từ phía bệnh nhân hoặc Admin)
     const handleAppointmentCancelled = (data) => {
-        // data = { appointmentId, ... }
-        console.log("Lịch bị hủy:", data);
         setAppointments(prev => prev.map(app => 
             app._id === data.appointmentId ? { ...app, status: 'cancelled' } : app
         ));
-        toastWarning("⚠️ Một lịch hẹn vừa bị hủy.");
+        if (data.doctor_id === currentDoctor._id) {
+             toastWarning("⚠️ Một lịch hẹn vừa bị hủy.");
+        }
     };
 
-    // 4. Lắng nghe: Cập nhật (nếu có)
     const handleAppointmentUpdated = (updatedAppt) => {
         if (updatedAppt.doctor_id === currentDoctor._id) {
              setAppointments(prev => prev.map(app => 
@@ -129,21 +121,19 @@ const DoctorAppointment = () => {
         }
     };
 
-    // Đăng ký sự kiện
     socket.on('new_appointment', handleNewAppointment);
     socket.on('appointment_cancelled', handleAppointmentCancelled);
     socket.on('appointment_updated', handleAppointmentUpdated);
 
-    // Cleanup khi unmount
     return () => {
         socket.off('new_appointment', handleNewAppointment);
         socket.off('appointment_cancelled', handleAppointmentCancelled);
         socket.off('appointment_updated', handleAppointmentUpdated);
     };
-
   }, [socket, isConnected, currentDoctor]); 
 
-  // === 4. Sync State Modal Ngày (Giữ nguyên) ===
+  // === 3. HELPERS ===
+  // Sync data cho Modal Ngày (Khi appointments thay đổi -> Modal cập nhật theo)
   useEffect(() => {
     if (currentDayDetails.date) {
         const updatedApps = appointments.filter(app => 
@@ -153,9 +143,8 @@ const DoctorAppointment = () => {
     }
   }, [appointments, currentDayDetails.date]);
 
-  // === 5. Helpers & Handlers (GIỮ NGUYÊN CODE CŨ CỦA BẠN TỪ ĐÂY TRỞ XUỐNG) ===
-  // ... (Copy y nguyên phần còn lại từ file cũ của bạn) ...
   const getDoctorName = useCallback(() => currentDoctor?.fullName || "Tôi", [currentDoctor]);
+  
   const getPatientName = useCallback((patient) => {
     if (!patient) return "Khách vãng lai";
     if (typeof patient === 'object') return patient.fullName || patient.name || "Không rõ";
@@ -168,19 +157,21 @@ const DoctorAppointment = () => {
       case "confirmed": return "bg-green-100 text-green-800";
       case "completed": return "bg-blue-100 text-blue-800";
       case "cancelled": return "bg-red-100 text-red-800";
-      default: return "bg-yellow-100 text-yellow-800";
+      default: return "bg-yellow-100 text-yellow-800"; // pending
     }
   }, []);
 
+  // === 4. HANDLERS (CRUD) ===
   const handleAddEdit = useCallback((appointment) => {
     setEditingAppointment(appointment);
     const defaultDate = currentDayDetails.date || new Date().toISOString().split("T")[0];
-    const myId = currentDoctor?._id;
+    
     if (appointment) {
+      // Edit Mode
       setFormData({
         _id: appointment._id,
         patient_id: appointment.patient_id?._id || appointment.patient_id,
-        doctor_id: myId,
+        doctor_id: currentDoctor?._id,
         date: appointment.date ? String(appointment.date).substring(0, 10) : '',
         start: appointment.start,
         status: appointment.status,
@@ -189,9 +180,10 @@ const DoctorAppointment = () => {
         original_timeslot_id: appointment.timeslot_id 
       });
     } else {
+      // Add Mode
       setFormData({
         patient_id: patients[0]?._id || "",
-        doctor_id: myId,
+        doctor_id: currentDoctor?._id,
         date: defaultDate,
         start: "", 
         status: "pending",
@@ -202,23 +194,12 @@ const DoctorAppointment = () => {
     setIsModalOpen(true);
   }, [currentDayDetails, currentDoctor, patients]);
 
-  const handleOpenVisitModal = (appointment) => {
-    if (appointment.status === 'completed') {
-        toastSuccess("Lịch hẹn này đã hoàn thành khám.");
-        return;
-    }
-    if (appointment.status === 'cancelled') {
-        toastError("Lịch hẹn đã bị hủy.");
-        return;
-    }
-    setSelectedAppointmentForVisit(appointment);
-    setIsVisitModalOpen(true);
-  };
-
   const handleSave = async (submitData) => {
     try {
       const payload = { ...submitData, doctor_id: currentDoctor._id };
+      
       if (editingAppointment) {
+        // Nếu thay đổi slot (dời lịch)
         if (submitData.timeslot_id !== submitData.original_timeslot_id) {
             await appointmentsService.rescheduleAppointmentByDoctor(submitData._id, {
                 new_timeslot_id: submitData.timeslot_id,
@@ -226,6 +207,7 @@ const DoctorAppointment = () => {
             });
             toastSuccess("Đã dời lịch khám thành công!");
         } else {
+            // Cập nhật thông tin thường
             await appointmentsService.updateAppointmentByDoctor(submitData._id, {
                 status: submitData.status,
                 note: submitData.reason
@@ -233,11 +215,12 @@ const DoctorAppointment = () => {
             toastSuccess("Cập nhật thông tin thành công!");
         }
       } else {
+        // Tạo mới
         await appointmentsService.bookAppointment(payload);
         toastSuccess("Tạo lịch hẹn thành công!");
       }
       setIsModalOpen(false);
-      fetchData(); 
+      fetchData(); // Reload lại dữ liệu sạch
     } catch (error) {
       console.error(error);
       const errMsg = error.response?.data?.error || error.message;
@@ -252,17 +235,31 @@ const DoctorAppointment = () => {
       await appointmentsService.cancelAppointmentByDoctor(confirmCancelId, {
           reason: "Bác sĩ hủy lịch"
       });
-      // Cập nhật Optimistic UI
+      // Optimistic UI Update
       setAppointments(prev => prev.map(app => 
           app._id === confirmCancelId ? { ...app, status: 'cancelled' } : app
       ));
       setConfirmCancelId(null);
-        toastSuccess("Đã hủy lịch hẹn thành công!");
+      toastSuccess("Đã hủy lịch hẹn thành công!");
     } catch (error) {
       toastError("Lỗi hủy lịch: " + (error.response?.data?.error || error.message));
     }
   };
 
+  const handleOpenVisitModal = (appointment) => {
+    if (appointment.status === 'completed') {
+        toastSuccess("Lịch hẹn này đã hoàn thành khám.");
+        return;
+    }
+    if (appointment.status === 'cancelled') {
+        toastError("Lịch hẹn đã bị hủy.");
+        return;
+    }
+    setSelectedAppointmentForVisit(appointment);
+    setIsVisitModalOpen(true);
+  };
+
+  // Handlers cho Calendar/List View
   const handleDateSelection = useCallback((dateString, selectedApps) => {
     setCurrentDayDetails({ date: dateString, apps: selectedApps });
     setIsDayModalOpen(true);
@@ -270,10 +267,15 @@ const DoctorAppointment = () => {
 
   const handleListDateChange = useCallback((e) => {
     const dateString = e.target.value;
-    const appsForDate = appointments.filter((app) => 
-       app.date && String(app.date).substring(0, 10) === dateString
-    );
-    setCurrentDayDetails({ date: dateString, apps: appsForDate });
+    // Nếu chọn ngày -> lọc, nếu xóa ngày -> hiện tất cả (dateString rỗng)
+    if (!dateString) {
+        setCurrentDayDetails({ date: null, apps: [] });
+    } else {
+        const appsForDate = appointments.filter((app) => 
+           app.date && String(app.date).substring(0, 10) === dateString
+        );
+        setCurrentDayDetails({ date: dateString, apps: appsForDate });
+    }
   }, [appointments]);
 
   const checkAvailability = useCallback((doctorId, date, startTime, excludeId) => {
@@ -285,27 +287,51 @@ const DoctorAppointment = () => {
     );
   }, [appointments]);
 
-  // === Render ===
-  if (loading) 
-      return <div className="flex justify-center items-center h-screen text-blue-600"><Loader2 className="w-10 h-10 animate-spin" /></div>;
+  // === RENDER ===
+  if (loading) return (
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+  );
 
   return (
     <main className="flex-1 p-4 sm:p-8 bg-gray-50 min-h-[calc(100vh-64px)]">
-      <h2 className="text-3xl font-bold text-gray-900 mb-6">Quản Lý Lịch Hẹn Của Tôi</h2>
-
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex space-x-2 bg-white p-1 rounded-xl shadow border">
-          <button onClick={() => setViewMode("calendar")} className={`px-4 py-2 rounded-lg transition ${viewMode === 'calendar' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Lịch</button>
-          <button onClick={() => setViewMode("list")} className={`px-4 py-2 rounded-lg transition ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Danh sách</button>
+      
+      {/* 1. Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <h2 className="text-3xl font-bold text-gray-900">Quản Lý Lịch Hẹn</h2>
+            <p className="text-gray-500 mt-1">Xem và quản lý danh sách bệnh nhân đặt khám</p>
         </div>
-        <button onClick={() => handleAddEdit(null)} className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 shadow-md transition">
-          <Plus size={20} /> Thêm Lịch Hẹn
-        </button>
+        
+        <div className="flex items-center gap-3">
+            {/* View Switcher */}
+            <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-200 flex">
+                <button 
+                    onClick={() => setViewMode("calendar")} 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        viewMode === 'calendar' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                >
+                    <CalendarIcon className="w-4 h-4" /> Lịch
+                </button>
+                <button 
+                    onClick={() => setViewMode("list")} 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        viewMode === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                >
+                    <ListIcon className="w-4 h-4" /> Danh sách
+                </button>
+            </div>
+
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+      {/* 2. Main Content Area */}
+      <div className="min-h-[600px]">
         {viewMode === "calendar" ? (
-          <div className="bg-white p-4 rounded-2xl shadow-sm border">
+          <div className="h-full">
             <AppointmentCalendar
               appointments={appointments}
               currentMonth={currentMonth}
@@ -315,25 +341,27 @@ const DoctorAppointment = () => {
             />
           </div>
         ) : (
-          <div className="bg-white p-4 rounded-2xl shadow-sm border">
-             <div className="mb-4 flex items-center gap-2">
-                <span className="text-gray-700 font-medium">Lọc theo ngày:</span>
-                <input type="date" onChange={handleListDateChange} className="border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"/>
+          <div className="h-full">
+
+             {/* Table Component */}
+             <div className="flex-1">
+                 <AppointmentListTable
+                   appointments={currentDayDetails.date ? currentDayDetails.apps : appointments}
+                   selectedDate={currentDayDetails.date}
+                   onDateChange={handleListDateChange}
+                   getDoctorName={getDoctorName}
+                   getPatientName={getPatientName}
+                   getStatusStyle={getStatusStyle}
+                   handleAddEdit={handleAddEdit}
+                   confirmCancel={confirmCancel} 
+                   handleOpenVisitModal={handleOpenVisitModal}
+                 />
              </div>
-             <AppointmentListTable
-               appointments={currentDayDetails.date ? currentDayDetails.apps : appointments}
-               selectedDate={currentDayDetails.date}
-               getDoctorName={getDoctorName}
-               getPatientName={getPatientName}
-               getStatusStyle={getStatusStyle}
-               handleAddEdit={handleAddEdit}
-               confirmCancel={confirmCancel} 
-               handleOpenVisitModal={handleOpenVisitModal}
-             />
           </div>
         )}
       </div>
 
+      {/* 3. Modals */}
       <AppointmentDayModal
         isOpen={isDayModalOpen}
         onClose={() => setIsDayModalOpen(false)}
@@ -344,6 +372,7 @@ const DoctorAppointment = () => {
         getStatusStyle={getStatusStyle}
         handleAddEdit={handleAddEdit}
         confirmCancel={confirmCancel} 
+        handleOpenVisitModal={handleOpenVisitModal}
       />
 
       {isModalOpen && (
@@ -365,18 +394,13 @@ const DoctorAppointment = () => {
         confirmCancelId={confirmCancelId}
         setconfirmCancelId={setConfirmCancelId}
         handleCancel={handleCancel}
-        title="Xác nhận hủy lịch"
-        message="Bạn có chắc chắn muốn hủy lịch hẹn này không? Lịch hẹn sẽ chuyển sang trạng thái 'Đã hủy' và thông báo sẽ được gửi đến bệnh nhân."
-        confirmText="Hủy Lịch"
-        cancelText="Không"
       />
+
       <VisitCreateModal
           isOpen={isVisitModalOpen}
           onClose={() => setIsVisitModalOpen(false)}
           appointment={selectedAppointmentForVisit}
-          onSuccess={() => {
-             fetchData(); 
-          }}
+          onSuccess={() => fetchData()}
       />
     </main>
   );

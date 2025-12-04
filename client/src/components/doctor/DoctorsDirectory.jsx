@@ -7,11 +7,16 @@ import {
   MapPin, 
   Banknote, 
   Search, 
-  CalendarCheck
+  CalendarCheck,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  SortAsc, // Icon sắp xếp
+  SortDesc
 } from "lucide-react"; 
 import doctorService from "../../services/DoctorService";
 import specialtyService from "../../services/SpecialtyService";
-import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
+import { toastSuccess, toastError } from "../../utils/toast";
 
 const formatVND = (value) => {
   if (value === null || value === undefined || value === "") return "—";
@@ -20,26 +25,46 @@ const formatVND = (value) => {
   return n.toLocaleString("vi-VN") + "đ";
 };
 
+const ITEMS_PER_PAGE = 9; 
+const SIDEBAR_SPECS_LIMIT = 5; // Số lượng khoa hiển thị trong sidebar trước khi xem thêm
+
 export default function DoctorsDirectory() {
   const [doctors, setDoctors] = useState([]);
   const [specialties, setSpecialties] = useState([]);
-  const [selectedSpecialtyId, setSelectedSpecialtyId] = useState("ALL");
   const [loading, setLoading] = useState(false);
+
+  // === CÁC STATE BỘ LỌC ===
+  const [selectedSpecialtyId, setSelectedSpecialtyId] = useState("ALL");
+  const [filterPrice, setFilterPrice] = useState("ALL");
+  const [filterRating, setFilterRating] = useState(0);
+  const [sortOrder, setSortOrder] = useState("DEFAULT"); // DEFAULT, ASC, DESC
+
+  // === STATE HIỂN THỊ ===
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [isSpecsExpanded, setIsSpecsExpanded] = useState(false); // Toggle xem thêm khoa ở sidebar
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
         setLoading(true);
         const [doctorRes, specialtyRes] = await Promise.all([
-          doctorService.getAllDoctors(),
-          specialtyService.getAllSpecialties()
+          // 👇 SỬA DÒNG NÀY: Truyền thêm { limit: 1000 } để lấy hết danh sách
+          doctorService.getAllDoctors({ limit: 1000 }), 
+          
+          specialtyService.getAllSpecialties({ limit: 100 })
         ]);
+        
         const doctorList = doctorRes.data?.doctors || doctorRes.data || [];
         setDoctors(doctorList);
-        const specialtyList = specialtyRes.data || [];
-        setSpecialties(specialtyList);
+
+        const rawSpecs = specialtyRes.data?.specialties || specialtyRes.data || [];
+        setSpecialties(Array.isArray(rawSpecs) ? rawSpecs : []);
+
       } catch (err) {
         toastError("Lỗi tải dữ liệu:", err);
+        setDoctors([]);
+        setSpecialties([]);
       } finally {
         setLoading(false);
       }
@@ -47,13 +72,62 @@ export default function DoctorsDirectory() {
     fetchAll();
   }, []);
 
-  const filteredDoctors = useMemo(() => {
-    if (selectedSpecialtyId === "ALL") return doctors;
-    return doctors.filter((doctor) => {
-      const docSpecId = doctor.specialty_id?._id || doctor.specialty_id;
-      return String(docSpecId) === String(selectedSpecialtyId);
+  // Reset phân trang khi đổi bộ lọc
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [selectedSpecialtyId, filterPrice, filterRating, sortOrder]);
+
+  // === LOGIC LỌC VÀ SẮP XẾP ===
+  const processedDoctors = useMemo(() => {
+    // 1. Lọc
+    let result = doctors.filter((doctor) => {
+      // Chuyên khoa
+      let matchSpec = true;
+      if (selectedSpecialtyId !== "ALL") {
+        const docSpecId = doctor.specialty_id?._id || doctor.specialty_id;
+        matchSpec = String(docSpecId) === String(selectedSpecialtyId);
+      }
+
+      // Giá
+      let matchPrice = true;
+      const fee = Number(doctor.consultation_fee) || 0;
+      if (filterPrice === "UNDER_200") matchPrice = fee < 200000;
+      else if (filterPrice === "200_500") matchPrice = fee >= 200000 && fee <= 500000;
+      else if (filterPrice === "ABOVE_500") matchPrice = fee > 500000;
+
+      // Đánh giá
+      let matchRating = true;
+      const rating = doctor.averageRating || 0;
+      if (filterRating > 0) matchRating = rating >= filterRating;
+
+      return matchSpec && matchPrice && matchRating;
     });
-  }, [doctors, selectedSpecialtyId]);
+
+    // 2. Sắp xếp (A-Z / Z-A)
+    if (sortOrder === "ASC") {
+      result.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
+    } else if (sortOrder === "DESC") {
+      result.sort((a, b) => (b.fullName || "").localeCompare(a.fullName || ""));
+    }
+
+    return result;
+  }, [doctors, selectedSpecialtyId, filterPrice, filterRating, sortOrder]);
+
+  const displayedDoctors = processedDoctors.slice(0, visibleCount);
+
+  // Danh sách khoa hiển thị ở Sidebar
+  const displayedSpecs = isSpecsExpanded ? specialties : specialties.slice(0, SIDEBAR_SPECS_LIMIT);
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + ITEMS_PER_PAGE);
+  };
+
+  const clearFilters = () => {
+    setSelectedSpecialtyId("ALL");
+    setFilterPrice("ALL");
+    setFilterRating(0);
+    setSortOrder("DEFAULT");
+  };
 
   if (loading) {
     return (
@@ -64,156 +138,199 @@ export default function DoctorsDirectory() {
   }
 
   return (
-    <section className="container mx-auto px-4 py-10 lg:py-16  min-h-screen">
+    <section className="container mx-auto px-4 py-8 lg:py-12 min-h-screen bg-gray-50">
+      
+      {/* Header */}
       <div className="text-center mb-10 mt-15">
-        <h2 className="text-3xl lg:text-4xl font-bold text-slate-800 mb-3">
-          Đội ngũ chuyên gia
-        </h2>
-        <p className="text-slate-500 max-w-2xl mx-auto">
-          Đặt lịch khám với các bác sĩ hàng đầu, chuyên môn cao và tận tâm với nghề.
-        </p>
+        <h2 className="text-3xl font-bold text-slate-800 mb-2">Đội ngũ chuyên gia</h2>
+        <p className="text-slate-500">Đặt lịch khám với các bác sĩ hàng đầu.</p>
       </div>
 
-      <div className="mb-10">
-        <div className="flex flex-wrap gap-3 justify-center">
-          <button
-            type="button"
-            onClick={() => setSelectedSpecialtyId("ALL")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300
-            ${
-              selectedSpecialtyId === "ALL"
-                ? "bg-sky-500 text-white shadow-lg shadow-sky-500/30 ring-2 ring-sky-300 ring-offset-2"
-                : "bg-white text-slate-600 border border-slate-200 hover:border-sky-300 hover:text-sky-600 shadow-sm"
-            }`}
-          >
-            <Search size={16} />
-            Tất cả
-          </button>
-          {specialties.map((spec) => (
-            <button
-              key={spec._id}
-              type="button"
-              onClick={() => setSelectedSpecialtyId(spec._id)}
-              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300
-              ${
-                selectedSpecialtyId === spec._id
-                  ? "bg-sky-500 text-white shadow-lg shadow-sky-500/30 ring-2 ring-sky-300 ring-offset-2"
-                  : "bg-white text-slate-600 border border-slate-200 hover:border-sky-300 hover:text-sky-600 shadow-sm"
-              }`}
-            >
-              {spec.name}
+      {/* Mobile Filter Button */}
+      <div className="lg:hidden mb-4">
+        <button 
+          onClick={() => setShowMobileFilter(!showMobileFilter)}
+          className="flex items-center justify-center gap-2 bg-white border border-slate-300 px-4 py-3 rounded-xl text-slate-700 font-bold shadow-sm w-full hover:bg-slate-50 transition"
+        >
+          <Filter size={18} />
+          {showMobileFilter ? "Ẩn bộ lọc" : "Bộ lọc & Sắp xếp"}
+        </button>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        
+        {/* === SIDEBAR (GỘP TẤT CẢ VÀO ĐÂY) === */}
+        <aside className={`w-full lg:w-1/5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-24 ${showMobileFilter ? 'block' : 'hidden lg:block'}`}>
+          
+          <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+            <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+              <Filter size={20} className="text-sky-500"/> Bộ lọc
+            </h3>
+            <button onClick={clearFilters} className="text-xs text-red-500 hover:text-red-700 font-semibold hover:underline transition">
+              Đặt lại
             </button>
-          ))}
+          </div>
+
+          {/* 1. SẮP XẾP (A-Z) */}
+          <div className="mb-8">
+            <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Sắp xếp tên</h4>
+            <div className="space-y-2">
+               <label className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
+                  <input type="radio" name="sort" className="accent-sky-500 w-4 h-4" checked={sortOrder === "DEFAULT"} onChange={() => setSortOrder("DEFAULT")} />
+                  <span className="text-sm text-slate-600">Mặc định</span>
+               </label>
+               <label className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
+                  <input type="radio" name="sort" className="accent-sky-500 w-4 h-4" checked={sortOrder === "ASC"} onChange={() => setSortOrder("ASC")} />
+                  <span className="text-sm text-slate-600 flex items-center gap-2"><SortAsc size={14}/> Tên (A - Z)</span>
+               </label>
+               <label className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
+                  <input type="radio" name="sort" className="accent-sky-500 w-4 h-4" checked={sortOrder === "DESC"} onChange={() => setSortOrder("DESC")} />
+                  <span className="text-sm text-slate-600 flex items-center gap-2"><SortDesc size={14}/> Tên (Z - A)</span>
+               </label>
+            </div>
+          </div>
+
+          {/* 2. CHUYÊN KHOA (ĐÃ GỘP VÀO ĐÂY) */}
+          <div className="mb-8">
+            <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Chuyên khoa</h4>
+            <div className="space-y-1">
+              <label className={`flex items-center gap-3 cursor-pointer p-2 rounded-lg -mx-2 transition ${selectedSpecialtyId === "ALL" ? "bg-sky-50" : "hover:bg-slate-50"}`}>
+                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedSpecialtyId === "ALL" ? "border-sky-500" : "border-slate-300"}`}>
+                    {selectedSpecialtyId === "ALL" && <div className="w-2 h-2 bg-sky-500 rounded-full" />}
+                 </div>
+                 <input type="radio" name="specialty" className="hidden" checked={selectedSpecialtyId === "ALL"} onChange={() => setSelectedSpecialtyId("ALL")} />
+                 <span className={`text-sm ${selectedSpecialtyId === "ALL" ? "text-sky-700 font-bold" : "text-slate-600"}`}>Tất cả</span>
+              </label>
+
+              {displayedSpecs.map((spec) => (
+                <label key={spec._id} className={`flex items-center gap-3 cursor-pointer p-2 rounded-lg -mx-2 transition ${selectedSpecialtyId === spec._id ? "bg-sky-50" : "hover:bg-slate-50"}`}>
+                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${selectedSpecialtyId === spec._id ? "border-sky-500" : "border-slate-300"}`}>
+                      {selectedSpecialtyId === spec._id && <div className="w-2 h-2 bg-sky-500 rounded-full" />}
+                   </div>
+                   <input type="radio" name="specialty" className="hidden" checked={selectedSpecialtyId === spec._id} onChange={() => setSelectedSpecialtyId(spec._id)} />
+                   <span className={`text-sm line-clamp-1 ${selectedSpecialtyId === spec._id ? "text-sky-700 font-bold" : "text-slate-600"}`}>{spec.name}</span>
+                </label>
+              ))}
+            </div>
+            
+            {/* Nút xem thêm khoa */}
+            {specialties.length > SIDEBAR_SPECS_LIMIT && (
+               <button 
+                  onClick={() => setIsSpecsExpanded(!isSpecsExpanded)}
+                  className="mt-2 text-xs font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1 transition"
+               >
+                  {isSpecsExpanded ? <>Thu gọn <ChevronUp size={12}/></> : <>Xem thêm {specialties.length - SIDEBAR_SPECS_LIMIT} khoa <ChevronDown size={12}/></>}
+               </button>
+            )}
+          </div>
+
+          {/* 3. GIÁ */}
+          <div className="mb-8">
+            <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Phí tư vấn</h4>
+            <div className="space-y-2">
+              {[
+                { label: "Tất cả", value: "ALL" },
+                { label: "Dưới 200k", value: "UNDER_200" },
+                { label: "200k - 500k", value: "200_500" },
+                { label: "Trên 500k", value: "ABOVE_500" },
+              ].map((opt) => (
+                <label key={opt.value} className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
+                  <input type="radio" name="price" className="accent-sky-500 w-4 h-4" checked={filterPrice === opt.value} onChange={() => setFilterPrice(opt.value)} />
+                  <span className="text-sm text-slate-600">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* 4. ĐÁNH GIÁ */}
+          <div>
+            <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Đánh giá</h4>
+            <div className="space-y-2">
+               <label className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
+                  <input type="radio" name="rating" className="accent-sky-500 w-4 h-4" checked={filterRating === 0} onChange={() => setFilterRating(0)} />
+                  <span className="text-sm text-slate-600">Mọi đánh giá</span>
+               </label>
+               {[5, 4, 3].map(star => (
+                 <label key={star} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
+                    <input type="radio" name="rating" className="accent-sky-500 w-4 h-4" checked={filterRating === star} onChange={() => setFilterRating(star)} />
+                    <div className="flex text-sm text-slate-600 items-center">
+                       <span className="mr-1">Từ {star}</span> <Star size={12} className="fill-amber-400 text-amber-400"/>
+                    </div>
+                 </label>
+               ))}
+            </div>
+          </div>
+
+        </aside>
+
+        {/* === MAIN CONTENT (DANH SÁCH BÁC SĨ) === */}
+        <div className="w-full lg:w-4/5">
+          
+          {/* Thông báo kết quả tìm kiếm */}
+          <div className="mb-4 text-sm text-slate-500 font-medium">
+             Tìm thấy <span className="text-sky-600 font-bold">{processedDoctors.length}</span> bác sĩ phù hợp
+          </div>
+
+          {displayedDoctors.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+              <Search size={48} className="text-slate-200 mb-4" />
+              <p className="text-slate-500 font-medium">Không tìm thấy bác sĩ nào.</p>
+              <button onClick={clearFilters} className="mt-2 text-sky-600 hover:underline text-sm font-bold">Xóa bộ lọc để xem tất cả</button>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {displayedDoctors.map((doctor) => {
+                  const { _id, fullName, thumbnail, specialty_id, consultation_fee, averageRating, address } = doctor;
+                  return (
+                    <div key={_id} className="group bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+                      <div className="flex gap-4 items-start mb-4">
+                        <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 border border-slate-100 shadow-inner">
+                          <img src={thumbnail || "https://ui-avatars.com/api/?name=Doctor&background=random"} alt={fullName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        </div>
+                        <div>
+                           <span className="inline-block text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 mb-1">
+                              {specialty_id?.name || "Đa khoa"}
+                           </span>
+                           <h3 className="font-bold text-slate-800 line-clamp-1 group-hover:text-sky-600 transition-colors">
+                              Bs. {fullName}
+                           </h3>
+                           <div className="flex items-center gap-1 text-xs text-amber-500 mt-1">
+                              <Star size={12} className="fill-amber-500"/>
+                              <span className="font-bold text-slate-700">{averageRating || 0}</span>
+                           </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-5 text-sm text-slate-500 flex-1">
+                         <div className="flex items-start gap-2">
+                            <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400"/>
+                            <span className="line-clamp-2 text-xs">{address || "Chưa cập nhật địa chỉ"}</span>
+                         </div>
+                         <div className="flex items-center gap-2">
+                            <Banknote size={14} className="shrink-0 text-slate-400"/>
+                            <span className="font-bold text-sky-700">{formatVND(consultation_fee)}</span>
+                         </div>
+                      </div>
+
+                      <Link to={`/doctors/${_id}`} className="mt-auto w-full py-2.5 rounded-xl bg-slate-50 text-slate-600 text-sm font-bold text-center hover:bg-sky-500 hover:text-white transition-all flex items-center justify-center gap-2 group-hover:shadow-md">
+                         <CalendarCheck size={16}/> Đặt lịch
+                      </Link>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* Load More */}
+          {visibleCount < processedDoctors.length && (
+            <div className="mt-12 text-center">
+                <button onClick={handleLoadMore} className="px-8 py-3 rounded-full bg-white border border-slate-200 text-slate-600 font-bold shadow-sm hover:border-sky-300 hover:text-sky-600 transition-all inline-flex items-center gap-2">
+                  Xem thêm {processedDoctors.length - visibleCount} bác sĩ <ChevronDown size={18}/>
+                </button>
+            </div>
+          )}
         </div>
       </div>
-
-      {filteredDoctors.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-slate-300 mx-auto max-w-2xl">
-          <div className="bg-slate-100 p-4 rounded-full mb-4">
-             <Search size={32} className="text-slate-400" />
-          </div>
-          <p className="text-slate-600 text-lg font-medium">Chưa có bác sĩ nào thuộc chuyên khoa này.</p>
-          <button 
-            onClick={() => setSelectedSpecialtyId("ALL")}
-            className="mt-4 text-sky-500 font-medium hover:underline hover:text-sky-600 transition-colors"
-          >
-            Quay lại xem tất cả
-          </button>
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredDoctors.map((doctor) => {
-            const {
-              _id,
-              fullName,
-              thumbnail,
-              specialty_id,
-              consultation_fee,
-              averageRating,
-              address
-            } = doctor;
-
-            const displayName = fullName || "Bác sĩ";
-            const displaySpec = specialty_id?.name || "Đa khoa";
-            const displayImage = thumbnail || "https://ui-avatars.com/api/?name=Doctor&background=random";
-            const ratingValue = averageRating || 0;
-            const hasRating = ratingValue > 0;
-
-            return (
-              <div
-                key={_id}
-                className="group bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col sm:flex-row gap-5"
-              >
-                {/* Cột Trái: Ảnh (Đã center sẵn ở flex-col items-center) */}
-                <div className="shrink-0 flex flex-col items-center sm:items-start">
-                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-slate-100 shadow-inner group-hover:shadow-md transition-shadow">
-                    <img
-                      src={displayImage}
-                      alt={displayName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Cột Phải: Thông tin (THAY ĐỔI Ở ĐÂY: Thêm items-center text-center cho mobile) */}
-                <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left">
-                  
-                  {/* Badge Row (Thêm justify-center) */}
-                  <div className="flex items-center justify-center sm:justify-start gap-2 mb-2 flex-wrap w-full">
-                      <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide font-bold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-100">
-                        <Stethoscope size={12} />
-                        {displaySpec}
-                      </span>
-
-                      {hasRating ? (
-                        <div className="flex items-center gap-1 text-xs font-bold text-amber-500 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
-                          <Star size={12} className="fill-amber-500" />
-                          <span>{ratingValue}</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">
-                          <Star size={12} className="text-slate-400" />
-                          <span>Mới</span>
-                        </div>
-                      )}
-                  </div>
-
-                  {/* Tên Bác sĩ */}
-                  <h3 className="text-lg font-bold text-slate-800 mb-1 group-hover:text-sky-600 transition-colors line-clamp-1 capitalize w-full">
-                    Bs. {displayName}
-                  </h3>
-
-                  {/* Địa chỉ & Giá (Thêm justify-center) */}
-                  <div className="space-y-1.5 mb-5 mt-1 w-full">
-                      <p className="text-sm text-slate-500 flex items-center justify-center sm:justify-start gap-2">
-                        <MapPin size={15} className="text-slate-400 shrink-0" />
-                        <span className="line-clamp-1 text-center sm:text-left">{address || "Chưa cập nhật địa chỉ"}</span>
-                      </p>
-                      
-                      <p className="text-sm text-slate-500 flex items-center justify-center sm:justify-start gap-2">
-                        <Banknote size={15} className="text-slate-400 shrink-0" />
-                        <span className="font-semibold text-sky-700 bg-sky-50 px-1.5 rounded">
-                          {formatVND(consultation_fee)}
-                        </span>
-                      </p>
-                  </div>
-                  
-                  {/* Button Đặt lịch */}
-                  <div className="mt-auto w-full">
-                    <Link
-                      to={`/doctors/${_id}`}
-                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-slate-100 text-slate-600 text-sm font-bold hover:bg-sky-500 hover:text-white transition-all active:scale-95"
-                    >
-                      <CalendarCheck size={16} />
-                      Đặt lịch hẹn
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </section>
   );
 }

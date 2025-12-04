@@ -9,7 +9,7 @@ import doctorSchedulesService from "../services/DoctorScheduleService.js";
 // Components
 import DoctorInfoCard from "../components/patient/DoctorInfoCard.jsx";
 import BookingSection from "../components/patient/BookingSection.jsx";
-import IntroCard from "../components/patient/IntroCard.jsx";
+import IntroCard from "../components/patient/IntroCard.jsx"; // Đã import nhưng chưa dùng, có thể để ở cột trái
 
 export default function DoctorDetailPage() {
   const { id } = useParams();
@@ -28,12 +28,10 @@ export default function DoctorDetailPage() {
         ]);
 
         // LOGIC MỚI DỰA TRÊN JSON:
-        // API trả về: { profile: { ... } } -> Lấy .profile
         if (doctorRes && doctorRes.profile) {
           setDoctor(doctorRes.profile);
         }
 
-        // API Schedule có thể trả về { data: ... } hoặc trực tiếp
         setScheduleConfig(scheduleRes ? scheduleRes.data || scheduleRes : null);
       } catch (err) {
         console.error("Error fetching doctor detail:", err);
@@ -59,28 +57,37 @@ export default function DoctorDetailPage() {
     ? new Date().getFullYear() - new Date(doctor.dob).getFullYear()
     : 0;
 
-  // Lấy object chuyên khoa từ field 'specialty_id' (đã populate name)
+  // Lấy object chuyên khoa
   const specialty = doctor.specialty_id || { name: "Chuyên khoa" };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 bg-gray-50 mt-15">
-      <div className="space-y-8">
-        {/* 1. Thông tin bác sĩ */}
-        <DoctorInfoCard
-          doctor={doctor}
-          specialty={specialty}
-          experienceYears={experienceYears}
-        />
+    // Tăng max-w lên 7xl để chia cột rộng rãi hơn
+    <div className="max-w-7xl mx-auto px-4 py-8 bg-gray-50 mt-15">
+      
+      {/* LAYOUT GRID:
+         - Mobile: 1 cột (grid-cols-1)
+         - Desktop (lg): 10 cột (grid-cols-10) để chia tỷ lệ 3/7 dễ dàng
+         - items-start: Để 2 cột căn dòng bên trên cùng
+      */}
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 items-start">
+        
+        {/* 1. CỘT TRÁI (30%) - Thông tin bác sĩ */}
+        <div className="lg:col-span-3 space-y-6">
+          <DoctorInfoCard
+            doctor={doctor}
+            specialty={specialty}
+            experienceYears={experienceYears}
+          />
+          
+          {/* Nếu bạn muốn hiện IntroCard, nên để nó ở cột nhỏ này luôn */}
+          {/* <IntroCard doctor={doctor} /> */}
+        </div>
 
-        {/* 2. Đặt khám nhanh */}
-        <BookingSection doctor={doctor} scheduleConfig={scheduleConfig} />
+        {/* 2. CỘT PHẢI (70%) - Đặt khám nhanh */}
+        <div className="lg:col-span-7">
+          <BookingSection doctor={doctor} scheduleConfig={scheduleConfig} />
+        </div>
 
-        {/* 3. Giới thiệu ngắn */}
-        <IntroCard
-          doctor={doctor}
-          specialty={specialty}
-          experienceYears={experienceYears}
-        />
       </div>
     </div>
   );

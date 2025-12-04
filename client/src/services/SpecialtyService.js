@@ -3,8 +3,8 @@ import api from '../api/axiosClient';
 
 const specialtyService = {
     // 1. GET /api/specialties
-    getAllSpecialties: async () => {
-        return await api.get('/specialties');
+   getAllSpecialties: (params) => {
+        return api.get('/specialties', { params });
     },
     // 2. GET /api/specialties/:id (Đã sửa ở backend để trả về Doctor)
     getSpecialtyWithDoctors: async (id) => {

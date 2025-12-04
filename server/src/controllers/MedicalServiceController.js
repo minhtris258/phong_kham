@@ -1,6 +1,9 @@
 import MedicalService from "../models/MedicalServiceModel.js";
 import { v2 as cloudinary } from "cloudinary";
 
+// Cấu hình Cloudinary (Nếu chưa cấu hình ở file server.js hay config riêng thì thêm vào đây, hoặc đảm bảo đã config ở chỗ khác)
+// cloudinary.config({ ... });
+
 /** * GET /api/services
  * Lấy danh sách dịch vụ
  */
@@ -43,22 +46,64 @@ export const getServices = async (req, res, next) => {
     next(error);
   }
 };
+/** * GET /api/services/:id
+ * Lấy chi tiết 1 dịch vụ theo ID (Để xem chi tiết hoặc edit)
+ */
+export const getServiceById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const service = await MedicalService.findById(id);
+
+    if (!service) {
+      return res.status(404).json({ error: "Không tìm thấy dịch vụ." });
+    }
+
+    res.json({ 
+      success: true, 
+      data: service 
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 /** * POST /api/services
- * Tạo dịch vụ mới
+ * Tạo dịch vụ mới (Có xử lý ảnh Base64)
  */
 export const createService = async (req, res, next) => {
   try {
-    const { name, code, price, description, status } = req.body;
+    const { name, code, price, description, status, image } = req.body;
 
     if (!name || !price) {
         return res.status(400).json({ error: "Tên dịch vụ và giá là bắt buộc." });
     }
 
-    // Nếu người dùng không nhập code, có thể tự sinh code (Optional)
-    // if (!code) code = "DV" + Date.now();
+    let imageUrl = "";
 
-    const newService = await MedicalService.create({ name, code, price, description, status });
+    // --- XỬ LÝ ẢNH BASE64 ---
+    if (image) {
+        try {
+            const uploadRes = await cloudinary.uploader.upload(image, {
+                upload_preset: "ml_default", // Hoặc bỏ dòng này nếu dùng cấu hình gốc
+                folder: "medical_services"   // Lưu vào thư mục riêng cho gọn
+            });
+            imageUrl = uploadRes.secure_url;
+        } catch (uploadErr) {
+            console.error("Lỗi upload ảnh:", uploadErr);
+            // Có thể return lỗi hoặc để trống ảnh tùy logic của bạn
+            // return res.status(500).json({ error: "Lỗi khi upload ảnh." });
+        }
+    }
+    // ------------------------
+
+    const newService = await MedicalService.create({ 
+        name, 
+        code, 
+        price, 
+        description, 
+        status, 
+        image: imageUrl // Lưu link ảnh vào DB
+    });
     
     res.status(201).json({ 
       success: true, 
@@ -75,16 +120,47 @@ export const createService = async (req, res, next) => {
 };
 
 /** * PUT /api/services/:id
- * Cập nhật giá, tên...
+ * Cập nhật giá, tên, ảnh...
  */
 export const updateService = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { name, code, price, description, status, image } = req.body;
+    
+    // Tìm dịch vụ cũ trước
+    const service = await MedicalService.findById(id);
+    if (!service) return res.status(404).json({ error: "Không tìm thấy dịch vụ." });
+
+    let imageUrl = service.image; // Mặc định giữ nguyên ảnh cũ
+
+    // --- XỬ LÝ ẢNH KHI UPDATE ---
+    // Kiểm tra xem 'image' gửi lên có phải là Base64 mới không (thường bắt đầu bằng "data:image")
+    // Nếu là link http... thì nghĩa là người dùng không đổi ảnh
+    if (image && image.startsWith("data:image")) {
+        try {
+            // (Tùy chọn) Xóa ảnh cũ trên Cloudinary nếu cần tiết kiệm dung lượng
+            // const publicId = service.image.split('/').pop().split('.')[0];
+            // await cloudinary.uploader.destroy(publicId);
+
+            const uploadRes = await cloudinary.uploader.upload(image, {
+                folder: "medical_services"
+            });
+            imageUrl = uploadRes.secure_url;
+        } catch (uploadErr) {
+             console.error("Lỗi upload ảnh update:", uploadErr);
+        }
+    } else if (image === "" || image === null) {
+        // Trường hợp người dùng muốn xóa ảnh
+        imageUrl = "";
+    }
+    // ----------------------------
+
+    const updateData = {
+        name, code, price, description, status,
+        image: imageUrl 
+    };
 
     const updatedService = await MedicalService.findByIdAndUpdate(id, updateData, { new: true });
-
-    if (!updatedService) return res.status(404).json({ error: "Không tìm thấy dịch vụ." });
 
     res.json({ 
       success: true, 
@@ -107,6 +183,9 @@ export const deleteService = async (req, res, next) => {
     const deleted = await MedicalService.findByIdAndDelete(id);
     
     if (!deleted) return res.status(404).json({ error: "Không tìm thấy dịch vụ." });
+
+    // (Tùy chọn) Xóa ảnh trên Cloudinary khi xóa DB
+    // if (deleted.image) { ... logic destroy cloudinary ... }
 
     res.json({ success: true, message: "Đã xóa dịch vụ." });
   } catch (error) {

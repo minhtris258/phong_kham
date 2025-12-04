@@ -1,60 +1,49 @@
-// src/services/doctorService.js
 import api from '../api/axiosClient';
 
 const doctorService = {
-    // LẤY DANH SÁCH BÁC SĨ
-    getAllDoctors: async () => {
-        const response = await api.get('/doctors');
-        return response; // { data: { doctors: [...] } } hoặc { data: [...] }
+    // LẤY DANH SÁCH BÁC SĨ (CÓ PHÂN TRANG)
+    getAllDoctors: async (params) => {
+        // params: { page, limit, search, specialty }
+        const response = await api.get('/doctors', { params });
+        return response; 
     },
-    // LẤY THÔNG TIN BÁC SĨ THEO ID
+
+    // ... Giữ nguyên các hàm khác (create, update, delete...)
     getDoctorById: async (id) => {
         const response = await api.get(`/doctors/${id}`);
         return response.data;
     },
-    // LẤY HỒ SƠ BÁC SĨ CỦA CHÍNH MÌNH
     getMe: async () => {
         const response = await api.get('/doctors/me');
-        return response.data; // Trả về { profile: { ... } }
+        return response.data;
     },
-     updateMyDoctorProfile: async (doctorData) => {
+    updateMyDoctorProfile: async (doctorData) => {
         const response = await api.put('/doctors/me', doctorData);
         return response;
     },
-    // TẠO MỚI BÁC SĨ (chỉ gửi name, email, password)
     createDoctor: async (doctorData) => {
-    // ÉP CHẮC CHẮN CHỈ GỬI 3 TRƯỜNG – LOẠI BỎ TẤT CẢ DỮ LIỆU THỪA
-    const payload = {
-        name: doctorData.name?.trim(),
-        email: doctorData.email?.trim(),
-        password: doctorData.password,
-    };
-
-    console.log("Frontend gửi đi:", payload); // ← IN RA ĐỂ KIỂM TRA
-
-    const response = await api.post('/doctors', payload);
-    return response;
-},
-
-    // CẬP NHẬT BÁC SĨ
+        const payload = {
+            name: doctorData.name?.trim(),
+            email: doctorData.email?.trim(),
+            password: doctorData.password,
+        };
+        const response = await api.post('/doctors', payload);
+        return response;
+    },
     updateDoctor: async (id, doctorData) => {
         const response = await api.put(`/doctors/${id}`, doctorData);
         return response;
     },
-
-    // XÓA BÁC SĨ
     deleteDoctor: async (id) => {
         const response = await api.delete(`/doctors/${id}`);
         return response;
     },
-
-    // LẤY DANH SÁCH CHUYÊN KHOA (nếu có API)
-    getSpecialties: async () => {
-            const response = await api.get('/specialties');
-            return response.data || response;
+    getSpecialties: async (params) => {
+        // Truyền params (ví dụ: ?limit=100) xuống API
+        const response = await api.get('/specialties', { params });
+        return response;
     },
     completeProfile: async (profileData) => {
-        // Endpoint khớp với Controller: POST /onboarding/doctor-profile
         const response = await api.post('/doctors/onboarding/doctor-profile', profileData);
         return response;
     },
