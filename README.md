@@ -92,4 +92,10 @@ server
 
 npm i
 
+mobile 
 
+npm i expo
+
+npm install babel-preset-expo --save-dev
+
+npx expo start
