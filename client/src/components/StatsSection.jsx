@@ -1,17 +1,17 @@
 // src/components/StatsSection.jsx
 import React, { useState, useEffect } from "react";
+import {Hospital, UserCheck, Users, Activity, Eye, BarChart2, NotepadText} from "lucide-react";
 import banner1 from "../assets/asset51.jpeg";
 import banner2 from "../assets/asset52.png";
 import banner3 from "../assets/asset53.png";
 
 // Dữ liệu thống kê
 const stats = [
-  { icon: "🩺", value: "4.0M+", label: "Lượt khám" },
-  { icon: "🏥", value: "100+", label: "Bệnh viện" },
-  { icon: "🏠", value: "300+", label: "Cơ sở Y tế" },
-  { icon: "👨‍⚕️", value: "2500+", label: "Bác sĩ" },
-  { icon: "📈", value: "1.0M+", label: "Lượt truy cập tháng" },
-  { icon: "👁️", value: "35K+", label: "Lượt truy cập trong ngày" },
+  { icon: <NotepadText />, value: "4.0M+", label: "Lượt khám" },
+  { icon: <Hospital />, value: "300+", label: "Cơ sở Y tế" },
+  { icon: <Users />, value: "2500+", label: "Bác sĩ" },
+  { icon: <BarChart2 />, value: "1.0M+", label: "Lượt truy cập tháng" },
+  { icon: <Eye />, value: "35K+", label: "Lượt truy cập trong ngày" },
 ];
 
 // 🖼️ MẢNG ẢNH SLIDE – bạn thay ảnh ở đây
@@ -39,7 +39,7 @@ export default function StatsSection() {
 
         {/* White card */}
         <div className="mx-auto max-w-6xl bg-white rounded-[32px] shadow-lg px-6 py-8 md:px-10 md:py-10">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-6 md:gap-y-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-6 md:gap-y-8">
             {stats.map((item) => (
               <div
                 key={item.label}

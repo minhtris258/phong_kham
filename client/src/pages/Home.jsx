@@ -16,7 +16,7 @@ const Home = () => {
   return (
     <>
       <Hero />
-
+<DoctorsBySpecialtySection />
       {/* ==================== SECTION MỚI: TIN TỨC + BÁC SĨ NỔI BẬT (2 CỘT) ==================== */}
       <section className="bg-slate-50 py-16 lg:py-20">
         <div className="container mx-auto max-w-7xl px-4">
@@ -48,12 +48,12 @@ const Home = () => {
         </div>
       </section>
 
-      <DoctorsBySpecialtySection />
+      
       <SpecialtySection />
       <DownloadAppSection />
-      <PartnersSection />
       <MediaMentionSection />
       <StatsSection />
+      <PartnersSection />
 
 
     </>

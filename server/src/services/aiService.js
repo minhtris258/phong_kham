@@ -62,8 +62,9 @@ const tools = [
             doctorId: { type: "STRING" },
             date: { type: "STRING", description: "Format YYYY-MM-DD" },
             time: { type: "STRING", description: "Format HH:mm" },
+            reason: { type: "STRING", description: "Lý do khám bệnh" },
           },
-          required: ["doctorId", "date", "time"],
+          required: ["doctorId", "date", "time", "reason"],
         },
       },
     ],
@@ -89,6 +90,7 @@ export const handleAIChat = async (userMessage, socketId, userId, io) => {
                     1. Khách hỏi bác sĩ -> Dùng "search_doctors".
                     2. Khách hỏi lịch ngày X -> Dùng "check_availability".
                     3. Khách hỏi "khi nào rảnh" (không rõ ngày) -> Dùng "find_next_available".
+                    "QUAN TRỌNG: Trước khi gọi tool 'book_appointment', BẮT BUỘC phải hỏi người dùng về triệu chứng hoặc lý do khám. Nếu người dùng chưa nói, hãy hỏi: 'Bạn đau ở đâu hay muốn khám về vấn đề gì ạ?'."
                     4. Khách chốt đặt lịch (vd: "ok đặt giờ này") -> Dùng "book_appointment".
                     
                     LƯU Ý QUAN TRỌNG:
@@ -161,98 +163,84 @@ export const handleAIChat = async (userMessage, socketId, userId, io) => {
               toolResult = { status: "error", message: "Bạn cần đăng nhập để đặt lịch." };
           } else {
               try {
-                  // --- LOGIC MỚI: TỰ ĐỘNG NHẬN DIỆN ID LÀ USER HAY PATIENT ---
+                  // --- XỬ LÝ ID (GIỮ NGUYÊN LOGIC CỦA BẠN - RẤT TỐT) ---
                   let userAccount = null;
                   let patientProfile = null;
-                  let realAccountId = null; // ID dùng để gửi socket/notification
+                  let realAccountId = null;
 
-                  // 1. Thử tìm trong bảng User trước
                   userAccount = await User.findById(userId);
-
                   if (userAccount) {
-                      // Nếu tìm thấy User -> userId chính là AccountID
-                      console.log("✅ ID gửi lên là User Account ID.");
                       realAccountId = userId;
-                      // Tìm Patient theo user_id
                       patientProfile = await Patient.findOne({ user_id: userId });
                   } else {
-                      // 2. Nếu không thấy trong User -> Thử tìm trong bảng Patient (Trường hợp Client gửi nhầm ID hồ sơ)
-                      console.log("⚠️ Không thấy trong bảng User, thử tìm trong bảng Patient...");
                       patientProfile = await Patient.findById(userId);
-                      
                       if (patientProfile) {
-                          console.log("✅ ID gửi lên là Patient ID. Đang truy ngược lại User...");
-                          realAccountId = patientProfile.user_id; // Lấy Account ID thực sự từ hồ sơ
+                          realAccountId = patientProfile.user_id;
                           userAccount = await User.findById(realAccountId);
                       }
                   }
 
-                  // --- KIỂM TRA KẾT QUẢ ---
                   if (!userAccount) {
-                      toolResult = { status: "error", message: "Không tìm thấy tài khoản người dùng hợp lệ." };
+                      toolResult = { status: "error", message: "Không tìm thấy tài khoản người dùng." };
                   } else if (!patientProfile) {
-                      const userName = userAccount.fullName || "bạn";
-                      toolResult = { 
-                          status: "error", 
-                          message: `Chào ${userName}, hệ thống chưa tìm thấy Hồ sơ bệnh nhân. Vui lòng vào mục 'Hồ sơ cá nhân' cập nhật thông tin y tế trước khi đặt lịch.` 
-                      };
+                      toolResult = { status: "error", message: "Vui lòng cập nhật Hồ sơ bệnh nhân trước khi đặt lịch." };
                   } else {
-                      // --- NẾU TÌM THẤY CẢ 2 -> TIẾN HÀNH ĐẶT LỊCH ---
                       
-                      const slot = await TimeSlot.findOne({
+                      // --- SỬA LỖI RACE CONDITION (QUAN TRỌNG) ---
+                      // Dùng findOneAndUpdate để Khóa slot ngay lập tức
+                      const slot = await TimeSlot.findOneAndUpdate(
+                        {
                           doctor_id: args.doctorId,
                           date: args.date,
                           start: args.time,
-                          status: "free"
-                      });
+                          status: "free" // Chỉ lấy slot đang free
+                        },
+                        { status: "booked" }, // Update ngay thành booked
+                        { new: true }
+                      );
 
                       if (!slot) {
-                          toolResult = { status: "error", message: "Giờ này vừa bị người khác đặt mất rồi." };
+                          // Nếu không tìm thấy hoặc status != free
+                          toolResult = { status: "error", message: "Rất tiếc, khung giờ này vừa có người khác đặt mất rồi." };
                       } else {
-                          // Update Slot
-                          slot.status = "booked";
-                          await slot.save();
-
-                          // Tạo Appointment (Dùng ID Bệnh Nhân)
+                          // Tạo Appointment
                           const newAppt = await Appointment.create({
                               doctor_id: args.doctorId,
-                              patient_id: patientProfile._id, // 👈 Luôn dùng đúng ID hồ sơ
+                              patient_id: patientProfile._id,
                               timeslot_id: slot._id,
                               date: args.date,
                               start: args.time,
                               status: "confirmed",
                               paymentStatus: "unpaid",
-                              reason: "Đặt lịch qua AI Chatbot",
+                              // Giờ đây args.reason sẽ có dữ liệu từ AI
+                              reason: args.reason || "Đặt lịch qua AI (Không rõ triệu chứng)", 
                               checkinCode: Math.random().toString(36).substring(2, 10).toUpperCase()
                           });
 
+                          // Cập nhật ngược lại slot để link với appointment
                           slot.appointment_id = newAppt._id;
                           await slot.save();
 
-                          // Tạo Thông báo (Dùng ID Tài khoản thực sự)
+                          // --- THÔNG BÁO & SOCKET (GIỮ NGUYÊN) ---
                           const doctorInfo = await Doctor.findById(args.doctorId).select('fullName');
                           const doctorName = doctorInfo ? doctorInfo.fullName : "Bác sĩ";
-                          const notifTitle = "✅ Đặt Lịch Thành Công";
-                          const notifBody = `Bạn đã đặt lịch với BS ${doctorName} lúc ${args.time} ngày ${args.date}.`;
-
+                          
                           const newNotif = await Notification.create({
-                              user_id: realAccountId, // 👈 Gửi cho Account ID thực sự
+                              user_id: realAccountId,
                               type: "appointment",
-                              title: notifTitle,
-                              body: notifBody,
+                              title: "✅ Đặt Lịch Thành Công",
+                              body: `Bạn đã đặt lịch với BS ${doctorName} lúc ${args.time} ngày ${args.date}. Lý do: ${args.reason}`,
                               appointment_id: newAppt._id,
                               channels: ["in-app"],
-                              status: "unread",
                               sent_at: new Date()
                           });
 
-                          // Gửi Socket (Dùng ID Tài khoản thực sự)
                           if (io) {
-                              console.log(`📡 Bắn Socket tới Account: ${realAccountId}`);
                               io.to(realAccountId.toString()).emit('new_notification', {
-                                  message: notifTitle,
+                                  message: "Đặt lịch thành công",
                                   data: newNotif
                               });
+                              // Bắn sự kiện để client khác cập nhật lại giao diện (ẩn slot đi)
                               io.emit('slot_booked', {
                                   timeslotId: slot._id,
                                   doctorId: args.doctorId
@@ -261,14 +249,21 @@ export const handleAIChat = async (userMessage, socketId, userId, io) => {
 
                           toolResult = { 
                               status: "success", 
-                              message: `Đã đặt thành công! Lịch hẹn với BS ${doctorName} lúc ${args.time} ngày ${args.date} đã được lưu.`, 
-                              details: newAppt 
+                              message: `Đã đặt thành công cho bệnh nhân ${patientProfile.fullName}!`, 
+                              details: { date: args.date, time: args.time, doctor: doctorName }
                           };
                       }
                   }
               } catch (err) {
                   console.error("AI Booking Error:", err);
-                  toolResult = { status: "error", message: "Lỗi hệ thống." };
+                  // Nếu lỗi khi tạo Appointment, cần hoàn trả lại trạng thái slot về free (Rollback)
+                  if(args.doctorId && args.date && args.time) {
+                     await TimeSlot.updateOne(
+                        { doctor_id: args.doctorId, date: args.date, start: args.time }, 
+                        { status: "free", appointment_id: null }
+                     );
+                  }
+                  toolResult = { status: "error", message: "Có lỗi xảy ra, vui lòng thử lại." };
               }
           }
       }
