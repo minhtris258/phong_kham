@@ -17,14 +17,15 @@ const Home = () => {
     <>
       <Hero />
 <DoctorsBySpecialtySection />
+<DownloadAppSection />
 
- <HomePosts />
          <DoctorsFavorite />
       <SpecialtySection />
-      <DownloadAppSection />
+       <HomePosts />
       <MediaMentionSection />
-      <StatsSection />
       <PartnersSection />
+      <StatsSection />
+      
 
 
     </>
