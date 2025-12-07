@@ -142,7 +142,7 @@ export default function HomePosts() {
       <div className="mt-12 text-center">
         <Link
           to="/post"
-          className="inline-flex items-center gap-3 px-8 py-4 bg-sky-600 text-white font-bold text-lg rounded-xl hover:bg-sky-700 hover:gap-5 transition-all shadow-lg"
+          className="inline-flex items-center gap-3 py-2 px-4 btn-color text-white font-bold text-lg rounded-2xl  hover:gap-5 transition-all shadow-lg"
         >
           Xem tất cả bài viết <ArrowRight size={22} />
         </Link>

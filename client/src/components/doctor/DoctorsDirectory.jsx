@@ -1,6 +1,7 @@
 // src/components/DoctorsDirectory.jsx
 import React, { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+
 import { 
   Star, 
   Stethoscope, 
@@ -33,6 +34,10 @@ export default function DoctorsDirectory() {
   const [specialties, setSpecialties] = useState([]);
   const [loading, setLoading] = useState(false);
 
+    // === LẤY CHUYÊN KHOA TỪ URL ===
+  const [searchParams] = useSearchParams();
+  const urlSpecialtyId = searchParams.get("specialtyId") || "ALL";
+
   // === CÁC STATE BỘ LỌC ===
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState("ALL");
   const [filterPrice, setFilterPrice] = useState("ALL");
@@ -44,6 +49,9 @@ export default function DoctorsDirectory() {
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [isSpecsExpanded, setIsSpecsExpanded] = useState(false); // Toggle xem thêm khoa ở sidebar
 
+   useEffect(() => {
+    setSelectedSpecialtyId(urlSpecialtyId || "ALL");
+  }, [urlSpecialtyId])
   useEffect(() => {
     const fetchAll = async () => {
       try {

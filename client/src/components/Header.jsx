@@ -90,7 +90,7 @@ export default function Header() {
       <div
         id="topbar"
         ref={topbarRef}
-        className="bg-[#28303f] py-2 hidden sm:block z-50 relative"
+        className="bg-[#0095D5] py-2 hidden sm:block z-50 relative"
       >
         <div className="container mx-auto px-4 flex items-center">
           <ul className="flex gap-3 text-white pl-3 text-sm">
@@ -110,7 +110,7 @@ export default function Header() {
       <div
         id="mainbar"
         ref={mainbarRef}
-        className="fixed top-0 inset-x-0 z-40 bg-gradient-to-b from-[#0a0f1f]/95 via-[#0a0f1f]/80 to-transparent backdrop-blur-sm transition-all duration-300"
+        className="fixed top-0 inset-x-0 z-40 bg-white shadow-xl to-transparent backdrop-blur-sm transition-all duration-300"
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-[72px] md:h-[84px]">
@@ -125,8 +125,8 @@ export default function Header() {
             </Link>
 
             {/* Nav Desktop */}
-            <nav className="hidden md:flex items-center gap-8">
-              <ul className="flex gap-6 text-white font-raleway font-semibold text-sm lg:text-base">
+            <nav className="hidden md:flex items-center gap-8 ">
+              <ul className="flex gap-6 text-black font-raleway font-semibold text-sm lg:text-lg">
                 <li><Link className="hover:text-cyan-300 transition" to="/">Trang Chủ</Link></li>
                 <li><Link className="hover:text-cyan-300 transition" to="/post">Bài Viết</Link></li>
                 <li><Link className="hover:text-cyan-300 transition" to="/services">Dịch Vụ</Link></li>
@@ -216,7 +216,7 @@ export default function Header() {
                 /* Login Button (Desktop) */
                 <Link
                   to="/login"
-                  className="hidden md:inline-flex items-center justify-center h-9 px-5 rounded-full bg-cyan-500 hover:bg-cyan-400 text-white font-semibold text-sm transition shadow-sm"
+                  className="hidden md:inline-flex items-center justify-center h-9 px-5 rounded-full btn-color text-white font-semibold text-sm transition shadow-sm"
                 >
                   Đăng Nhập
                 </Link>
@@ -268,7 +268,7 @@ export default function Header() {
           ) : (
             <Link
               to="/login"
-              className="block w-full py-3 mb-8 text-center bg-cyan-600 hover:bg-cyan-500 rounded-xl font-bold transition shadow-lg"
+              className="block w-full py-3 mb-8 text-center btn-color rounded-xl font-bold transition shadow-lg"
               onClick={() => setOpen(false)}
             >
               Đăng Nhập Ngay
