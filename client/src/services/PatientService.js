@@ -56,10 +56,15 @@ const patientService = {
     return api.put('/patients/me', data).then(res => res.data);
   },
 
-  changeMyPassword: async (oldPassword, newPassword) => {
-    const response = await api.put(`/patients/me/password`, { oldPassword, newPassword });
+ changeMyPassword: async (oldPassword, newPassword, confirmPassword) => {
+    // Gửi đủ cả 3 trường
+    const response = await api.put('/patients/me/password', { 
+        oldPassword, 
+        newPassword, 
+        confirmPassword 
+    });
     return response;
-  },
+},
 };
 
 export default patientService;

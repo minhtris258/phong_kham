@@ -34,7 +34,11 @@ export const PatientPassword = () => {
 
         try {
             setIsLoading(true);
-            await patientService.changeMyPassword(passwordData.oldPassword, passwordData.newPassword);
+            await patientService.changeMyPassword(
+        passwordData.oldPassword, 
+        passwordData.newPassword, 
+        passwordData.confirmPassword
+    );
             setMessage({ type: "success", text: "Đổi mật khẩu thành công!" });
             // Reset form
             setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });

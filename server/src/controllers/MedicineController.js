@@ -1,25 +1,23 @@
 import Medicine from "../models/MedicineModel.js";
 
 /** * GET /api/medicines
- * Lấy danh sách thuốc (Có tìm kiếm + Phân trang)
+ * Lấy danh sách thuốc (Giữ nguyên)
  */
 export const getMedicines = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, search, status } = req.query;
     
-    // Tạo bộ lọc
     const filter = {};
     if (status) filter.status = status;
     if (search) {
-      filter.name = { $regex: search, $options: "i" }; // Tìm gần đúng, không phân biệt hoa thường
+      filter.name = { $regex: search, $options: "i" };
     }
 
-    // Thực hiện query
     const skip = (page - 1) * limit;
     
     const [medicines, total] = await Promise.all([
       Medicine.find(filter)
-        .sort({ name: 1 }) // Sắp xếp tên A-Z
+        .sort({ name: 1 })
         .skip(Number(skip))
         .limit(Number(limit))
         .lean(),
@@ -42,21 +40,37 @@ export const getMedicines = async (req, res, next) => {
 };
 
 /** * POST /api/medicines
- * Thêm thuốc mới
+ * Thêm thuốc mới (Cập nhật để nhận mảng dosages)
  */
 export const createMedicine = async (req, res, next) => {
   try {
-    const { name, unit, description, status } = req.body;
+    // 1. Nhận dosages từ body (Thay vì dosage số ít)
+    const { name, unit, description, status, dosages } = req.body;
 
     if (!name) return res.status(400).json({ error: "Tên thuốc là bắt buộc." });
 
-    // Kiểm tra xem thuốc đã tồn tại chưa (Optional)
     const exists = await Medicine.findOne({ name: name });
     if (exists) {
         return res.status(409).json({ error: "Tên thuốc này đã tồn tại trong hệ thống." });
     }
 
-    const newMedicine = await Medicine.create({ name, unit, description, status });
+    // 2. Xử lý dosages: Đảm bảo nó là mảng và loại bỏ các dòng rỗng
+    let finalDosages = [];
+    if (Array.isArray(dosages)) {
+        // Lọc bỏ các giá trị rỗng hoặc null
+        finalDosages = dosages.filter(d => d && d.trim() !== "");
+    } else if (typeof dosages === 'string' && dosages.trim() !== "") {
+        // Trường hợp client lỡ gửi string, ta biến nó thành mảng 1 phần tử
+        finalDosages = [dosages];
+    }
+
+    const newMedicine = await Medicine.create({ 
+        name, 
+        unit, 
+        description, 
+        status, 
+        dosages: finalDosages // Lưu mảng vào DB
+    });
     
     res.status(201).json({ 
       success: true, 
@@ -69,12 +83,33 @@ export const createMedicine = async (req, res, next) => {
 };
 
 /** * PUT /api/medicines/:id
- * Cập nhật thông tin thuốc
+ * Cập nhật thuốc (Cho phép xóa/sửa liều lượng)
  */
 export const updateMedicine = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { name, unit, description, status, dosages } = req.body;
+
+    // 1. Chuẩn bị dữ liệu update
+    const updateData = {
+        name,
+        unit,
+        description,
+        status
+    };
+
+    // 2. Xử lý Logic xóa/sửa Dosages
+    // Client sẽ gửi lên danh sách MỚI NHẤT. 
+    // Ví dụ cũ: ["500mg", "250mg"]. Client gửi lên: ["500mg"]. 
+    // Server sẽ lưu ["500mg"] -> Tự động mất "250mg".
+    if (dosages !== undefined) {
+        if (Array.isArray(dosages)) {
+            // Lọc bỏ chuỗi rỗng để data sạch
+            updateData.dosages = dosages.filter(d => d && d.trim() !== ""); 
+        } else {
+            updateData.dosages = []; // Nếu gửi null/rỗng thì coi như xóa hết liều lượng
+        }
+    }
 
     const updatedMedicine = await Medicine.findByIdAndUpdate(id, updateData, { new: true });
 
@@ -91,7 +126,7 @@ export const updateMedicine = async (req, res, next) => {
 };
 
 /** * DELETE /api/medicines/:id
- * Xóa thuốc (Lưu ý: Nên dùng soft delete bằng cách update status thành inactive thay vì xóa hẳn)
+ * Xóa thuốc (Giữ nguyên)
  */
 export const deleteMedicine = async (req, res, next) => {
   try {

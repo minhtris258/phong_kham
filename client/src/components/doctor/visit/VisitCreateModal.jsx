@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { Plus, Trash2, Save, Calendar, Pill, DollarSign, FileText, Clock, Search } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Plus, Trash2, Save, Calendar, Pill, DollarSign, FileText, Clock, X, AlertCircle } from "lucide-react";
 import { toastSuccess, toastError, toastWarning, toastInfo } from "../../../utils/toast";
 
 // Import Services
 import visitService from "../../../services/VisitService";
 import timeslotService from "../../../services/TimeslotService";
-// Giả sử bạn đã có 2 service này (nếu chưa, hãy tạo file gọi API tương ứng)
 import medicineService from "../../../services/MedicineService"; 
 import medicalServiceService from "../../../services/MedicalServiceService";
 
@@ -15,10 +14,11 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
   // === STATE ===
   const [loading, setLoading] = useState(false);
   
-  // Dữ liệu danh mục để chọn
+  // Dữ liệu danh mục
   const [medicineList, setMedicineList] = useState([]);
   const [serviceList, setServiceList] = useState([]);
 
+  // Form chính
   const [formData, setFormData] = useState({
     symptoms: "",
     diagnosis: "",
@@ -27,37 +27,35 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
     next_visit_date: "",
   });
 
-  // State cho Timeslot
+  // Timeslot tái khám
   const [availableTimeslots, setAvailableTimeslots] = useState([]);
   const [selectedTimeslotId, setSelectedTimeslotId] = useState("");
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // State danh sách thuốc
+  // Danh sách thuốc
   const [prescriptions, setPrescriptions] = useState([
-    { medicine_id: "", drug: "", dosage: "", frequency: "", duration: "", note: "", quantity: 1, unit: "Viên" }
+    { medicine_id: null, drug: "", dosage: "", frequency: "", duration: "", note: "", quantity: 1, unit: "Viên", availableDosages: [] }
   ]);
 
-  // State danh sách dịch vụ (Chỉ dùng để hiển thị preview cho bác sĩ)
-  const [selectedServices, setSelectedServices] = useState([
-    { service_id: "", name: "", price: 0 } 
-  ]);
+  // Danh sách dịch vụ (UI only)
+  const [selectedServices, setSelectedServices] = useState([]);
 
-  // === EFFECT: Load danh mục Thuốc & Dịch vụ ===
+  // === DATA LOADING ===
   useEffect(() => {
     if (isOpen) {
-        // Load danh sách thuốc
+        // Load danh mục thuốc
         medicineService.getAllMedicines({ limit: 1000, status: 'active' })
             .then(res => setMedicineList(res.data?.data || []))
             .catch(err => console.error("Lỗi tải thuốc", err));
 
-        // Load danh sách dịch vụ
+        // Load danh mục dịch vụ
         medicalServiceService.getAllServices({ limit: 100, status: 'active' })
             .then(res => setServiceList(res.data?.data || []))
             .catch(err => console.error("Lỗi tải dịch vụ", err));
     }
   }, [isOpen]);
 
-  // === EFFECT: Reset form khi mở modal ===
+  // === RESET FORM ===
   useEffect(() => {
     if (isOpen && appointment) {
       setFormData({
@@ -67,15 +65,15 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
         advice: "",
         next_visit_date: "",
       });
-      setPrescriptions([{ medicine_id: "", drug: "", dosage: "", frequency: "", duration: "", note: "", quantity: 1, unit: "Viên" }]);
-      setSelectedServices([]); // Mặc định chưa chọn dịch vụ nào (Phí khám server tự tính)
-      
+      // Reset thuốc về dòng trắng
+      setPrescriptions([{ medicine_id: null, drug: "", dosage: "", frequency: "", duration: "", note: "", quantity: 1, unit: "Viên", availableDosages: [] }]);
+      setSelectedServices([]);
       setAvailableTimeslots([]);
       setSelectedTimeslotId("");
     }
   }, [isOpen, appointment]);
 
-  // === EFFECT: Load Timeslot ===
+  // === LOAD TIMESLOTS (TÁI KHÁM) ===
   useEffect(() => {
     const fetchSlots = async () => {
       if (!formData.next_visit_date || !appointment) {
@@ -83,7 +81,8 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
         return;
       }
       
-      const doctorId = typeof appointment.doctor_id === 'object' ? appointment.doctor_id._id : appointment.doctor_id;
+      // Xử lý an toàn doctor_id (có thể là string hoặc object populated)
+      const doctorId = appointment.doctor_id?._id || appointment.doctor_id;
       if (!doctorId) return;
 
       setLoadingSlots(true);
@@ -92,6 +91,7 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
         const slots = res.data?.data || res.data || []; 
         setAvailableTimeslots(Array.isArray(slots) ? slots.filter(s => s.status === 'free') : []);
       } catch (error) {
+        console.error(error);
         setAvailableTimeslots([]);
       } finally {
         setLoadingSlots(false);
@@ -100,7 +100,6 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
 
     fetchSlots();
   }, [formData.next_visit_date, appointment]);
-
 
   // === HANDLERS ===
   const handleChange = (e) => {
@@ -113,21 +112,25 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
     const newList = [...prescriptions];
     newList[index][field] = value;
 
-    // Logic: Nếu chọn tên thuốc từ datalist, tự điền ID và Unit
+    // Logic thông minh: Khi chọn tên thuốc -> Tự điền ID, Unit và Load gợi ý Liều lượng
     if (field === 'drug') {
         const selectedMed = medicineList.find(m => m.name === value);
         if (selectedMed) {
             newList[index].medicine_id = selectedMed._id;
             newList[index].unit = selectedMed.unit || "Viên";
+            // Lưu mảng dosages vào state tạm để hiển thị datalist cho ô dosage
+            newList[index].availableDosages = selectedMed.dosages || []; 
         } else {
-            newList[index].medicine_id = null; // Thuốc mới/tự nhập
+            // Nếu nhập tên thuốc mới/không có trong kho
+            newList[index].medicine_id = null; 
+            newList[index].availableDosages = [];
         }
     }
 
     setPrescriptions(newList);
   };
   
-  const addPrescription = () => setPrescriptions([...prescriptions, { medicine_id: "", drug: "", dosage: "", frequency: "", duration: "", note: "", quantity: 1, unit: "Viên" }]);
+  const addPrescription = () => setPrescriptions([...prescriptions, { medicine_id: null, drug: "", dosage: "", frequency: "", duration: "", note: "", quantity: 1, unit: "Viên", availableDosages: [] }]);
   const removePrescription = (index) => setPrescriptions(prescriptions.filter((_, i) => i !== index));
 
   // --- XỬ LÝ DỊCH VỤ ---
@@ -150,7 +153,13 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
   const addService = () => setSelectedServices([...selectedServices, { service_id: "", name: "", price: 0 }]);
   const removeService = (index) => setSelectedServices(selectedServices.filter((_, i) => i !== index));
   
-  const calculateTotalService = () => selectedServices.reduce((total, item) => total + (item.price || 0), 0);
+  // Tính tổng tiền dự kiến (Dịch vụ + Phí khám bác sĩ)
+  const totalAmountEstimate = useMemo(() => {
+    const serviceTotal = selectedServices.reduce((total, item) => total + (item.price || 0), 0);
+    // Giả sử lấy phí khám từ appointment (nếu backend có populate) hoặc mặc định
+    const docFee = appointment?.doctor_id?.consultation_fee || 0; 
+    return serviceTotal + docFee;
+  }, [selectedServices, appointment]);
 
   // === SUBMIT ===
   const handleSubmit = async () => {
@@ -160,7 +169,7 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
     }
 
     if (formData.next_visit_date && !selectedTimeslotId) {
-        toastWarning("Vui lòng chọn khung giờ cho lịch tái khám.");
+        toastWarning("Bạn đã chọn ngày tái khám nhưng chưa chọn giờ.");
         return;
     }
 
@@ -174,11 +183,11 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
         advice: formData.advice,
         next_visit_timeslot_id: selectedTimeslotId || null, 
         
-        // 1. Gửi danh sách thuốc chuẩn
+        // 1. Map danh sách thuốc
         prescriptions: prescriptions
-            .filter(p => p.drug.trim() !== "")
+            .filter(p => p.drug.trim() !== "") // Loại bỏ dòng trống
             .map(p => ({
-                medicine_id: p.medicine_id || null, // Backend sẽ dùng cái này nếu có
+                medicine_id: p.medicine_id || null, 
                 drug: p.drug,
                 dosage: p.dosage,
                 frequency: p.frequency,
@@ -188,242 +197,262 @@ const VisitCreateModal = ({ isOpen, onClose, appointment, onSuccess }) => {
                 unit: p.unit
             })),
 
-        // 2. Gửi danh sách ID dịch vụ (Backend sẽ tự tính tiền)
+        // 2. Map danh sách dịch vụ (Chỉ cần gửi ID)
         serviceIds: selectedServices
             .filter(s => s.service_id)
             .map(s => s.service_id)
       };
 
       const res = await visitService.createVisit(payload);
-      toastSuccess("Hoàn tất khám bệnh thành công!");
       
+      toastSuccess("Tạo hồ sơ khám thành công!");
       if (res.data?.followup?.scheduled) {
-        toastInfo(`Đã hẹn tái khám: ${new Date(res.data.followup.date).toLocaleDateString('vi-VN')} (${res.data.followup.start})`);
+        toastInfo(`Đã hẹn tái khám ngày: ${new Date(res.data.followup.date).toLocaleDateString('vi-VN')}`);
       }
       
       onSuccess(); 
       onClose();
     } catch (error) {
       console.error(error);
-      toastError(error.response?.data?.error || "Lỗi khi tạo hồ sơ");
+      toastError(error.response?.data?.error || "Lỗi khi lưu hồ sơ");
     } finally {
       setLoading(false);
     }
   };
 
-  // UI Helper
-  const patientName = typeof appointment?.patient_id === 'object' 
-    ? appointment.patient_id.fullName || appointment.patient_id.name
-    : "Bệnh nhân";
+  // Render Helper
+  const patientName = appointment?.patient_id?.fullName || appointment?.patient_id?.name || "Bệnh nhân";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Tạo Hồ Sơ Khám: ${patientName}`} maxWidth="6xl">
-      <div className="space-y-6 pb-2">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Khám bệnh: ${patientName}`} maxWidth="7xl">
+      <div className="flex flex-col h-[80vh]"> {/* Cố định chiều cao modal */}
         
-        {/* 1. THÔNG TIN LÂM SÀNG */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-4 border-b pb-2">
-             <FileText className="text-blue-600" size={20}/>
-             <h3 className="font-bold text-gray-800">Thông tin lâm sàng</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Triệu chứng <span className="text-red-500">*</span></label>
-              <textarea name="symptoms" value={formData.symptoms} onChange={handleChange} rows="3"
-                className="w-full mt-1 border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 outline-none" placeholder="Mô tả triệu chứng..." />
+        <div className="flex-1 overflow-y-auto pr-2 space-y-6 pb-4">
+            {/* 1. THÔNG TIN LÂM SÀNG */}
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-2 mb-4 border-b pb-2">
+                <FileText className="text-blue-600" size={20}/>
+                <h3 className="font-bold text-gray-800">Thông tin lâm sàng</h3>
             </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Chẩn đoán</label>
-              <textarea name="diagnosis" value={formData.diagnosis} onChange={handleChange} rows="3"
-                className="w-full mt-1 border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 outline-none" placeholder="Kết luận bệnh..." />
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Lời dặn bác sĩ</label>
-              <input name="advice" value={formData.advice} onChange={handleChange}
-                className="w-full mt-1 border border-gray-300 rounded-lg p-2.5 outline-none" placeholder="Dặn dò ăn uống..." />
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Ghi chú (Nội bộ)</label>
-              <input name="notes" value={formData.notes} onChange={handleChange}
-                className="w-full mt-1 border border-gray-300 rounded-lg p-2.5 outline-none" placeholder="Ghi chú riêng tư..." />
-            </div>
-          </div>
-        </div>
-
-        {/* 2. KÊ ĐƠN THUỐC */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex justify-between items-center mb-4 border-b pb-2">
-            <div className="flex items-center gap-2">
-                <Pill className="text-green-600" size={20}/>
-                <h3 className="font-bold text-gray-800">Kê đơn thuốc</h3>
-            </div>
-            <button onClick={addPrescription} className="text-sm bg-green-50 text-green-700 px-3 py-1 rounded-md font-medium hover:bg-green-100 transition flex items-center gap-1">
-              <Plus size={16}/> Thêm thuốc
-            </button>
-          </div>
-          
-          <div className="space-y-3">
-            {/* Header Table */}
-            <div className="grid grid-cols-12 gap-2 text-xs font-bold text-gray-500 uppercase px-2">
-                <div className="col-span-3">Tên thuốc</div>
-                <div className="col-span-2">Đơn vị</div>
-                <div className="col-span-1">SL Mua</div>
-                <div className="col-span-2">Liều dùng (Sáng/...)</div>
-                <div className="col-span-2">Cách dùng</div>
-                <div className="col-span-2">Thời gian</div>
-            </div>
-
-            {prescriptions.map((item, index) => (
-            <div key={index} className="grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
-                {/* Tên thuốc + Datalist */}
-                <div className="col-span-3">
-                    <input 
-                        list={`med-list-${index}`}
-                        placeholder="Nhập tên thuốc..." 
-                        className="w-full border-gray-300 border p-2 rounded text-sm outline-none focus:border-green-500"
-                        value={item.drug} 
-                        onChange={(e) => handlePrescriptionChange(index, 'drug', e.target.value)}
-                    />
-                    <datalist id={`med-list-${index}`}>
-                        {medicineList.map(med => (
-                            <option key={med._id} value={med.name}>{med.unit}</option>
-                        ))}
-                    </datalist>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-1 md:col-span-2">
+                <label className="text-sm font-semibold text-gray-700">Triệu chứng <span className="text-red-500">*</span></label>
+                <textarea name="symptoms" value={formData.symptoms} onChange={handleChange} rows="2"
+                    className="w-full mt-1 border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 outline-none" placeholder="Mô tả triệu chứng..." />
                 </div>
-
-                {/* Đơn vị */}
-                <div className="col-span-2">
-                    <input placeholder="Viên/Vỉ" className="w-full border-gray-300 border p-2 rounded text-sm outline-none"
-                        value={item.unit} onChange={(e) => handlePrescriptionChange(index, 'unit', e.target.value)}/>
+                <div>
+                <label className="text-sm font-semibold text-gray-700">Chẩn đoán</label>
+                <textarea name="diagnosis" value={formData.diagnosis} onChange={handleChange} rows="2"
+                    className="w-full mt-1 border border-gray-300 rounded-lg p-2.5 focus:ring-blue-500 outline-none" placeholder="Kết luận bệnh..." />
                 </div>
-                
-                {/* Số lượng mua */}
-                <div className="col-span-1">
-                    <input type="number" min="1" className="w-full border-gray-300 border p-2 rounded text-sm text-center outline-none font-semibold text-green-700"
-                        value={item.quantity} onChange={(e) => handlePrescriptionChange(index, 'quantity', e.target.value)}/>
+                <div>
+                <label className="text-sm font-semibold text-gray-700">Lời dặn bác sĩ</label>
+                <textarea name="advice" value={formData.advice} onChange={handleChange} rows="2"
+                    className="w-full mt-1 border border-gray-300 rounded-lg p-2.5 outline-none" placeholder="Dặn dò ăn uống, nghỉ ngơi..." />
                 </div>
-
-                {/* Liều dùng */}
-                <div className="col-span-2">
-                    <input placeholder="Sáng 1, Tối 1" className="w-full border-gray-300 border p-2 rounded text-sm outline-none"
-                        value={item.frequency} onChange={(e) => handlePrescriptionChange(index, 'frequency', e.target.value)}/>
-                </div>
-
-                {/* Cách dùng (Note) */}
-                <div className="col-span-2">
-                    <input placeholder="Sau ăn..." className="w-full border-gray-300 border p-2 rounded text-sm outline-none"
-                        value={item.note} onChange={(e) => handlePrescriptionChange(index, 'note', e.target.value)}/>
-                </div>
-
-                {/* Thời gian + Nút Xóa */}
-                <div className="col-span-2 flex gap-1">
-                    <input placeholder="5 ngày" className="w-full border-gray-300 border p-2 rounded text-sm outline-none"
-                        value={item.duration} onChange={(e) => handlePrescriptionChange(index, 'duration', e.target.value)}/>
-                    <button onClick={() => removePrescription(index)} className="text-gray-400 hover:text-red-600 p-1">
-                        <Trash2 size={18} />
-                    </button>
+                <div className="col-span-1 md:col-span-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-1"><AlertCircle size={14}/> Ghi chú nội bộ</label>
+                <input name="notes" value={formData.notes} onChange={handleChange}
+                    className="w-full mt-1 border border-gray-300 rounded-lg p-2.5 outline-none text-sm bg-gray-50" placeholder="Ghi chú chỉ bác sĩ/admin thấy..." />
                 </div>
             </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* 3. DỊCH VỤ & TÁI KHÁM */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 2. KÊ ĐƠN THUỐC */}
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-center mb-4 border-b pb-2">
+                <div className="flex items-center gap-2">
+                    <Pill className="text-green-600" size={20}/>
+                    <h3 className="font-bold text-gray-800">Đơn thuốc</h3>
+                </div>
+                <button onClick={addPrescription} className="text-sm bg-green-50 text-green-700 px-3 py-1 rounded-md font-medium hover:bg-green-100 transition flex items-center gap-1">
+                <Plus size={16}/> Thêm dòng
+                </button>
+            </div>
             
-            {/* Cột Trái: Dịch vụ */}
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col">
-                <div className="flex justify-between items-center mb-4 border-b pb-2">
-                    <div className="flex items-center gap-2">
-                        <DollarSign className="text-yellow-600" size={20}/>
-                        <h3 className="font-bold text-gray-800">Chỉ định dịch vụ</h3>
+            <div className="space-y-3">
+                <div className="hidden md:grid grid-cols-12 gap-2 text-xs font-bold text-gray-500 uppercase px-2">
+                    <div className="col-span-3">Tên thuốc</div>
+                    <div className="col-span-1 text-center">Đơn vị</div>
+                    <div className="col-span-1 text-center">SL</div>
+                    <div className="col-span-2">Liều lượng</div>
+                    <div className="col-span-2">Cách dùng</div>
+                    <div className="col-span-2">Thời gian</div>
+                    <div className="col-span-1"></div>
+                </div>
+
+                {prescriptions.map((item, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-start bg-gray-50 p-3 md:p-2 rounded-lg border border-gray-100 shadow-sm md:shadow-none">
+                    {/* Tên thuốc */}
+                    <div className="md:col-span-3 relative">
+                        <label className="md:hidden text-xs font-bold text-gray-500 mb-1 block">Tên thuốc</label>
+                        <input 
+                            list={`med-list-${index}`}
+                            placeholder="Nhập tên thuốc..." 
+                            className="w-full border-gray-300 border p-2 rounded text-sm outline-none focus:border-green-500 font-medium"
+                            value={item.drug} 
+                            onChange={(e) => handlePrescriptionChange(index, 'drug', e.target.value)}
+                        />
+                        <datalist id={`med-list-${index}`}>
+                            {medicineList.map(med => (
+                                <option key={med._id} value={med.name}>{med.unit}</option>
+                            ))}
+                        </datalist>
                     </div>
-                    <button onClick={addService} className="text-sm bg-yellow-50 text-yellow-700 px-3 py-1 rounded-md font-medium hover:bg-yellow-100 transition flex items-center gap-1">
-                        <Plus size={16}/> Thêm
-                    </button>
-                </div>
 
-                <div className="space-y-2 flex-grow">
-                    {selectedServices.map((item, index) => (
-                        <div key={index} className="flex gap-2 items-center">
-                            <select 
-                                className="flex-1 border border-gray-300 p-2 rounded text-sm outline-none focus:border-yellow-500"
-                                value={item.service_id}
-                                onChange={(e) => handleServiceChange(index, e.target.value)}
-                            >
-                                <option value="">-- Chọn dịch vụ --</option>
-                                {serviceList.map(svc => (
-                                    <option key={svc._id} value={svc._id}>
-                                        {svc.name} ({svc.price?.toLocaleString()}đ)
-                                    </option>
-                                ))}
-                            </select>
-                            
-                            <div className="w-24 text-right text-sm font-semibold text-gray-700 bg-gray-50 p-2 rounded border border-gray-200">
-                                {item.price?.toLocaleString()}
-                            </div>
+                    {/* Đơn vị */}
+                    <div className="md:col-span-1">
+                        <label className="md:hidden text-xs font-bold text-gray-500 mb-1 block">Đơn vị</label>
+                        <input placeholder="Viên" className="w-full border-gray-300 border p-2 rounded text-sm outline-none text-center bg-gray-100"
+                            value={item.unit} readOnly tabIndex={-1} />
+                    </div>
+                    
+                    {/* Số lượng */}
+                    <div className="md:col-span-1">
+                        <label className="md:hidden text-xs font-bold text-gray-500 mb-1 block">Số lượng</label>
+                        <input type="number" min="1" className="w-full border-gray-300 border p-2 rounded text-sm text-center outline-none font-bold text-green-700"
+                            value={item.quantity} onChange={(e) => handlePrescriptionChange(index, 'quantity', e.target.value)}/>
+                    </div>
 
-                            <button onClick={() => removeService(index)} className="text-gray-400 hover:text-red-600 p-1">
-                                <Trash2 size={18} />
-                            </button>
-                        </div>
-                    ))}
+                    {/* Liều lượng (Hỗ trợ gợi ý từ mảng dosages) */}
+                    <div className="md:col-span-2">
+                        <label className="md:hidden text-xs font-bold text-gray-500 mb-1 block">Liều lượng</label>
+                        <input 
+                            list={`dosage-list-${index}`}
+                            placeholder="Vd: 500mg" 
+                            className="w-full border-gray-300 border p-2 rounded text-sm outline-none"
+                            value={item.dosage} 
+                            onChange={(e) => handlePrescriptionChange(index, 'dosage', e.target.value)}
+                        />
+                         {/* Datalist hiển thị mảng dosages của thuốc đã chọn */}
+                        {item.availableDosages && item.availableDosages.length > 0 && (
+                             <datalist id={`dosage-list-${index}`}>
+                                {item.availableDosages.map((d, i) => <option key={i} value={d} />)}
+                             </datalist>
+                        )}
+                    </div>
+
+                    {/* Cách dùng */}
+                    <div className="md:col-span-2">
+                        <label className="md:hidden text-xs font-bold text-gray-500 mb-1 block">Cách dùng</label>
+                        <input placeholder="Sáng 1, Chiều 1" className="w-full border-gray-300 border p-2 rounded text-sm outline-none"
+                            value={item.frequency} onChange={(e) => handlePrescriptionChange(index, 'frequency', e.target.value)}/>
+                        {/* Note nhỏ */}
+                        <input placeholder="Ghi chú (sau ăn...)" className="w-full mt-1 border-gray-200 border p-1.5 rounded text-xs outline-none text-gray-600"
+                            value={item.note} onChange={(e) => handlePrescriptionChange(index, 'note', e.target.value)}/>
+                    </div>
+
+                    {/* Thời gian */}
+                    <div className="md:col-span-2">
+                        <label className="md:hidden text-xs font-bold text-gray-500 mb-1 block">Thời gian</label>
+                        <input placeholder="5 ngày" className="w-full border-gray-300 border p-2 rounded text-sm outline-none"
+                            value={item.duration} onChange={(e) => handlePrescriptionChange(index, 'duration', e.target.value)}/>
+                    </div>
+
+                    {/* Nút xóa */}
+                    <div className="md:col-span-1 flex justify-center pt-2">
+                        <button onClick={() => removePrescription(index)} className="text-gray-400 hover:text-red-600 bg-white p-1 rounded-full hover:bg-red-50 transition">
+                            <Trash2 size={18} />
+                        </button>
+                    </div>
                 </div>
-                
-                <div className="mt-4 pt-3 border-t border-dashed border-gray-300 flex justify-between items-center">
-                    <span className="text-gray-600 font-medium">Tổng phí dịch vụ (Dự kiến):</span>
-                    <span className="text-xl font-bold text-indigo-600">
-                        {calculateTotalService().toLocaleString('vi-VN')} đ
-                    </span>
-                </div>
+                ))}
+            </div>
             </div>
 
-            {/* Cột Phải: Tái khám */}
-            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 h-fit">
-                <div className="flex items-center gap-2 mb-3">
-                    <Calendar size={20} className="text-indigo-600"/>
-                    <h3 className="font-bold text-indigo-800">Hẹn tái khám</h3>
-                </div>
+            {/* 3. DỊCH VỤ & TÁI KHÁM */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
-                <div className="space-y-3">
-                    <div>
-                        <label className="block text-xs font-bold text-indigo-900 uppercase mb-1">Ngày tái khám</label>
-                        <input type="date" name="next_visit_date" min={new Date().toISOString().split("T")[0]}
-                            value={formData.next_visit_date} onChange={handleChange}
-                            className="w-full border border-indigo-200 p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+                {/* Dịch vụ */}
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col">
+                    <div className="flex justify-between items-center mb-4 border-b pb-2">
+                        <div className="flex items-center gap-2">
+                            <DollarSign className="text-yellow-600" size={20}/>
+                            <h3 className="font-bold text-gray-800">Dịch vụ kỹ thuật</h3>
+                        </div>
+                        <button onClick={addService} className="text-sm bg-yellow-50 text-yellow-700 px-3 py-1 rounded-md font-medium hover:bg-yellow-100 transition flex items-center gap-1">
+                            <Plus size={16}/> Thêm
+                        </button>
                     </div>
 
-                    {formData.next_visit_date && (
-                        <div className="animate-fade-in-down">
-                             <label className="block text-xs font-bold text-indigo-900 uppercase mb-1">Khung giờ trống</label>
-                             {loadingSlots ? (
-                                 <div className="text-sm text-indigo-500 flex items-center gap-2"><div className="animate-spin">⏳</div> Đang tải...</div>
-                             ) : (
-                                <div className="relative">
-                                    <select value={selectedTimeslotId} onChange={(e) => setSelectedTimeslotId(e.target.value)}
-                                        className="w-full border border-indigo-200 p-2 rounded-lg appearance-none bg-white pr-8 cursor-pointer outline-none">
-                                        <option value="">-- Chọn giờ --</option>
-                                        {availableTimeslots.length > 0 ? (
-                                            availableTimeslots.map(slot => (
-                                                <option key={slot._id} value={slot._id}>{slot.start} - {slot.end}</option>
-                                            ))
-                                        ) : <option disabled>Hết lịch trống</option>}
-                                    </select>
-                                    <Clock size={16} className="absolute right-3 top-3 text-gray-400 pointer-events-none"/>
-                                </div>
-                             )}
+                    <div className="space-y-2">
+                        {selectedServices.length === 0 && <p className="text-sm text-gray-400 italic text-center py-2">Chưa chọn dịch vụ nào</p>}
+                        {selectedServices.map((item, index) => (
+                            <div key={index} className="flex gap-2 items-center">
+                                <select 
+                                    className="flex-1 border border-gray-300 p-2 rounded text-sm outline-none focus:border-yellow-500"
+                                    value={item.service_id}
+                                    onChange={(e) => handleServiceChange(index, e.target.value)}
+                                >
+                                    <option value="">-- Chọn dịch vụ --</option>
+                                    {serviceList.map(svc => (
+                                        <option key={svc._id} value={svc._id}>
+                                            {svc.name} ({svc.price?.toLocaleString()}đ)
+                                        </option>
+                                    ))}
+                                </select>
+                                <span className="text-sm font-semibold text-gray-700 w-24 text-right">{item.price?.toLocaleString()}</span>
+                                <button onClick={() => removeService(index)} className="text-gray-400 hover:text-red-600 p-1">
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Tái khám */}
+                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 h-fit">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Calendar size={20} className="text-indigo-600"/>
+                        <h3 className="font-bold text-indigo-800">Hẹn tái khám</h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                        <div>
+                            <label className="block text-xs font-bold text-indigo-900 uppercase mb-1">Ngày tái khám</label>
+                            <input type="date" name="next_visit_date" min={new Date().toISOString().split("T")[0]}
+                                value={formData.next_visit_date} onChange={handleChange}
+                                className="w-full border border-indigo-200 p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
                         </div>
-                    )}
+
+                        {formData.next_visit_date && (
+                            <div className="animate-fade-in-down">
+                                 <label className="block text-xs font-bold text-indigo-900 uppercase mb-1">Khung giờ trống</label>
+                                 {loadingSlots ? (
+                                     <div className="text-sm text-indigo-500 flex items-center gap-2"><div className="animate-spin">⏳</div> Đang tìm giờ...</div>
+                                 ) : (
+                                    <div className="relative">
+                                        <select value={selectedTimeslotId} onChange={(e) => setSelectedTimeslotId(e.target.value)}
+                                            className="w-full border border-indigo-200 p-2 rounded-lg appearance-none bg-white pr-8 cursor-pointer outline-none text-sm">
+                                            <option value="">-- Chọn giờ khám --</option>
+                                            {availableTimeslots.length > 0 ? (
+                                                availableTimeslots.map(slot => (
+                                                    <option key={slot._id} value={slot._id}>{slot.start} - {slot.end}</option>
+                                                ))
+                                            ) : <option disabled>Hết lịch trống</option>}
+                                        </select>
+                                        <Clock size={16} className="absolute right-3 top-2.5 text-gray-400 pointer-events-none"/>
+                                    </div>
+                                 )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-100">
-            <button onClick={onClose} disabled={loading} className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50">Hủy</button>
-            <button onClick={handleSubmit} disabled={loading} className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 flex items-center gap-2 disabled:opacity-70">
-                {loading ? <span className="animate-spin">⏳</span> : <Save size={20} />} Lưu Hồ Sơ
-            </button>
+        {/* Footer & Tổng tiền */}
+        <div className="border-t border-gray-200 pt-4 mt-2 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex flex-col">
+                <span className="text-sm text-gray-500">Tổng chi phí dự kiến (Chưa bao gồm thuốc):</span>
+                <span className="text-2xl font-bold text-blue-600">{totalAmountEstimate.toLocaleString('vi-VN')} đ</span>
+            </div>
+            <div className="flex gap-3 w-full md:w-auto">
+                <button onClick={onClose} disabled={loading} className="flex-1 md:flex-none px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50">Hủy</button>
+                <button onClick={handleSubmit} disabled={loading} className="flex-1 md:flex-none px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 flex justify-center items-center gap-2 disabled:opacity-70 shadow-lg shadow-blue-200">
+                    {loading ? <span className="animate-spin">⏳</span> : <Save size={20} />} Lưu Hồ Sơ
+                </button>
+            </div>
         </div>
 
       </div>

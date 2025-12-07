@@ -10,7 +10,8 @@ const MedicineList = ({ medicines, handleAddEdit, confirmDelete }) => {
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên Thuốc</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đơn Vị</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô Tả / Công Dụng</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liều Lượng Có Sẵn</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô Tả</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng Thái</th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành Động</th>
                         </tr>
@@ -19,8 +20,24 @@ const MedicineList = ({ medicines, handleAddEdit, confirmDelete }) => {
                         {medicines.length > 0 ? (
                             medicines.map((med) => (
                                 <tr key={med._id || med.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{med.name}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{med.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{med.unit}</td>
+                                    
+                                    {/* Cột Liều Lượng Mới */}
+                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                        {med.dosages && med.dosages.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1">
+                                                {med.dosages.map((d, i) => (
+                                                    <span key={i} className="px-2 py-0.5 rounded text-xs bg-gray-100 border border-gray-200">
+                                                        {d}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 italic text-xs">Chưa cập nhật</span>
+                                        )}
+                                    </td>
+
                                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{med.description || '-'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -37,7 +54,7 @@ const MedicineList = ({ medicines, handleAddEdit, confirmDelete }) => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">Chưa có thuốc nào.</td>
+                                <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">Chưa có thuốc nào.</td>
                             </tr>
                         )}
                     </tbody>

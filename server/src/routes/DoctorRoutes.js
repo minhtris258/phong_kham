@@ -9,6 +9,7 @@ import {
   updateMyDoctorProfile,
   getAllDoctors,
   deleteDoctor,
+  updateMyPassword,
 } from "../controllers/DoctorController.js";
 
 const router = Router();
@@ -17,6 +18,7 @@ const router = Router();
 router.post("/onboarding/doctor-profile", verifyToken, requireRole(["doctor"]), completeDoctorProfile);
 router.get("/me", verifyToken, requireRole(["doctor"]), getMyDoctorProfile);
 router.put("/me", verifyToken, requireRole(["doctor"]), updateMyDoctorProfile);
+router.put("/me/password", verifyToken, requireRole(["doctor"]), updateMyPassword);
 
 router.get("/:id", getDoctorById);
 router.get("/", getAllDoctors);

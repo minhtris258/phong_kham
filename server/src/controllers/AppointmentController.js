@@ -8,10 +8,13 @@ import Doctor from "../models/DoctorModel.js";
 import Patient from "../models/PatientModel.js";
 import Medicine from "../models/MedicineModel.js";
 import MedicalService from "../models/MedicalServiceModel.js";
+import sendEmail from "../utils/sendEmail.js";
 
 // =================================================================
 // CLIENT (PATIENT) FUNCTIONS
 // =================================================================
+
+// file: controllers/AppointmentController.js
 
 export const bookAppointment = async (req, res, next) => {
   const session = await mongoose.startSession();
@@ -20,16 +23,17 @@ export const bookAppointment = async (req, res, next) => {
   try {
     const role = req.user?.role || req.user?.role?.name;
     const io = req.app.get('io');
-    const { timeslot_id, reason = "", patient_id } = req.body || {}; // Admin sẽ gửi patient_id
+    const { timeslot_id, reason = "", patient_id } = req.body || {};
 
     if (!timeslot_id) return res.status(400).json({ error: "Thiếu timeslot_id" });
 
     // ============================================================
-    // 1. XÁC ĐỊNH ID HỒ SƠ BỆNH NHÂN VÀ ID TÀI KHOẢN NHẬN THÔNG BÁO
+    // 1. XÁC ĐỊNH THÔNG TIN BỆNH NHÂN
     // ============================================================
-    let finalPatientId;      // ID bảng Patient (lưu vào Appointment)
-    let notificationUserId;  // ID bảng User (để gửi thông báo)
-    let patientNameForNotif; // Tên để hiển thị trong thông báo
+    let finalPatientId;      // ID bảng Patient
+    let notificationUserId;  // ID bảng User (để gửi noti/socket)
+    let patientNameForNotif; // Tên hiển thị
+    let patientEmail;        // <--- THÊM BIẾN EMAIL ĐỂ GỬI MAIL
 
     if (role === 'admin') {
         // --- LOGIC ADMIN ---
@@ -41,17 +45,20 @@ export const bookAppointment = async (req, res, next) => {
             return res.status(404).json({ error: "Không tìm thấy hồ sơ bệnh nhân này." });
         }
         finalPatientId = patientObj._id;
-        notificationUserId = patientObj.user_id; // Thông báo gửi về User của bệnh nhân
+        notificationUserId = patientObj.user_id;
         patientNameForNotif = patientObj.fullName;
+        patientEmail = patientObj.email; // Lấy email từ hồ sơ bệnh nhân
     } else {
-        // --- LOGIC PATIENT (Tự đặt) ---
+        // --- LOGIC PATIENT ---
         const patientProfile = await Patient.findOne({ user_id: req.user._id });
         if (!patientProfile) {
             return res.status(404).json({ error: "Vui lòng cập nhật hồ sơ bệnh nhân trước khi đặt lịch." });
         }
         finalPatientId = patientProfile._id;
-        notificationUserId = req.user._id; // Thông báo gửi về chính mình
+        notificationUserId = req.user._id;
         patientNameForNotif = patientProfile.fullName;
+        // Lấy email từ user đang login hoặc từ hồ sơ
+        patientEmail = req.user.email || patientProfile.email; 
     }
     // ============================================================
 
@@ -67,7 +74,7 @@ export const bookAppointment = async (req, res, next) => {
       // 3. Tạo Appointment
       const [appt] = await Appointment.create(
         [{
-          patient_id: finalPatientId, // <--- Dùng ID đã xác định ở trên
+          patient_id: finalPatientId,
           doctor_id: slot.doctor_id,
           timeslot_id: slot._id,
           date: slot.date,
@@ -89,10 +96,10 @@ export const bookAppointment = async (req, res, next) => {
     });
 
     // ============================================================
-    // 5. XỬ LÝ SAU KHI ĐẶT THÀNH CÔNG
+    // 5. XỬ LÝ SAU KHI ĐẶT THÀNH CÔNG (Notification & Email)
     // ============================================================
     
-    // Lấy thông tin bác sĩ
+    // Lấy thông tin bác sĩ để hiển thị
     const doctor = await Doctor.findById(createdAppt.doctor_id).lean();
     const doctorName = doctor?.fullName || "Bác sĩ";
     const doctorUserId = doctor?.user_id;
@@ -107,17 +114,14 @@ export const bookAppointment = async (req, res, next) => {
     });
     const qrCodeBase64 = await QRCode.toDataURL(qrData);
 
-    // Nội dung thông báo
+    // --- A. TẠO NOTIFICATION (Lưu DB) ---
     const notificationBody = 
-      `Chào ${patientNameForNotif}, ${role === 'admin' ? 'Admin' : 'bạn'} đã đặt lịch thành công!\n` +
+      `Chào ${patientNameForNotif}, lịch khám của bạn đã được xác nhận!\n` +
       `- Bác sĩ: ${doctorName}\n` +
-      `- Thời gian: ${createdAppt.start} ngày ${formattedDate}\n` +
-      `- Lý do: ${reason || "Không có"}\n` +
-      `Vui lòng đưa mã QR đính kèm cho lễ tân để check-in.`;
+      `- Thời gian: ${createdAppt.start} ngày ${formattedDate}`;
 
-    // Tạo Notification (Lưu ý user_id ở đây là Account User ID để họ nhận được trên App)
     const newNotification = await Notification.create({
-      user_id: notificationUserId, // <--- Gửi cho User tương ứng với bệnh nhân
+      user_id: notificationUserId,
       type: "appointment",
       title: "✅ Đặt Lịch Thành Công",
       body: notificationBody,
@@ -133,7 +137,7 @@ export const bookAppointment = async (req, res, next) => {
       sent_at: new Date()
     });
 
-    // Gửi Socket Realtime
+    // --- B. GỬI SOCKET REALTIME ---
     if (io) {
       // Gửi cho Bệnh nhân
       io.to(notificationUserId.toString()).emit('new_notification', {
@@ -141,21 +145,73 @@ export const bookAppointment = async (req, res, next) => {
         data: newNotification
       });
       
-      // (Tùy chọn) Nếu Admin đặt, có thể gửi socket phản hồi cho Admin biết (nếu cần)
+      // Gửi cho Bác sĩ (nếu cần)
       if (doctorUserId) {
-          // Lấy đầy đủ thông tin patient để frontend bác sĩ hiển thị ngay mà không cần F5
           const apptWithPatient = await Appointment.findById(createdAppt._id)
               .populate("patient_id", "fullName name email phone") 
               .lean();
-
           io.to(doctorUserId.toString()).emit('new_appointment', apptWithPatient);
-          console.log(`Socket sent to Doctor (User: ${doctorUserId})`);
       }
-    io.emit('slot_booked', {
+      
+      // Update Slot Realtime cho mọi người
+      io.emit('slot_booked', {
             timeslotId: timeslot_id,
-            doctorId: createdAppt.doctor_id, // Gửi kèm doctorId để client lọc cho chính xác
+            doctorId: createdAppt.doctor_id,
             bookedByUserId: notificationUserId.toString()
         });
+    }
+
+    // --- C. GỬI EMAIL XÁC NHẬN (Đã sửa lại nội dung) ---
+    try {
+        if (patientEmail) {
+            await sendEmail({
+            email: patientEmail, 
+            subject: `Xác nhận đặt lịch khám thành công - ${formattedDate}`,
+            message: `Xin chào ${patientNameForNotif}, bạn đã đặt lịch thành công với BS ${doctorName}.`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+                <h2 style="color: #007bff; text-align: center;">Đặt Lịch Thành Công!</h2>
+                <p>Xin chào <b>${patientNameForNotif}</b>,</p>
+                <p>Phòng khám Tâm An xác nhận bạn đã đặt lịch khám thành công. Dưới đây là thông tin chi tiết:</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px;">
+                    <tr style="background-color: #f9f9f9;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><b>Bác sĩ:</b></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${doctorName}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><b>Thời gian:</b></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${createdAppt.start} - ${formattedDate}</td>
+                    </tr>
+                    <tr style="background-color: #f9f9f9;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><b>Lý do khám:</b></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${reason || "Không ghi chú"}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><b>Mã tiếp đón:</b></td>
+                        <td style="padding: 10px; border: 1px solid #ddd; color: #d9534f; font-weight: bold; font-size: 16px;">${createdAppt.checkinCode}</td>
+                    </tr>
+                </table>
+
+                <div style="text-align: center; margin: 20px 0;">
+                    <p><i>Vui lòng đến đúng giờ và đưa mã QR trong ứng dụng cho lễ tân.</i></p>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #eee;">
+                <p style="font-size: 12px; color: #777; text-align: center;">
+                    Phòng Khám Tâm An - Chăm sóc sức khỏe toàn diện<br>
+                    Đây là email tự động, vui lòng không trả lời email này.
+                </p>
+                </div>
+            `
+            });
+            console.log(`📧 Email xác nhận đã gửi tới: ${patientEmail}`);
+        } else {
+            console.log("⚠️ Không tìm thấy email bệnh nhân, bỏ qua bước gửi mail.");
+        }
+    } catch (err) {
+        console.error("❌ Lỗi gửi email đặt lịch:", err.message);
+        // Không throw error để tránh rollback transaction khi đã đặt lịch thành công
     }
 
     return res.status(201).json({
