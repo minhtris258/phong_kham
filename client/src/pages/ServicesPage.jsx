@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import medicalServiceService from "../services/medicalServiceService";
+import ServicesModal from "../components/ServicesModal";
 
 export default function ServicesPage() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedPrice, setSelectedPrice] = useState("ALL");
+  const [selectedService, setSelectedService] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -72,9 +75,7 @@ export default function ServicesPage() {
         <h2 className="text-center text-3xl lg:text-4xl font-bold mb-6 text-[#0a2463]">
           DANH SÁCH DỊCH VỤ
         </h2>
-        <p className="text-center text-slate-600">
-          Hiện chưa có dịch vụ nào.
-        </p>
+        <p className="text-center text-slate-600">Hiện chưa có dịch vụ nào.</p>
       </section>
     );
   }
@@ -103,10 +104,6 @@ export default function ServicesPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-50">
-                  {/* icon phễu lọc đơn giản */}
-                  <span className="w-3 h-3 border-t-2 border-l-2 border-blue-500 rotate-[-45deg]" />
-                </span>
                 <span className="font-semibold text-[#0a2463] text-lg">
                   Bộ lọc
                 </span>
@@ -188,82 +185,69 @@ export default function ServicesPage() {
             </span>{" "}
             dịch vụ phù hợp
           </p>
-
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredServices.map((item) => {
               const fee = item.price || item.fee || 0;
+              const createdAt =
+                item.published_at || item.created_at || item.date;
 
               return (
                 <div
                   key={item._id || item.id}
-                  className="bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 p-6 flex flex-col"
+                  className="bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
                 >
-                  {/* Ảnh + tên + trạng thái */}
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="shrink-0">
-                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-100 bg-slate-50">
-                        <img
-                          src={resolveServiceImage(item)}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex-1">
-                      {/* Tag trạng thái nếu có */}
-                      {item.status && (
-                        <div
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-1 ${
-                            item.status === "active"
-                              ? "bg-green-50 text-green-700"
-                              : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {item.status === "active"
-                            ? "Đang cung cấp"
-                            : "Ngừng cung cấp"}
-                        </div>
-                      )}
-                      <h3 className="text-base font-bold text-[#0a2463] leading-snug">
-                        {item.name}
-                      </h3>
-                    </div>
+                  {/* ẢNH LỚN Ở TRÊN */}
+                  <div className="w-full h-40 md:h-48">
+                    <img
+                      src={resolveServiceImage(item)}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
 
-                  {/* Giá + mã dịch vụ */}
-                  <div className="space-y-1 text-sm mb-4">
-                    <div className="flex items-center gap-2 text-slate-500">
-                      <span className="text-lg leading-none">💳</span>
-                      <span className="font-semibold text-[#0a2463]">
-                        {fee
-                          ? Number(fee).toLocaleString("vi-VN") + "đ"
-                          : "Liên hệ"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-500">
-                      <span className="text-xs uppercase tracking-wide">
-                        Mã DV:
-                      </span>
-                      <span className="font-medium">
-                        {item.code || "Tự động"}
-                      </span>
-                    </div>
-                  </div>
+                  {/* NỘI DUNG */}
+                  <div className="flex-1 flex flex-col p-4 md:p-5">
+                    {/* Tiêu đề */}
+                    <h3 className="text-base md:text-lg font-bold text-[#0a2463] leading-snug line-clamp-2 mb-1">
+                      {item.name}
+                    </h3>
 
-                  {/* Mô tả ngắn */}
-                  <p className="text-slate-600 text-sm line-clamp-3 mb-4">
-                    {item.description || "Không có mô tả"}
-                  </p>
+                    {/* GIÁ DỊCH VỤ */}
+                    <div className="text-[15px] font-semibold text-[#0a2463] mb-3">
+                      {fee
+                        ? Number(fee).toLocaleString("vi-VN") + "đ"
+                        : "Liên hệ"}
+                    </div>
 
-                  {/* Nút xem chi tiết */}
-                  <div className="mt-auto">
-                    <Link
-                      to={`/services/${item._id || item.id}`}
-                      className="w-full inline-flex items-center justify-center h-11 rounded-2xl bg-[#f4f7ff] text-[#0a2463] font-semibold text-sm hover:bg-[#e6ecff] transition"
-                    >
-                      Xem chi tiết
-                    </Link>
+                    {/* Ngày + Đọc tiếp */}
+                    {/* Ngày + Xem chi tiết */}
+                    <div className="mt-auto pt-2 flex items-center justify-between text-xs md:text-sm text-slate-500">
+                      <span>
+                        {createdAt
+                          ? new Date(createdAt).toLocaleDateString("vi-VN")
+                          : ""}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedService(item);
+                          setIsModalOpen(true);
+                        }}
+                        className="inline-flex items-center text-[13px] font-semibold text-sky-600 hover:text-sky-700"
+                      >
+                        Xem Chi Tiết{" "}
+                        <span className="ml-1 text-lg leading-none">→</span>
+                      </button>
+                    </div>
+                    <ServicesModal
+                      isOpen={isModalOpen}
+                      onClose={() => {
+                        setIsModalOpen(false);
+                        setSelectedService(null);
+                      }}
+                      service={selectedService}
+                    />
                   </div>
                 </div>
               );

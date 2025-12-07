@@ -36,12 +36,12 @@ h2 {
 
 /* Button */
 .btn-color{
-  background-color: #16B7D7;
+  background-color: #00B5F1;
   color: white;
   font-weight: 600;
 }
 .btn-color:hover{
-  background-color: #2d3435;
+  background-color: #0095D5;
 }
 .bg-fade-vert {
   @apply bg-[#e8f4fd];

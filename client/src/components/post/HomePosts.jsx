@@ -124,6 +124,7 @@ export default function HomePosts() {
           </div>
         </div>
 
+
         {/* Nút mobile */}
         <div className="mt-8 text-center md:hidden">
           <Link
@@ -133,6 +134,7 @@ export default function HomePosts() {
             Xem tất cả tin tức
           </Link>
         </div>
+
       </div>
     </section>
   );

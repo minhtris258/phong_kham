@@ -22,7 +22,9 @@ export default function ContactHospitalPage() {
     e.preventDefault();
     // Sau này bạn gọi API gửi form ở đây
     console.log("Form liên hệ:", form);
-    setStatus("Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi trong thời gian sớm nhất.");
+    setStatus(
+      "Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi trong thời gian sớm nhất."
+    );
     setForm({
       fullName: "",
       phone: "",
@@ -38,7 +40,6 @@ export default function ContactHospitalPage() {
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Header */}
         <div className="text-center mb-10">
-          
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold color-title mt-8">
             Liên hệ với Bệnh viện
           </h1>
@@ -53,56 +54,57 @@ export default function ContactHospitalPage() {
           {/* Form */}
           <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 md:p-8">
             {/* Info + Map */}
-          <div className="space-y-6 grid grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 md:p-7">
-              <h2 className="text-lg font-bold text-slate-900 mb-4">
-                Thông tin liên hệ
-              </h2>
+            <div className="space-y-6 grid grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 md:p-7">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">
+                  Thông tin liên hệ
+                </h2>
 
-              <div className="space-y-3 text-sm text-slate-600">
-                <div>
-                  <p className="font-semibold text-slate-800">Bệnh viện MedEye</p>
-                  <p>123 Đường Sức Khỏe, Quận 1, TP. Hồ Chí Minh</p>
-                </div>
+                <div className="space-y-3 text-sm text-slate-600">
+                  <div>
+                    <p className="font-semibold text-slate-800">
+                      Bệnh viện MedPro
+                    </p>
+                    <p>70 Nguyễn Huệ - Phường Thuận Hóa - TP Huế</p>
+                  </div>
 
-                <div>
-                  <p className="font-semibold text-slate-800">Hotline</p>
-                  <p>1900 123 456</p>
-                </div>
+                  <div>
+                    <p className="font-semibold text-slate-800">Hotline</p>
+                    <p>1900 6868</p>
+                  </div>
 
-                <div>
-                  <p className="font-semibold text-slate-800">Email</p>
-                  <p>lienhe@medeye.vn</p>
-                </div>
+                  <div>
+                    <p className="font-semibold text-slate-800">Email</p>
+                    <p>lienhe@medpro.vn</p>
+                  </div>
 
-                <div>
-                  <p className="font-semibold text-slate-800">Giờ làm việc</p>
-                  <p>Thứ 2 – Thứ 7: 7:00 – 20:00</p>
-                  <p>Chủ nhật & ngày lễ: 8:00 – 17:00</p>
+                  <div>
+                    <p className="font-semibold text-slate-800">Giờ làm việc</p>
+                    <p>Thứ 2 – Thứ 7: 7:00 – 20:00</p>
+                    <p>Chủ nhật & ngày lễ: 8:00 – 17:00</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Google Map (bạn thay src cho đúng bệnh viện thật) */}
-            <div className="bg-white rounded-2xl shadow-lg h-56 md:h-80 overflow-hidden">
-              <div className="h-56 md:h-80 w-full">
-                <iframe
-                  title="Bản đồ bệnh viện"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.451914518223!2d106.7000000!3d10.7760000!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zQ8O0bmcgVGjhu4sgVGjhursgVGhp4buHdQ!5e0!3m2!1svi!2svi!4v0000000000000"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                ></iframe>
+              {/* Google Map (bạn thay src cho đúng bệnh viện thật) */}
+              <div className="bg-white rounded-2xl shadow-lg h-56 md:h-80 overflow-hidden">
+                <div className="h-56 md:h-80 w-full">
+                  <iframe
+                    title="Bản đồ bệnh viện"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7652.6891483027175!2d107.58852623334347!3d16.458081037849492!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3141a147ba6bdbff%3A0x2e605afab4951ad9!2sHue%20Industrial%20College!5e0!3m2!1sen!2s!4v1765096316618!5m2!1sen!2s"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  ></iframe>
+                </div>
               </div>
-            </div>
             </div>
             <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-4">
               Gửi yêu cầu liên hệ
             </h2>
-            
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
@@ -240,10 +242,8 @@ export default function ContactHospitalPage() {
               </button>
             </form>
           </div>
-
-          
-          </div>
         </div>
       </div>
+    </div>
   );
 }

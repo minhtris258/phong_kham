@@ -5,19 +5,21 @@ import { toastSuccess,toastError, toastWarning, toastInfo } from "../utils/toast
 import axios from "axios";
 import "../index.css";
 
-// ====================== API ENDPOINT ======================
 const API_URL = "http://localhost:3000/api/specialties";
 
-// ====================== UTIL ======================
 const resolveSpecialtyImage = (thumbnail) =>
   thumbnail || "https://via.placeholder.com/110x110.png?text=Specialty";
 
 // =================== 1 CARD CHUYÊN KHOA ===================
 function SpecialtyCard({ spec }) {
-  const { _id, id, name, thumbnail, imageUrl, slug } = spec || {};
+  const { _id, id, name, thumbnail, imageUrl } = spec || {};
 
   const imgSrc = resolveSpecialtyImage(thumbnail || imageUrl);
-  const linkTo = slug ? `/chuyen-khoa/${slug}` : "#.";
+  const specialtyId = _id || id;
+  // Link sang trang DoctorDirectory kèm query specialtyId
+  const linkTo = specialtyId
+    ? `/doctors?specialtyId=${specialtyId}`
+    : "/doctors";
 
   return (
     <Link to={linkTo} className="col-span-1 block">
@@ -42,21 +44,17 @@ export default function SpecialtySection({
   specialties: specialtiesProp,
 }) {
   const [specialties, setSpecialties] = useState(specialtiesProp || []);
-  const shouldFetch = !specialtiesProp; // nếu không truyền props thì mới gọi API
+  const shouldFetch = !specialtiesProp;
 
   useEffect(() => {
     if (!shouldFetch) return;
-
     let cancelled = false;
 
     (async () => {
       try {
         const res = await axios.get(API_URL, {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
         });
-
 
         const list =
           res.data?.specialties ||
@@ -68,9 +66,7 @@ export default function SpecialtySection({
         }
       } catch (e) {
         toastError("Fetch specialties failed:", e);
-        if (!cancelled) {
-          setSpecialties([]);
-        }
+        if (!cancelled) setSpecialties([]);
       }
     })();
 
