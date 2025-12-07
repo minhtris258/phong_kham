@@ -51,11 +51,11 @@ export default function Hero() {
         style={{ backgroundImage: `url(${activeSlide.image})` }}
       >
         {/* Layer mờ để chữ dễ đọc hơn */}
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0" />
 
         <div className="container relative z-10">
           <div className="lg:grid lg:grid-cols-5 text-center lg:py-60 py-16">
-            <div className="w-full p-10 bg-[#a49f9f57] rounded-2xl col-span-3">
+            <div className="w-full p-10 bg-[#c7e1e778] rounded-2xl col-span-3">
               <h1 className="font-roboto font-bold lg:text-5xl text-3xl color-title">
                 {activeSlide.title}
               </h1>

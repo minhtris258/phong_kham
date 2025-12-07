@@ -76,11 +76,12 @@ export default function PostsDirectory() {
   }
 
   return (
-    <section className="container py-20 lg:py-25 mt-10">
+    <section className="container py-20 lg:py-25 mt-12">
       {/* Title */}
-      <h2 className="text-2xl lg:text-3xl font-bold text-center text-sky-900 mb-6">
+      <h2 className="text-2xl lg:text-3xl font-bold text-center color-title ">
         Tin tức & cẩm nang
       </h2>
+      <p className="text-center text-slate-600 mb-10">Cập nhật những thông tin mới nhất về sức khỏe và y tế.</p>
 
       {safePosts.length === 0 ? (
         <p className="text-center text-slate-600">

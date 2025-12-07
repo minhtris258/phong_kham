@@ -150,7 +150,7 @@ export default function DoctorsDirectory() {
       
       {/* Header */}
       <div className="text-center mb-10 mt-15">
-        <h2 className="text-3xl font-bold text-slate-800 mb-2">Đội ngũ chuyên gia</h2>
+        <h2 className="text-3xl font-bold color-title mb-2">Đội ngũ chuyên gia</h2>
         <p className="text-slate-500">Đặt lịch khám với các bác sĩ hàng đầu.</p>
       </div>
 
