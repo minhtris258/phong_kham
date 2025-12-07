@@ -143,7 +143,7 @@ export default function Header() {
                   {/* Notification Bell */}
                   <Link
                     to="/notifications"
-                    className="relative p-2 text-white hover:bg-white/10 rounded-full transition"
+                    className="relative p-2 text-black hover:bg-white/10 rounded-full transition"
                   >
                     <Bell size={20} />
                     {unreadCount > 0 && (
@@ -157,16 +157,16 @@ export default function Header() {
                   <div className="relative hidden md:block">
                     <button
                       onClick={() => setAccountOpen(!accountOpen)}
-                      className="flex items-center gap-2 text-white hover:opacity-80 transition focus:outline-none"
+                      className="flex items-center gap-2 text-black hover:opacity-80 transition focus:outline-none"
                     >
                       <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
                         {user?.avatar ? (
                            <img src={user.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover"/>
                         ) : (
-                           <CircleUserRound size={20} />
+                           <CircleUserRound size={30} strokeWidth={1.5} />
                         )}
                       </div>
-                      <span className="font-medium text-sm max-w-[100px] truncate">{user?.name || "User"}</span>
+                      <span className="font-medium text-sm max-w-[100px] truncate">{user?.fullName || "User"}</span>
                     </button>
 
                     {/* Dropdown Menu */}
@@ -229,7 +229,7 @@ export default function Header() {
               <button
                 id="open-menu"
                 onClick={() => setOpen(true)}
-                className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition"
+                className="md:hidden text-black p-2 hover:bg-white/10 rounded-lg transition"
               >
                 <Menu size={24} />
               </button>
@@ -264,7 +264,7 @@ export default function Header() {
                 {user?.name?.charAt(0).toUpperCase() || "U"}
               </div>
               <div className="flex-1 overflow-hidden">
-                <p className="font-semibold truncate">{user?.name}</p>
+                <p className="font-semibold truncate">{user?.fullName}</p>
                 <p className="text-xs text-gray-400 truncate">{user?.email}</p>
               </div>
             </div>
