@@ -111,18 +111,21 @@ export default function DoctorsBySpecialtySection() {
     <section className="w-full bg-white py-12 md:py-16">
       <div className="container mx-auto px-4">
         {/* Header + Tabs */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
-          <div>
+        <div className=" md:flex-row md:items-end md:justify-between gap-4 mb-8 ">
+          <div className=" text-center">
             <p className="text-xs md:text-sm uppercase tracking-[0.2em] color-title font-semibold">
               ĐỘI NGŨ CHUYÊN GIA
             </p>
             <h2 className="text-2xl md:text-3xl font-bold color-title mt-1">
               BÁC SĨ THEO CHUYÊN KHOA
             </h2>
-            <p className="text-sm md:text-base text-slate-600 mt-2 max-w-xl">
+            <div className="justify-center flex mb-4">
+              <p className="text-sm md:text-base text-slate-600 mt-2 max-w-xl justify-center">
               Chọn chuyên khoa để xem nhanh một số bác sĩ tiêu biểu. Nhấn
               &quot;Xem thêm&quot; để tới trang danh sách đầy đủ.
             </p>
+            </div>
+            
           </div>
 
           {/* Tabs chọn khoa */}

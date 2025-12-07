@@ -6,7 +6,7 @@ const visitService = {
   getVisitById: (id) => api.get(`/visits/${id}`),
   getVisitByAppointment: (appointmentId) => api.get(`/visits/by-appointment/${appointmentId}`),
   myVisits: () => api.get("/visits/me"),
-  myDoctorVisits: () => api.get("/visits/doctor/me"),
+  myDoctorVisits: (params) => api.get("/visits/doctor/me", { params }),
   updateVisit: (id, data) => api.put(`/visits/${id}`, data),
 
 

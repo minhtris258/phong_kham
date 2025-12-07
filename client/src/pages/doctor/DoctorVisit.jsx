@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 
 // Import Services
 import visitService from "../../services/VisitService";
 
-// Import Components đã tách
+// Import Components
 import DashboardStats from "../../components/doctor/visit/DashboardStats";
 import VisitFilter from "../../components/doctor/visit/VisitFilter";
 import VisitList from "../../components/doctor/visit/VisitList";
-import VisitDetailModal from "../../components/doctor/visit/VistitDetailModal"; // File modal bạn đã có
+import VisitDetailModal from "../../components/doctor/visit/VistitDetailModal";
 
 const DoctorVisit = () => {
   // --- STATE ---
@@ -17,21 +17,30 @@ const DoctorVisit = () => {
     visits_this_month: 0,
     revenue_this_month: 0,
   });
-  
+
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState(null);
+
+  // State phân trang
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalDocs: 0,
+    totalPages: 1,
+  });
 
   const [filters, setFilters] = useState({
     diagnosis: "",
     fromDate: "",
     toDate: "",
+    patientName: "", // Thêm trường này nếu backend bạn hỗ trợ tìm tên
   });
 
   // --- EFFECTS ---
   useEffect(() => {
     fetchDashboardStats();
-    handleSearch();
+    handleSearch(1); // Load dữ liệu trang 1 khi mới vào
   }, []);
 
   // --- API FUNCTIONS ---
@@ -42,22 +51,46 @@ const DoctorVisit = () => {
         setStats(res.data.stats);
       }
     } catch (error) {
-      toastError("Lỗi tải thống kê:", error);
+      console.error("Lỗi tải thống kê:", error);
     }
   };
 
-  const handleSearch = async () => {
+  // HÀM SEARCH & PHÂN TRANG (QUAN TRỌNG)
+  const handleSearch = async (pageNumber = 1) => {
     setLoading(true);
     try {
-      const res = await visitService.searchDoctorVisits(filters);
-      if (res.data && Array.isArray(res.data.data)) {
-        setVisits(res.data.data);
-      } else {
-        setVisits([]);
+      // Chuẩn bị params gửi lên server
+      const params = { 
+        ...filters, 
+        page: pageNumber, 
+        limit: 10 
+      };
+
+      // Gọi API searchDoctorVisits (đã update ở backend)
+      const res = await visitService.searchDoctorVisits(params);
+
+      // Cấu trúc trả về từ Backend mới: 
+      // { data: [...], pagination: { totalItems, totalPages, currentPage, pageSize } }
+      
+      if (res.data) {
+        // 1. Lấy danh sách visits
+        const fetchedVisits = res.data.data || [];
+        setVisits(fetchedVisits);
+
+        // 2. Lấy thông tin phân trang (nếu có) hoặc fallback
+        const meta = res.data.pagination || {};
+        
+        setPagination({
+          page: meta.currentPage || pageNumber,
+          limit: meta.pageSize || 10,
+          totalDocs: meta.totalItems || fetchedVisits.length,
+          totalPages: meta.totalPages || 1
+        });
       }
     } catch (error) {
-      toastError("Lỗi tải danh sách:", error);
-        toastError("Không thể tải danh sách hồ sơ khám.");
+      console.error(error);
+      toastError("Không thể tải danh sách hồ sơ khám.");
+      setVisits([]);
     } finally {
       setLoading(false);
     }
@@ -69,15 +102,39 @@ const DoctorVisit = () => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Khi bấm nút "Tìm kiếm", luôn reset về trang 1
+  const onSearchClick = () => {
+      handleSearch(1);
+  };
+
+  // Khi bấm nút "Xóa lọc"
   const handleClearFilter = () => {
-    setFilters({ diagnosis: "", fromDate: "", toDate: "" });
-    // setTimeout để đảm bảo state đã clear trước khi gọi API
-    setTimeout(() => {
-        // Có thể gọi lại hàm search với bộ lọc rỗng thủ công để chắc chắn
-        visitService.searchDoctorVisits({ diagnosis: "", fromDate: "", toDate: "" })
-          .then(res => setVisits(res.data?.data || []))
-          .catch(err => console.error(err));
-    }, 0);
+    const emptyFilters = { diagnosis: "", fromDate: "", toDate: "", patientName: "" };
+    setFilters(emptyFilters);
+    
+    // Gọi lại API với bộ lọc rỗng, về trang 1
+    setLoading(true);
+    visitService.searchDoctorVisits({ ...emptyFilters, page: 1, limit: 10 })
+        .then(res => {
+            const fetchedVisits = res.data.data || [];
+            const meta = res.data.pagination || {};
+            
+            setVisits(fetchedVisits);
+            setPagination({
+                page: 1,
+                limit: 10,
+                totalDocs: meta.totalItems || 0,
+                totalPages: meta.totalPages || 1
+            });
+        })
+        .catch(err => toastError("Lỗi làm mới dữ liệu"))
+        .finally(() => setLoading(false));
+  };
+
+  // Chuyển trang
+  const handlePageChange = (newPage) => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      handleSearch(newPage);
   };
 
   // Modal Handlers
@@ -91,25 +148,23 @@ const DoctorVisit = () => {
         Quản Lý Hồ Sơ Khám Bệnh
       </h1>
 
-      {/* 1. Thống kê */}
       <DashboardStats stats={stats} />
 
-      {/* 2. Bộ lọc */}
       <VisitFilter
         filters={filters}
         onChange={handleFilterChange}
-        onSearch={handleSearch}
+        onSearch={onSearchClick}
         onClear={handleClearFilter}
       />
 
-      {/* 3. Danh sách */}
       <VisitList
         visits={visits}
         loading={loading}
         onViewDetail={handleOpenDetail}
+        pagination={pagination}
+        onPageChange={handlePageChange}
       />
 
-      {/* 4. Modal Chi tiết */}
       {selectedVisit && (
         <VisitDetailModal
           visit={selectedVisit}

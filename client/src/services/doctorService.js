@@ -47,6 +47,15 @@ const doctorService = {
         const response = await api.post('/doctors/onboarding/doctor-profile', profileData);
         return response;
     },
+     changeMyPassword: async (oldPassword, newPassword, confirmPassword) => {
+    // Gửi đủ cả 3 trường
+    const response = await api.put('/doctors/me/password', { 
+        oldPassword, 
+        newPassword, 
+        confirmPassword 
+    });
+    return response;
+},
 };
 
 export default doctorService;

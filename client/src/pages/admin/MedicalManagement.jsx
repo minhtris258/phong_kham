@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search } from 'lucide-react';
-// Giả sử bạn đã tạo service này
 import medicineService from '../../services/medicineService'; 
 import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 
-// Components
 import MedicineList from '../../components/admin/medicine/MedicineList';
 import MedicineFormModal from '../../components/admin/medicine/MedicineFormModal';
-import SpecialtyDeleteModal from '../../components/admin/specialty/SpecialtyDeleteModal'; // Tái sử dụng Delete Modal
+import SpecialtyDeleteModal from '../../components/admin/specialty/SpecialtyDeleteModal'; 
 
 const MedicineManagement = () => {
     const [medicines, setMedicines] = useState([]);
@@ -24,7 +22,6 @@ const MedicineManagement = () => {
     const fetchMedicines = async (search = '') => {
         setLoading(true);
         try {
-            // API backend của bạn hỗ trợ query ?search=...
             const response = await medicineService.getMedicines({ search, limit: 100 }); 
             const list = response.data?.data || [];
             setMedicines(list);
@@ -47,15 +44,15 @@ const MedicineManagement = () => {
         }
     };
 
-    // Form Handlers
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-    };
-
+    // --- SỬA LOGIC KHỞI TẠO FORM ---
     const handleAddEdit = (med) => {
         setEditingMedicine(med);
-        setFormData(med ? { ...med } : { name: '', unit: '', description: '', status: 'active' });
+        // Nếu edit: copy dữ liệu, đảm bảo dosages luôn là mảng
+        // Nếu add: khởi tạo dosages là mảng rỗng
+        setFormData(med 
+            ? { ...med, dosages: med.dosages || [] } 
+            : { name: '', unit: '', description: '', status: 'active', dosages: [] }
+        );
         setIsModalOpen(true);
     };
 
@@ -64,6 +61,7 @@ const MedicineManagement = () => {
         if (!formData.name) return toastWarning("Tên thuốc là bắt buộc!");
 
         try {
+            // formData bây giờ đã chứa mảng dosages từ Modal
             if (editingMedicine) {
                 await medicineService.updateMedicine(editingMedicine._id, formData);
                 toastSuccess("Cập nhật thành công!");
@@ -78,7 +76,6 @@ const MedicineManagement = () => {
         }
     };
 
-    // Delete Handlers
     const handleDelete = async () => {
         try {
             await medicineService.deleteMedicine(confirmDeleteId);
@@ -96,7 +93,6 @@ const MedicineManagement = () => {
                 <h2 className="text-3xl font-bold text-gray-900">Quản Lý Kho Thuốc</h2>
                 
                 <div className="flex gap-3 w-full sm:w-auto">
-                    {/* Search Box */}
                     <div className="relative flex-grow sm:flex-grow-0">
                         <input 
                             type="text" 
@@ -132,12 +128,12 @@ const MedicineManagement = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 formData={formData}
-                handleInputChange={handleInputChange}
+                // Quan trọng: Truyền hàm setFormData xuống để Modal thao tác mảng dosages
+                setFormData={setFormData} 
                 handleSave={handleSave}
                 editingMedicine={editingMedicine}
             />
 
-            {/* Tái sử dụng Modal Delete của Specialty nhưng đổi title props nếu component đó hỗ trợ, hoặc dùng Generic Modal */}
             <SpecialtyDeleteModal 
                 confirmDeleteId={confirmDeleteId}
                 onClose={() => setConfirmDeleteId(null)}

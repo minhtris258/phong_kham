@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Users, Calendar, Activity, DollarSign, Loader2 
-} from 'lucide-react'; // Import icon trực tiếp
+} from 'lucide-react'; 
 
 // Components
 import KPICard from '../../components/admin/KPICard';
@@ -24,15 +24,17 @@ const DashboardContent = () => {
     const [topDoctors, setTopDoctors] = useState([]);
     const [activities, setActivities] = useState([]);
 
-    // === FETCH DATA ===
+    // State cho bộ lọc biểu đồ (Mặc định là 'month')
+    const [trendFilter, setTrendFilter] = useState('month');
+
+    // === 1. FETCH DỮ LIỆU TỔNG QUAN (Chạy 1 lần đầu tiên) ===
     useEffect(() => {
-        const fetchDashboardData = async () => {
+        const fetchGeneralData = async () => {
             setLoading(true);
             try {
-                // Gọi song song 5 API để tiết kiệm thời gian
-                const [statsRes, trendRes, statusRes, topDocsRes, activityRes] = await Promise.all([
+                // Gọi các API KHÔNG phụ thuộc vào bộ lọc Trend
+                const [statsRes, statusRes, topDocsRes, activityRes] = await Promise.all([
                     dashboardService.getStats().catch(() => null),
-                    dashboardService.getAppointmentTrend().catch(() => []),
                     dashboardService.getAppointmentStatus().catch(() => []),
                     dashboardService.getTopDoctors().catch(() => []),
                     dashboardService.getRecentActivity().catch(() => [])
@@ -44,7 +46,7 @@ const DashboardContent = () => {
                         {
                             title: 'Tổng Lịch Hẹn',
                             value: statsRes.totalAppointments || 0,
-                            change: '+12%', // Có thể tính toán nếu API trả về số liệu tháng trước
+                            change: '+12%',
                             period: 'tháng trước',
                             isPositive: true,
                             icon: Calendar,
@@ -70,7 +72,7 @@ const DashboardContent = () => {
                         },
                         {
                             title: 'Hiệu Suất Hoạt Động',
-                            value: '95%', // Ví dụ, có thể tính từ số ca hoàn thành / tổng ca
+                            value: '95%',
                             change: '+5%',
                             period: 'tháng trước',
                             isPositive: true,
@@ -80,11 +82,7 @@ const DashboardContent = () => {
                     ]);
                 }
 
-                // 2. Xử lý biểu đồ Trend
-                setTrendData(trendRes || []);
-
-                // 3. Xử lý biểu đồ Status
-                // Map màu sắc cho trạng thái nếu API chưa trả về
+                // 2. Xử lý biểu đồ Status
                 const coloredStatus = (statusRes || []).map(item => {
                     let color = 'bg-gray-500';
                     if (item.status === 'Hoàn thành' || item.status === 'completed') color = 'bg-green-500';
@@ -95,22 +93,39 @@ const DashboardContent = () => {
                 });
                 setStatusData(coloredStatus);
 
-                // 4. Top Doctors
+                // 3. Top Doctors & Activity
                 setTopDoctors(topDocsRes || []);
-
-                // 5. Activities
                 setActivities(activityRes || []);
 
             } catch (err) {
-                console.error("Dashboard Error:", err);
-                toastError("Không thể tải dữ liệu Dashboard.");
+                console.error("Dashboard General Error:", err);
+                toastError("Không thể tải dữ liệu tổng quan.");
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchDashboardData();
+        fetchGeneralData();
     }, []);
+
+    // === 2. FETCH DỮ LIỆU TREND (Chạy khi trendFilter thay đổi) ===
+    useEffect(() => {
+        const fetchTrendData = async () => {
+            // Lưu ý: Không set loading toàn trang để tránh nhấp nháy, 
+            // component Chart sẽ tự xử lý hoặc hiển thị data cũ cho đến khi data mới về
+            try {
+                // Truyền tham số type (day/month/year) vào service
+                // Đảm bảo dashboardService.getAppointmentTrend chấp nhận params
+                const trendRes = await dashboardService.getAppointmentTrend({ type: trendFilter });
+                setTrendData(trendRes || []);
+            } catch (err) {
+                console.error("Trend Error:", err);
+                setTrendData([]); 
+            }
+        };
+
+        fetchTrendData();
+    }, [trendFilter]); // Chạy lại mỗi khi trendFilter thay đổi
 
     if (loading) {
         return (
@@ -125,7 +140,7 @@ const DashboardContent = () => {
 
     return (
         <main className="flex-1 p-4 sm:p-8 bg-gray-50 min-h-[calc(100vh-64px)]">
-             <header className="mb-8">
+            <header className="mb-8">
                 <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
                     Dashboard Đặt Lịch Khám
                 </h1>
@@ -143,13 +158,11 @@ const DashboardContent = () => {
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
                 {/* Biểu đồ Xu hướng Lịch Hẹn */}
                 <div className="lg:col-span-2">
-                    {trendData.length > 0 ? (
-                        <AppointmentTrendChart data={trendData} />
-                    ) : (
-                        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 h-96 flex items-center justify-center text-gray-400">
-                            Chưa có dữ liệu xu hướng
-                        </div>
-                    )}
+                    {/* Truyền props onFilterChange để nhận sự kiện từ Chart */}
+                    <AppointmentTrendChart 
+                        data={trendData} 
+                        onFilterChange={setTrendFilter} 
+                    />
                 </div>
                 
                 {/* Biểu đồ Trạng thái Lịch Hẹn */}

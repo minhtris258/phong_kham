@@ -8,13 +8,26 @@ import {
   getAllPatients,
   getMyPatientProfile,
   getPatientById,
+  updateMyPassword,
   updateMyPatientProfile,
   updatePatientAdmin,
 } from "../controllers/PatientController.js";
 import { verifyToken, requireRole } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
-
+// --- Tuyến đường Cá nhân (Patient) ---
+router.post(
+  "/complete-profile",
+  verifyToken,
+  requireRole("patient"),
+  completePatientProfile
+); // POST /api/patients/complete-profile
+router.put(
+  "/me/password",
+  verifyToken,
+  requireRole("patient"),
+  updateMyPassword
+); // PUT /api/patients/me/password
 // --- Tuyến đường Admin ---
 router.post("/", verifyToken, requireRole("admin"), createPatient); // POST /api/patients
 router.get("/", verifyToken, requireRole("admin"), getAllPatients); // GET /api/patients
@@ -27,25 +40,14 @@ router.put(
 ); // PUT /api/patients/:id/password (Chỉ Admin)
 router.delete("/:id", verifyToken, requireRole("admin"), deletePatientById); // DELETE /api/patients/:id
 
-// --- Tuyến đường Cá nhân (Patient) ---
-router.post(
-  "/complete-profile",
-  verifyToken,
-  requireRole("patient"),
-  completePatientProfile
-); // POST /api/patients/complete-profile
+
 
 router.put("/me", verifyToken, requireRole("patient"), updateMyPatientProfile); // PUT /api/patients/me (Cập nhật hồ sơ cá nhân)
 router.get("/me", verifyToken, requireRole("patient"), getMyPatientProfile); // GET /api/patients/me
 
 // Đổi mật khẩu cá nhân sẽ dùng route khác (ví dụ: /me/password) hoặc dùng route Admin ở trên nếu hàm Admin đủ thông minh.
 // Nếu bạn muốn Patient tự đổi mật khẩu (của CHÍNH họ), hãy dùng route /me
-router.put(
-  "/me/password",
-  verifyToken,
-  requireRole("patient"),
-  adminUpdatePatientPassword
-); // PUT /api/patients/me/password
+
 
 // --- Tuyến đường Public/Get ID ---
 router.get("/:id", getPatientById); // GET /api/patients/:id (Có thể cần kiểm tra quyền)

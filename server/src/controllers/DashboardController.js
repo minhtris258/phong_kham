@@ -3,42 +3,37 @@ import Appointment from "../models/AppointmentModel.js";
 import Doctor from "../models/DoctorModel.js";
 import Patient from "../models/PatientModel.js";
 import User from "../models/UserModel.js";
+import Visit from "../models/VisitModel.js"; // <--- QUAN TRỌNG: Import Visit để lấy doanh thu thực
 
 // 1. Lấy số liệu tổng quan (KPI Cards)
 export const getDashboardStats = async (req, res, next) => {
   try {
-    // A. Tổng lịch hẹn
+    // A. Tổng lịch hẹn (Vẫn giữ nguyên để đếm số lượng đặt lịch)
     const totalAppointments = await Appointment.countDocuments();
 
     // B. Tổng bác sĩ (đang active)
     const totalDoctors = await Doctor.countDocuments({ status: "active" });
 
     // C. Bệnh nhân mới (trong tháng này)
-    const startOfMonth = new Date(new Date().setDate(1)); // Ngày mùng 1 tháng này
+    const startOfMonth = new Date(new Date().setDate(1));
+    startOfMonth.setHours(0, 0, 0, 0); // Reset về đầu ngày mùng 1
+    
     const newPatients = await Patient.countDocuments({
       createdAt: { $gte: startOfMonth },
     });
 
-    // D. Tổng doanh thu (Tính dựa trên các lịch hẹn đã 'completed')
-    // Lưu ý: Nếu Appointment không lưu giá tiền, ta phải lookup sang Doctor để lấy consultation_fee
-    const revenueAgg = await Appointment.aggregate([
-      { $match: { status: "completed" } },
-      {
-        $lookup: {
-          from: "doctors",
-          localField: "doctor_id",
-          foreignField: "_id",
-          as: "doctor_info",
-        },
-      },
-      { $unwind: "$doctor_info" },
+    // D. TỔNG DOANH THU (CẬP NHẬT LOGIC MỚI)
+    // Thay vì tính từ Appointment (chỉ có phí khám), ta tính từ Visit (Phí khám + Dịch vụ + Thuốc)
+    const revenueAgg = await Visit.aggregate([
       {
         $group: {
           _id: null,
-          total: { $sum: "$doctor_info.consultation_fee" },
+          // total_amount trong Visit đã được tính toán gồm: Phí khám + Dịch vụ
+          total: { $sum: "$total_amount" }, 
         },
       },
     ]);
+    
     const totalRevenue = revenueAgg.length > 0 ? revenueAgg[0].total : 0;
 
     return res.status(200).json({
@@ -52,34 +47,80 @@ export const getDashboardStats = async (req, res, next) => {
   }
 };
 
-// 2. Biểu đồ Xu hướng (12 tháng gần nhất)
+// 2. Biểu đồ Xu hướng (12 tháng gần nhất) - GIỮ NGUYÊN
 export const getAppointmentTrend = async (req, res, next) => {
   try {
-    const twelveMonthsAgo = new Date();
-    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+    const { type = 'month' } = req.query; // Nhận tham số type từ frontend
+    
+    let matchStage = {};
+    let groupStage = {};
+    let sortStage = {};
+    let formatLabel = (id) => ""; // Helper để format label hiển thị
+
+    const now = new Date();
+
+    if (type === 'day') {
+        // Lấy 7 ngày gần nhất
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(now.getDate() - 7);
+        sevenDaysAgo.setHours(0,0,0,0);
+
+        matchStage = { createdAt: { $gte: sevenDaysAgo } };
+        groupStage = {
+            _id: { 
+                day: { $dayOfMonth: "$createdAt" }, 
+                month: { $month: "$createdAt" },
+                year: { $year: "$createdAt" }
+            },
+            count: { $sum: 1 }
+        };
+        sortStage = { "_id.year": 1, "_id.month": 1, "_id.day": 1 };
+        formatLabel = (id) => `${id.day}/${id.month}`; // VD: 15/10
+    } 
+    else if (type === 'year') {
+        // Lấy 5 năm gần nhất
+        const fiveYearsAgo = new Date();
+        fiveYearsAgo.setFullYear(now.getFullYear() - 5);
+        
+        matchStage = { createdAt: { $gte: fiveYearsAgo } };
+        groupStage = {
+            _id: { year: { $year: "$createdAt" } },
+            count: { $sum: 1 }
+        };
+        sortStage = { "_id.year": 1 };
+        formatLabel = (id) => `${id.year}`; // VD: 2023
+    } 
+    else {
+        // Mặc định: Lấy 12 tháng gần nhất (Month)
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setMonth(now.getMonth() - 11);
+        twelveMonthsAgo.setDate(1);
+
+        matchStage = { createdAt: { $gte: twelveMonthsAgo } };
+        groupStage = {
+            _id: { 
+                month: { $month: "$createdAt" }, 
+                year: { $year: "$createdAt" } 
+            },
+            count: { $sum: 1 }
+        };
+        sortStage = { "_id.year": 1, "_id.month": 1 };
+        formatLabel = (id) => `Thg ${id.month}`; // VD: Thg 10
+    }
 
     const trend = await Appointment.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: twelveMonthsAgo },
-        },
-      },
-      {
-        $group: {
-          _id: {
-            month: { $month: "$createdAt" },
-            year: { $year: "$createdAt" },
-          },
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { "_id.year": 1, "_id.month": 1 } },
+      { $match: matchStage },
+      { $group: groupStage },
+      { $sort: sortStage },
     ]);
 
-    // Map dữ liệu để frontend dễ hiển thị (VD: "Thg 1")
+    // Format dữ liệu trả về cho Frontend
+    // key 'label' dùng để hiển thị trên trục X
     const formattedTrend = trend.map((item) => ({
-      month: `Thg ${item._id.month}`,
+      label: formatLabel(item._id), 
       count: item.count,
+      // Giữ lại các trường gốc nếu cần debug
+      dateInfo: item._id 
     }));
 
     return res.status(200).json(formattedTrend);
@@ -88,7 +129,7 @@ export const getAppointmentTrend = async (req, res, next) => {
   }
 };
 
-// 3. Biểu đồ Trạng thái (Phân bổ %)
+// 3. Biểu đồ Trạng thái (Phân bổ %) - GIỮ NGUYÊN
 export const getAppointmentStatus = async (req, res, next) => {
   try {
     const totalDocs = await Appointment.countDocuments();
@@ -105,10 +146,8 @@ export const getAppointmentStatus = async (req, res, next) => {
     ]);
 
     const formattedStatus = statusStats.map((item) => {
-      // Tính phần trăm
       const percentage = Math.round((item.count / totalDocs) * 100);
       
-      // Map tên trạng thái sang tiếng Việt (khớp với Frontend Dashboard.jsx nếu cần)
       let label = item._id;
       if (item._id === 'confirmed') label = 'Đã xác nhận';
       if (item._id === 'pending') label = 'Chờ xác nhận';
@@ -118,7 +157,6 @@ export const getAppointmentStatus = async (req, res, next) => {
       return {
         status: label,
         percentage: percentage,
-        // Màu sắc sẽ được xử lý ở Frontend (Dashboard.jsx) dựa trên status key
       };
     });
 
@@ -128,22 +166,19 @@ export const getAppointmentStatus = async (req, res, next) => {
   }
 };
 
-// 4. Top Bác sĩ bận rộn nhất
+// 4. Top Bác sĩ bận rộn nhất - GIỮ NGUYÊN (Tính theo số lượng lịch hẹn)
+// Nếu muốn chính xác hơn có thể đổi sang đếm Visit, nhưng đếm Appointment thể hiện "Nhu cầu" tốt hơn
 export const getTopDoctors = async (req, res, next) => {
   try {
     const topDoctors = await Appointment.aggregate([
-      // Gom nhóm theo doctor_id và đếm số lịch hẹn
       {
         $group: {
           _id: "$doctor_id",
           appointments: { $sum: 1 },
         },
       },
-      // Sắp xếp giảm dần
       { $sort: { appointments: -1 } },
-      // Lấy top 5
       { $limit: 5 },
-      // Join sang bảng Doctors để lấy tên và chuyên khoa
       {
         $lookup: {
           from: "doctors",
@@ -153,7 +188,6 @@ export const getTopDoctors = async (req, res, next) => {
         },
       },
       { $unwind: "$doctor_info" },
-      // Join tiếp sang bảng Specialties để lấy tên khoa
       {
         $lookup: {
           from: "specialties",
@@ -178,17 +212,15 @@ export const getTopDoctors = async (req, res, next) => {
   }
 };
 
-// 5. Hoạt động gần đây (Tổng hợp từ Appointment và User mới)
+// 5. Hoạt động gần đây - GIỮ NGUYÊN
 export const getRecentActivity = async (req, res, next) => {
   try {
-    // Lấy 5 lịch hẹn mới nhất
     const recentAppointments = await Appointment.find()
       .sort({ createdAt: -1 })
       .limit(5)
       .populate("patient_id", "fullName")
       .lean();
 
-    // Format dữ liệu
     const activities = recentAppointments.map((app) => {
         let actionText = "";
         let type = "system";
@@ -205,7 +237,7 @@ export const getRecentActivity = async (req, res, next) => {
             time: new Date(app.createdAt).toLocaleString('vi-VN'),
             user: app.patient_id?.fullName || "Khách vãng lai",
             action: actionText,
-            type: type // sale, user, system... để frontend tô màu
+            type: type 
         }
     });
 

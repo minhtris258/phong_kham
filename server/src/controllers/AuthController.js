@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/UserModel.js";
 import Role from "../models/RoleModel.js";
 import Patient from "../models/PatientModel.js";
+import sendEmail from "../utils/sendEmail.js";
 
 // POST /api/login
 export const login = async (req, res, next) => {
@@ -155,7 +156,28 @@ export async function registerPublic(req, res, next) {
       { expiresIn: "7d" }
     );
 
-    // 10. Trả về kết quả
+    // --- 10. THÊM ĐOẠN NÀY ĐỂ GỬI MAIL ---
+    try {
+      await sendEmail({
+        email: email, 
+        subject: 'Chào mừng đến với Phòng Khám Tâm An',
+        message: `Xin chào ${name}, bạn đã đăng ký tài khoản thành công!`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2 style="color: #007bff;">Xin chào ${name}!</h2>
+            <p>Chúc mừng bạn đã đăng ký tài khoản thành công tại <b>Phòng Khám Tâm An</b>.</p>
+            <p>Vui lòng hoàn tất hồ sơ cá nhân để bắt đầu đặt lịch khám.</p>
+          </div>
+        `
+      });
+      console.log("Đã gửi email chào mừng!");
+    } catch (err) {
+      console.log("Lỗi gửi email:", err);
+      // Không return lỗi ở đây để tránh chặn người dùng đăng ký nếu chỉ lỗi mail
+    }
+    // -------------------------------------
+
+    // 11. Trả về kết quả (Code cũ của bạn dời xuống đây)
     return res.status(201).json({
       message: "Đăng ký thành công! Vui lòng hoàn tất hồ sơ cá nhân.",
       token,

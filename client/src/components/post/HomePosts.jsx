@@ -1,152 +1,217 @@
 // src/components/post/HomePosts.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
-import { Calendar, ArrowRight } from "lucide-react";
+import { Calendar, ArrowRight, Clock } from "lucide-react";
+import postService from "../../services/PostService";
 
-// ==== SỬA ĐƯỜNG DẪN NÀY CHO ĐÚNG VỚI BACKEND CỦA BẠN ====
-const POSTS_API_URL = "http://localhost:3000/api/posts";   // ← sửa nếu khác
+// --- HELPER FUNCTIONS (Giữ nguyên) ---
+const formatDate = (dateString) => {
+  if (!dateString) return "—";
+  return new Date(dateString).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
 
-const formatDate = (d) =>
-  d ? new Date(d).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
+const processPostData = (post) => {
+  let thumb = post.thumbnail || post.cover_image;
+  if (!thumb || thumb.includes("via.placeholder.com") || !thumb.startsWith("http")) {
+      thumb = "https://placehold.co/600x400?text=No+Image"; 
+  }
 
+  return {
+    id: post._id || post.id,
+    slug: post.slug || post._id,
+    name: post.name || post.title || "Không có tiêu đề",
+    thumbnail: thumb,
+    excerpt: post.excerpt || post.summary || "Nội dung đang cập nhật...",
+    category: post.category?.name || (post.tags && post.tags[0]) || "Tin tức",
+    createdAt: post.publishedAt || post.createdAt || new Date(),
+  };
+};
+
+// --- MAIN COMPONENT ---
 export default function HomePosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchPosts = async () => {
       try {
-        console.log("Fetching posts từ:", POSTS_API_URL);
-        const res = await axios.get(POSTS_API_URL);
-        console.log("Response đầy đủ:", res);
-        console.log("res.data:", res.data);
+        const response = await postService.getPosts({
+          limit: 5,
+          status: "published",
+          sort: "-createdAt", 
+        });
 
         let list = [];
+        if (response.data?.items) list = response.data.items;
+        else if (response.items) list = response.items;
+        else if (Array.isArray(response.data)) list = response.data;
+        else if (Array.isArray(response)) list = response;
 
-        // BẮT HẾT MỌI TRƯỜNG HỢP PHỔ BIẾN NHẤT
-        if (Array.isArray(res.data)) {
-          list = res.data;
-        } else if (res.data?.posts && Array.isArray(res.data.posts)) {
-          list = res.data.posts;
-        } else if (res.data?.data && Array.isArray(res.data.data)) {
-          list = res.data.data;
-        } else if (res.data?.items && Array.isArray(res.data.items)) {
-          list = res.data.items;
-        } else {
-          console.warn("Cấu trúc dữ liệu không mong đợi:", res.data);
-        }
-
-        console.log("Danh sách bài viết sau khi xử lý:", list);
-        setPosts(list.slice(0, 4)); // chỉ lấy 4 bài
+        setPosts(list);
       } catch (err) {
-        console.error("Lỗi khi fetch bài viết:", err);
-        setError("Không tải được bài viết");
+        console.error("Lỗi tải tin tức:", err);
       } finally {
         setLoading(false);
       }
     };
-
-    fetch();
+    fetchPosts();
   }, []);
 
-  // Loading
+  // -- SKELETON LOADING (Đã cập nhật theo tỷ lệ 2:3) --
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden animate-pulse">
-            <div className="h-52 bg-slate-200"></div>
-            <div className="p-5 space-y-3">
-              <div className="h-6 bg-slate-200 rounded w-4/5"></div>
-              <div className="h-4 bg-slate-200 rounded w-full"></div>
-              <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+      <div className="container mx-auto px-4 py-12">
+         <div className="w-48 h-8 bg-gray-200 rounded mb-6 animate-pulse"></div>
+         {/* Grid 5 cột cho skeleton */}
+         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-2 h-96 bg-gray-200 rounded-xl animate-pulse"></div>
+            <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-6">
+               {[1,2,3,4].map(i => <div key={i} className="h-44 bg-gray-200 rounded-xl animate-pulse"></div>)}
+            </div>
+         </div>
+      </div>
+    );
+  }
+
+  if (posts.length === 0) return null;
+
+  const heroPost = posts[0];
+  const subPosts = posts.slice(1, 5);
+
+  return (
+    <section className="py-12 bg-gray-50">
+      <div className="container mx-auto px-4">
+        
+        {/* HEADER */}
+        <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-800 uppercase tracking-tight border-l-4 border-blue-600 pl-3">
+            Tin Tức Y Tế
+          </h2>
+          <Link 
+            to="/post" 
+            className="hidden md:flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            Xem tất cả <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        {/* --- THAY ĐỔI CHÍNH Ở ĐÂY: LAYOUT 5 CỘT (2:3) --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          
+          {/* === BÀI LỚN (HERO) - Chiếm 2/5 === */}
+          <div className="lg:col-span-2">
+             {heroPost && <HeroCard post={heroPost} />}
+          </div>
+
+          {/* === 4 BÀI NHỎ - Chiếm 3/5 === */}
+          <div className="lg:col-span-3">
+            {/* Grid con vẫn giữ 2 cột để chia đều 4 bài nhỏ */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
+              {subPosts.map((post) => (
+                <SubCard key={post._id || post.id} post={post} />
+              ))}
+              
+              {subPosts.length < 4 && Array(4 - subPosts.length).fill(0).map((_, i) => (
+                 <div key={i} className="bg-white rounded-xl border border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-sm h-full min-h-[200px]">
+                    Sắp có bài viết mới
+                 </div>
+              ))}
             </div>
           </div>
-        ))}
+        </div>
+
+
+        {/* Nút mobile */}
+        <div className="mt-8 text-center md:hidden">
+          <Link
+            to="/post"
+            className="inline-block px-6 py-2 bg-white border border-blue-600 text-blue-600 font-semibold rounded-full hover:bg-blue-50 transition"
+          >
+            Xem tất cả tin tức
+          </Link>
+        </div>
+
       </div>
-    );
-  }
-
-  // Lỗi
-  if (error) {
-    return <div className="text-center py-16 text-red-600">{error}</div>;
-  }
-
-  // Không có bài
-  if (posts.length === 0) {
-    return (
-      <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
-        <p className="text-slate-500 text-lg">
-          Chưa có bài viết nào hoặc API chưa trả dữ liệu đúng.
-          <br />
-          <span className="text-sm">Mở Console (F12) để xem log chi tiết</span>
-        </p>
-      </div>
-    );
-  }
-
-  // HIỂN THỊ BÀI VIẾT
-  return (
-    <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-        {posts.map((post) => {
-          const id = post._id || post.id;
-          const slug = post.slug || id;
-          const title = post.name || "Không có tiêu đề";
-          const img = post.thumbnail || post.cover_image || "https://via.placeholder.com/600x400/0ea5e9/fff?text=No+Image";
-          const excerpt = post.excerpt || post.summary || "Xem chi tiết...";
-          const cat = post.category?.name || post.category?.title || "Tin tức";
-          const date = post.publishedAt || post.createdAt;
-
-          return (
-            <article
-              key={id}
-              className="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300"
-            >
-              <Link to={`/post/${slug}`}>
-                <div className="relative overflow-hidden">
-                  <img
-                    src={img}
-                    alt={title}
-                    className="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <span className="absolute top-3 left-3 px-3 py-1.5 bg-sky-600 text-white text-xs font-bold rounded-full shadow-lg">
-                    {cat}
-                  </span>
-                </div>
-
-                <div className="p-5">
-                  <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-sky-600 transition-colors">
-                    {title}
-                  </h3>
-                  <p className="text-sm text-slate-600 line-clamp-3 mb-4">{excerpt}</p>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar size={14} />
-                      <span>{formatDate(date)}</span>
-                    </div>
-                    <span className="text-sky-600 font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                      Đọc thêm <ArrowRight size={14} />
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </article>
-          );
-        })}
-      </div>
-
-      <div className="mt-12 text-center">
-        <Link
-          to="/post"
-          className="inline-flex items-center gap-3 py-2 px-4 btn-color text-white font-bold text-lg rounded-2xl  hover:gap-5 transition-all shadow-lg"
-        >
-          Xem tất cả bài viết <ArrowRight size={22} />
-        </Link>
-      </div>
-    </div>
+    </section>
   );
 }
+
+// === COMPONENT CON: BÀI VIẾT LỚN ===
+const HeroCard = ({ post }) => {
+  const { slug, name, thumbnail, excerpt, createdAt, category } = processPostData(post);
+
+  return (
+    <Link to={`/post/${slug}`} className="group h-full block">
+      <article className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 h-full flex flex-col hover:shadow-lg transition-all duration-300">
+        {/* Giữ tỉ lệ 4:3 hoặc đổi sang 16:9 nếu muốn ảnh thấp hơn */}
+        <div className="relative overflow-hidden w-full aspect-[4/3]">
+          <img
+            src={thumbnail}
+            alt={name}
+            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+          />
+          <span className="absolute top-3 left-3 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide">
+            {category}
+          </span>
+        </div>
+
+        <div className="p-5 flex flex-col flex-1">
+          <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
+             <Calendar size={12} />
+             <span>{formatDate(createdAt)}</span>
+          </div>
+
+          <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-3 group-hover:text-blue-600 transition-colors leading-snug">
+            {name}
+          </h3>
+          
+          <p className="text-gray-500 text-sm line-clamp-3 mb-4 flex-1">
+            {excerpt}
+          </p>
+
+          <span className="text-blue-600 font-semibold text-xs flex items-center gap-1 mt-auto">
+            Đọc tiếp <ArrowRight size={12} />
+          </span>
+        </div>
+      </article>
+    </Link>
+  );
+};
+
+// === COMPONENT CON: BÀI VIẾT NHỎ ===
+const SubCard = ({ post }) => {
+  const { slug, name, thumbnail, createdAt, category } = processPostData(post);
+
+  return (
+    <Link to={`/post/${slug}`} className="group block h-full">
+      <article className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 h-full flex flex-col hover:shadow-md transition-all duration-300">
+        <div className="relative overflow-hidden w-full aspect-[16/9]">
+          <img
+            src={thumbnail}
+            alt={name}
+            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+          />
+        </div>
+
+        <div className="p-4 flex flex-col flex-1">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[10px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded">
+                {category}
+            </span>
+            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                <Clock size={10} /> {formatDate(createdAt)}
+            </span>
+          </div>
+
+          <h3 className="text-sm font-bold text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors leading-relaxed" title={name}>
+            {name}
+          </h3>
+        </div>
+      </article>
+    </Link>
+  );
+};

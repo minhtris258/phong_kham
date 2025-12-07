@@ -742,3 +742,41 @@ export const deleteDoctor = async (req, res, next) => {
     next(error);
   }
 };
+export const updateMyPassword = async (req, res) => {
+  try {
+    const currentUserId = req.user.id || req.user._id; // Lấy ID từ Token
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    // 1. VALIDATION CƠ BẢN
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "Vui lòng nhập đầy đủ tất cả các trường!" });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: "Mật khẩu nhập lại không khớp!" });
+    }
+
+    // 2. TÌM USER TRONG DB
+    const user = await User.findById(currentUserId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 3. KIỂM TRA MẬT KHẨU CŨ
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+        return res.status(400).json({ message: "Mật khẩu cũ không chính xác!" });
+    }
+
+    // 4. CẬP NHẬT MẬT KHẨU MỚI
+    const hash = await bcrypt.hash(newPassword, 10);
+    user.password = hash;
+    await user.save(); 
+
+    // 5. PHẢN HỒI
+    res.status(200).json({ message: "Đổi mật khẩu thành công!" });
+
+  } catch (error) {
+    console.error("Lỗi đổi mật khẩu:", error);
+    res.status(500).json({ message: "Lỗi hệ thống, vui lòng thử lại sau." });
+  }
+};
