@@ -129,9 +129,9 @@ export default function Header() {
               <ul className="flex gap-6 text-white font-raleway font-semibold text-sm lg:text-base">
                 <li><Link className="hover:text-cyan-300 transition" to="/">Trang Chủ</Link></li>
                 <li><Link className="hover:text-cyan-300 transition" to="/post">Bài Viết</Link></li>
-                <li><Link className="hover:text-cyan-300 transition" to="#">Dịch Vụ</Link></li>
+                <li><Link className="hover:text-cyan-300 transition" to="/services">Dịch Vụ</Link></li>
                 <li><Link className="hover:text-cyan-300 transition" to="/doctors">Bác Sĩ</Link></li>
-                <li><Link className="hover:text-cyan-300 transition" to="#">Liên Hệ</Link></li>
+                <li><Link className="hover:text-cyan-300 transition" to="/about-us">Liên Hệ</Link></li>
               </ul>
             </nav>
 

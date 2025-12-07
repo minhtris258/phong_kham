@@ -1,13 +1,19 @@
 // src/components/MediaMentionSection.jsx
 import React from "react";
+import thanhNienLogo from "../assets/thanh-nien-logo.webp";
+import tuoiTreLogo from "../assets/tuoi-tre-logo.webp";
+import danTriLogo from "../assets/dan-tri.webp";
+import thvlLogo from "../assets/thvl-logo.webp";
+import htvLogo from "../assets/htv.webp";
+import vtv1Logo from "../assets/vtv1-logo.webp";
 
 const mediaLogos = [
-  { name: "Thanh Niên", src: "../assets/thanh-nien-logo.webp" },
-  { name: "Tuổi Trẻ", src: "../assets/tuoi-tre-logo.webp" },
-  { name: "Dân Trí", src: "../assets/dan-tri-logo.webp" },
-  { name: "Người Lao Động", src: "../assets/nguoi-lao-dong-logo.webp" },
-  { name: "HTV", src: "../assets/htv-logo.webp" },
-  { name: "VTV1", src: "../assets/vtv1-logo.webp" },
+  { name: "Thanh Niên", src: thanhNienLogo },
+  { name: "Tuổi Trẻ", src: tuoiTreLogo },
+  { name: "Dân Trí", src: danTriLogo },
+  { name: "THVL", src: thvlLogo },
+  { name: "HTV", src: htvLogo },
+  { name: "VTV1", src: vtv1Logo },
 ];
 
 export default function MediaMentionSection() {
@@ -30,13 +36,14 @@ export default function MediaMentionSection() {
           {mediaLogos.map((logo) => (
             <div
               key={logo.name}
-              className="flex items-center justify-center h-16 md:h-20 grayscale hover:grayscale-0 opacity-80 hover:opacity-100 transition"
+              className="flex items-center justify-center h-16 md:h-20 transition"
             >
+                <a href="https://thanhnien.vn/benh-vien-mat-tphcm-chinh-thuc-ra-mat-ung-dung-dat-lich-1851509686.htm">
               <img
                 src={logo.src}
                 alt={logo.name}
-                className="max-h-full w-auto object-contain"
-              />
+                className="max-h-full w-[60%] justify-self-center object-contain"
+              /></a>
             </div>
           ))}
         </div>

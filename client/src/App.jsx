@@ -52,6 +52,8 @@ import DoctorList from "./pages/doctor/DoctorList";
 import ServiceManagement from "./pages/admin/MedicalServiceManagement.jsx";
 import MedicineManagement from "./pages/admin/MedicalManagement.jsx";
 import VisitManagement from "./pages/admin/VisitManagement.jsx";
+import AboutUsPage from "./pages/ContactHospitalPage.jsx";
+import ServicesPage from "./pages/ServicesPage.jsx";
 
 export default function App() {
   return (
@@ -65,6 +67,9 @@ export default function App() {
           {/* --- PUBLIC ROUTES --- */}
           <Route path="Login" element={<LoginPage />} />
           <Route path="Register" element={<RegisterPage />} />
+          <Route path="about-us" element={<AboutUsPage />} />
+          <Route path="services" element={<ServicesPage />} />
+          
           
           {/* --- ONBOARDING ROUTES (Bọc RequireProfile để xử lý logic chặn/đẩy) --- */}
           <Route element={<RequireProfile />}>
