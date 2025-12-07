@@ -31,6 +31,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: "Quản Lý Thuốc", icon: Stethoscope, to: "medicines" },
     { name: "Hồ Sơ Khám Bệnh", icon: FileText, to: "visits" },
     { name: "Đối Tác", icon: Handshake, to: "partners" },
+    { name: "Quản Lý Liên Hệ", icon: Lock, to: "contacts" },
     { name: "Profile", icon: UserRoundPen, to: "profile" },
     { name: "Cài Đặt", icon: Settings, to: "settings" },
   ];

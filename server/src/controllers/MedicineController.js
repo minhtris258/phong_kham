@@ -5,7 +5,7 @@ import Medicine from "../models/MedicineModel.js";
  */
 export const getMedicines = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search, status } = req.query;
+    const { page = 1, limit = 10, search, status } = req.query;
     
     const filter = {};
     if (status) filter.status = status;

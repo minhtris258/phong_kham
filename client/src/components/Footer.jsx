@@ -257,7 +257,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <p className="text-center font-roboto text-sm sm:text-base text-white bg-black h-16 sm:h-20 grid place-items-center">
+      <p className="bg-[#0095D5] text-center font-roboto text-sm sm:text-base text-white h-16 sm:h-20 grid place-items-center">
         © 2025 Bản quyền thuộc về nhóm M.Trí, Trí, Quyền.
       </p>
     </footer>

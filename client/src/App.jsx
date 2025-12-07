@@ -54,6 +54,7 @@ import MedicineManagement from "./pages/admin/MedicalManagement.jsx";
 import VisitManagement from "./pages/admin/VisitManagement.jsx";
 import AboutUsPage from "./pages/ContactHospitalPage.jsx";
 import ServicesPage from "./pages/ServicesPage.jsx";
+import ContactManagement from "./pages/admin/ContactManagement.jsx";
 
 export default function App() {
   return (
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="services" element={<ServiceManagement />} />
           <Route path="medicines" element={<MedicineManagement />} />
           <Route path="visits" element={<VisitManagement />} />
+          <Route path="contacts" element={<ContactManagement />} />
           <Route path="profile" element={<ProfileSettings />} />
           <Route path="*" element={<NotFound />} />
         </Route>

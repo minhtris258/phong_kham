@@ -7,34 +7,73 @@ import ServiceList from '../../components/admin/service/ServiceList';
 import ServiceFormModal from '../../components/admin/service/ServiceFormModal';
 import SpecialtyDeleteModal from '../../components/admin/specialty/SpecialtyDeleteModal';
 
-const ServiceManagement = () => {
+const MedicalServiceManagement = () => {
+    // === STATE QUẢN LÝ DỮ LIỆU & PHÂN TRANG ===
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalDocs, setTotalDocs] = useState(0);
 
+    // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingService, setEditingService] = useState(null);
     const [formData, setFormData] = useState({});
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
     // === FETCH DATA ===
-    const fetchServices = async (search = '') => {
+    // Hàm fetch nhận vào page (mặc định là state page hiện tại) và search term
+    const fetchServices = async (currentPage = page, search = searchTerm) => {
         setLoading(true);
         try {
-            const response = await medicalServiceService.getServices({ search, limit: 100 });
+            // Gọi API với tham số page và limit (ví dụ: limit = 10 cho mỗi trang)
+            const response = await medicalServiceService.getServices({ 
+                search, 
+                page: currentPage, 
+                limit: 10 // Số lượng item mỗi trang
+            });
+            
+            // Cập nhật dữ liệu services
             setServices(response.data?.data || []);
+            
+            // Cập nhật thông tin phân trang từ response API
+            if (response.data?.pagination) {
+                setTotalPages(response.data.pagination.totalPages);
+                setTotalDocs(response.data.pagination.total);
+                setPage(response.data.pagination.page);
+            }
         } catch (err) {
             toastError("Lỗi tải danh sách dịch vụ.");
+            console.error(err);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => { fetchServices(); }, []);
+    // Load data lần đầu khi mount
+    useEffect(() => { 
+        fetchServices(); 
+    }, []);
 
     // === HANDLERS ===
+    
+    // Xử lý khi bấm Enter tìm kiếm -> Reset về trang 1
     const handleSearch = (e) => {
-        if (e.key === 'Enter') fetchServices(searchTerm);
+        if (e.key === 'Enter') {
+            setPage(1); // Reset về trang 1 khi tìm kiếm mới
+            fetchServices(1, searchTerm);
+        }
+    };
+
+    // Xử lý chuyển trang
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setPage(newPage);
+            fetchServices(newPage, searchTerm);
+        }
     };
 
     const handleInputChange = (e) => {
@@ -42,7 +81,7 @@ const ServiceManagement = () => {
         setFormData({ ...formData, [name]: value });
     };
 
-    // [MỚI] Xử lý chọn file ảnh -> Chuyển sang Base64
+    // Xử lý chọn file ảnh -> Chuyển sang Base64
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -72,7 +111,6 @@ const ServiceManagement = () => {
         e.preventDefault();
         try {
             if (editingService) {
-                // Backend Controller đã xử lý: Nếu image là Base64 thì upload, nếu là Link cũ thì giữ nguyên
                 await medicalServiceService.updateService(editingService._id, formData);
                 toastSuccess("Cập nhật dịch vụ thành công!");
             } else {
@@ -80,7 +118,7 @@ const ServiceManagement = () => {
                 toastSuccess("Thêm dịch vụ thành công!");
             }
             setIsModalOpen(false);
-            fetchServices(searchTerm);
+            fetchServices(page, searchTerm); // Reload lại trang hiện tại
         } catch (err) {
             console.error(err);
             toastError(err.response?.data?.error || "Lỗi lưu dịch vụ.");
@@ -92,7 +130,13 @@ const ServiceManagement = () => {
             await medicalServiceService.deleteService(confirmDeleteId);
             toastSuccess("Xóa dịch vụ thành công!");
             setConfirmDeleteId(null);
-            fetchServices(searchTerm);
+            
+            // Nếu xóa item cuối cùng của trang, lùi lại 1 trang
+            if (services.length === 1 && page > 1) {
+                fetchServices(page - 1, searchTerm);
+            } else {
+                fetchServices(page, searchTerm);
+            }
         } catch (err) {
             toastError("Xóa thất bại.");
         }
@@ -104,8 +148,14 @@ const ServiceManagement = () => {
                 <h2 className="text-3xl font-bold text-gray-900">Quản Lý Dịch Vụ Khám</h2>
                 <div className="flex gap-3 w-full sm:w-auto">
                     <div className="relative flex-grow sm:flex-grow-0">
-                        <input type="text" placeholder="Tìm tên hoặc mã..." className="pl-10 pr-4 py-2 border rounded-lg w-full sm:w-64"
-                            value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={handleSearch} />
+                        <input 
+                            type="text" 
+                            placeholder="Tìm tên hoặc mã..." 
+                            className="pl-10 pr-4 py-2 border rounded-lg w-full sm:w-64"
+                            value={searchTerm} 
+                            onChange={(e) => setSearchTerm(e.target.value)} 
+                            onKeyDown={handleSearch} 
+                        />
                         <Search className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" />
                     </div>
                     <button onClick={() => handleAddEdit(null)} className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 whitespace-nowrap">
@@ -118,7 +168,10 @@ const ServiceManagement = () => {
                 <ServiceList 
                     services={services} 
                     handleAddEdit={handleAddEdit} 
-                    confirmDelete={setConfirmDeleteId} 
+                    confirmDelete={setConfirmDeleteId}
+                    // Truyền Props phân trang xuống ServiceList
+                    pagination={{ page, totalPages, totalDocs }}
+                    onPageChange={handlePageChange}
                 />
             }
 
@@ -127,7 +180,7 @@ const ServiceManagement = () => {
                 onClose={() => setIsModalOpen(false)} 
                 formData={formData}
                 handleInputChange={handleInputChange} 
-                handleFileChange={handleFileChange} // <--- Truyền hàm này vào Modal
+                handleFileChange={handleFileChange} 
                 handleSave={handleSave} 
                 editingService={editingService} 
             />
@@ -141,4 +194,4 @@ const ServiceManagement = () => {
     );
 };
 
-export default ServiceManagement;
+export default MedicalServiceManagement;
