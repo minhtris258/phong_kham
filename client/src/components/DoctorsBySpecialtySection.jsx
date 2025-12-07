@@ -119,10 +119,13 @@ export default function DoctorsBySpecialtySection() {
             <h2 className="text-2xl md:text-3xl font-bold color-title mt-1">
               BÁC SĨ THEO CHUYÊN KHOA
             </h2>
-            <p className="text-sm md:text-base text-slate-600 mt-2 max-w-xl justify-center">
+            <div className="justify-center flex mb-4">
+              <p className="text-sm md:text-base text-slate-600 mt-2 max-w-xl justify-center">
               Chọn chuyên khoa để xem nhanh một số bác sĩ tiêu biểu. Nhấn
               &quot;Xem thêm&quot; để tới trang danh sách đầy đủ.
             </p>
+            </div>
+            
           </div>
 
           {/* Tabs chọn khoa */}

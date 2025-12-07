@@ -177,14 +177,17 @@ export default function Header() {
                           <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                         </div>
 
-                        <Link
-                          to="/profile"
-                          className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600"
-                          onClick={() => setAccountOpen(false)}
-                        >
-                          <CircleUserRound size={16} className="mr-2" />
-                          Hồ sơ cá nhân
-                        </Link>
+                        {/* --- CHỈ HIỆN VỚI BỆNH NHÂN --- */}
+                        {user?.role === 'patient' && (
+                          <Link
+                            to="/profile"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600"
+                            onClick={() => setAccountOpen(false)}
+                          >
+                            <CircleUserRound size={16} className="mr-2" />
+                            Hồ sơ cá nhân
+                          </Link>
+                        )}
 
                         {/* Admin/Doctor Dashboard Link */}
                         {dashboardPath && (
@@ -284,9 +287,14 @@ export default function Header() {
             {isAuthenticated && (
               <>
                 <div className="my-4 border-t border-white/10"></div>
-                <MobileNavLink to="/profile" onClick={() => setOpen(false)} icon={<CircleUserRound size={18}/>}>
-                  Hồ sơ cá nhân
-                </MobileNavLink>
+                
+                {/* --- CHỈ HIỆN VỚI BỆNH NHÂN --- */}
+                {user?.role === 'patient' && (
+                  <MobileNavLink to="/profile" onClick={() => setOpen(false)} icon={<CircleUserRound size={18}/>}>
+                    Hồ sơ cá nhân
+                  </MobileNavLink>
+                )}
+
                 <MobileNavLink to="/notifications" onClick={() => setOpen(false)} icon={<Bell size={18}/>}>
                   Thông báo {unreadCount > 0 && <span className="ml-auto bg-red-500 text-xs px-2 py-0.5 rounded-full">{unreadCount}</span>}
                 </MobileNavLink>
