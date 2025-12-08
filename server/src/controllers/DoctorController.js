@@ -780,3 +780,36 @@ export const updateMyPassword = async (req, res) => {
     res.status(500).json({ message: "Lỗi hệ thống, vui lòng thử lại sau." });
   }
 };
+export const adminUpdateDoctorPassword = async (req, res) => {
+  const { id } = req.params; // ID của Doctor document
+  const { newPassword } = req.body;
+  
+  try {
+    // 1. Tìm Doctor (dùng để lấy user_id)
+    const doctor = await Doctor.findById(id);
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    // 2. Tính Hash Mật khẩu MỚI (chỉ một lần)
+    const hash = await bcrypt.hash(newPassword, 10); 
+    
+    // 3. Cập nhật User liên kết
+    // Sử dụng findByIdAndUpdate trực tiếp để cập nhật trường 'password'
+    const user = await User.findByIdAndUpdate(
+        doctor.user_id, 
+        { password: hash },
+        { new: true }
+    );
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found (Associated User ID is missing or invalid)" });
+    }
+
+    // 4. Phản hồi thành công
+    res.json({ message: "Doctor password updated successfully" });
+  } catch (error) {
+    console.error("Lỗi đổi mật khẩu Admin:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
