@@ -28,7 +28,7 @@ export default function ServicesPage() {
     const fetchServices = async () => {
       try {
         setLoading(true);
-        const res = await medicalServiceService.getAllServices();
+        const res = await medicalServiceService.getAllServices({ limit: 1000 });
         
         let list = [];
         if (Array.isArray(res.data)) list = res.data;

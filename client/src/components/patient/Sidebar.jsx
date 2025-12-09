@@ -9,7 +9,7 @@ const menuItems = [
   // Thêm end: true để link này chỉ active khi đường dẫn là chính xác "/profile"
   { to: "/profile", icon: UserCircle, label: "Hồ sơ cá nhân", end: true },
   { to: "/profile/appointments", icon: Calendar, label: "Lịch khám bệnh" },
-  { to: "/payment-history", icon: Receipt, label: "Lịch sử thanh toán" }, 
+  // { to: "/payment-history", icon: Receipt, label: "Lịch sử thanh toán" }, 
   // Cập nhật đường dẫn đúng: /profile/password
   { to: "/profile/password", icon: Settings, label: "Đổi mật khẩu" },
 ];
@@ -26,8 +26,8 @@ export default function Sidebar() {
   }
 
   return (
-   <div className="lg:col-span-1">
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden sticky top-24">
+   <div className="lg:col-span-1 pt-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
         <div className="p-4 space-y-1">
           {menuItems.map(item => (
             <NavLink

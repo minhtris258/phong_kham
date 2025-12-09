@@ -9,6 +9,7 @@ import DoctorScheduleAdminModal from "../../components/admin/doctor/DoctorSchedu
 import DoctorEditModal from "../../components/admin/doctor/DoctorEditModal";
 import DoctorViewModal from "./../../components/admin/doctor/DoctorViewModal";
 import DoctorDeleteModal from "./../../components/admin/doctor/DoctorDeleteModal";
+import DoctorPasswordModal from "../../components/admin/doctor/DoctorPasswordModal";
 import { mockSpecialties } from "../../mocks/mockdata";
 
 const DoctorManagement = () => {
@@ -22,12 +23,12 @@ const DoctorManagement = () => {
     page: 1,
     limit: 10,
     totalPages: 1,
-    totalDocs: 0
+    totalDocs: 0,
   });
   const [filters, setFilters] = useState({
     search: "",
     specialty: "", // Lọc theo ID chuyên khoa
-    status: "" // Lọc theo trạng thái
+    status: "", // Lọc theo trạng thái
   });
 
   // === State Modal (Giữ nguyên) ===
@@ -40,10 +41,12 @@ const DoctorManagement = () => {
   const [isImagePending, setIsImagePending] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [scheduleDoctor, setScheduleDoctor] = useState(null);
-  
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordDoctor, setPasswordDoctor] = useState(null);
+
   // === Data Chuyên khoa ===
   const [specialties, setSpecialties] = useState([]);
-  
+
   const specialtyMap = useMemo(() => {
     // FIX: Kiểm tra nếu specialties là mảng thì mới map, không thì dùng mảng rỗng
     const list = Array.isArray(specialties) ? specialties : [];
@@ -56,14 +59,13 @@ const DoctorManagement = () => {
       try {
         // 👇 THÊM: limit: 100 để lấy danh sách đầy đủ cho Dropdown
         const res = await doctorService.getSpecialties({ limit: 100 });
-        
+
         // Backend trả về: { specialties: [...], pagination: ... }
         // Lấy mảng specialties
         const rawData = res.data?.specialties || res.data || [];
-        
+
         // Đảm bảo luôn là mảng
         setSpecialties(Array.isArray(rawData) ? rawData : []);
-        
       } catch (err) {
         console.error("Lỗi lấy chuyên khoa:", err);
         setSpecialties(mockSpecialties || []);
@@ -81,7 +83,7 @@ const DoctorManagement = () => {
         limit: pagination.limit,
         search: filters.search,
         specialty: filters.specialty,
-        status: filters.status
+        status: filters.status,
       });
 
       // Xử lý response mới
@@ -89,10 +91,10 @@ const DoctorManagement = () => {
       const pageInfo = response.data?.pagination || {};
 
       setDoctors(doctorList);
-      setPagination(prev => ({
+      setPagination((prev) => ({
         ...prev,
         totalPages: pageInfo.totalPages || 1,
-        totalDocs: pageInfo.totalDocs || 0
+        totalDocs: pageInfo.totalDocs || 0,
       }));
       setError(null);
     } catch (err) {
@@ -106,7 +108,7 @@ const DoctorManagement = () => {
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
-        fetchDoctors();
+      fetchDoctors();
     }, 500);
     return () => clearTimeout(timer);
   }, [pagination.page, filters]); // Trigger khi page hoặc filter đổi
@@ -114,29 +116,35 @@ const DoctorManagement = () => {
   // === Handlers ===
   const handlePageChange = (newPage) => {
     if (newPage > 0 && newPage <= pagination.totalPages) {
-        setPagination(prev => ({ ...prev, page: newPage }));
+      setPagination((prev) => ({ ...prev, page: newPage }));
     }
   };
-const handleStatusFilterChange = (e) => {
-  setFilters(prev => ({ ...prev, status: e.target.value }));
-  setPagination(prev => ({ ...prev, page: 1 }));
-};  
+  const handleStatusFilterChange = (e) => {
+    setFilters((prev) => ({ ...prev, status: e.target.value }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
   const handleSearchChange = (e) => {
-    setFilters(prev => ({ ...prev, search: e.target.value }));
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset về trang 1
+    setFilters((prev) => ({ ...prev, search: e.target.value }));
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset về trang 1
   };
 
   const handleSpecialtyFilterChange = (e) => {
-    setFilters(prev => ({ ...prev, specialty: e.target.value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setFilters((prev) => ({ ...prev, specialty: e.target.value }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   // ... (Giữ nguyên logic handleAddEdit, confirmDelete, modals...)
-  const handleManageSchedule = (doctor) => { setScheduleDoctor(doctor); setIsScheduleModalOpen(true); };
+  const handleManageSchedule = (doctor) => {
+    setScheduleDoctor(doctor);
+    setIsScheduleModalOpen(true);
+  };
   const handleAddEdit = (doctor = null) => {
     setEditingDoctor(doctor);
     if (doctor) {
-      setFormData({ ...doctor, specialty_id: doctor.specialty_id?._id || doctor.specialty_id || "" });
+      setFormData({
+        ...doctor,
+        specialty_id: doctor.specialty_id?._id || doctor.specialty_id || "",
+      });
     } else {
       setFormData({ name: "", email: "", password: "" });
     }
@@ -149,29 +157,63 @@ const handleStatusFilterChange = (e) => {
       setConfirmDeleteId(null);
       fetchDoctors();
       toastSuccess("Xóa bác sĩ thành công!");
-    } catch (err) { toastError("Xóa thất bại"); }
+    } catch (err) {
+      toastError("Xóa thất bại");
+    }
   };
-  const handleCloseModal = () => { setIsModalOpen(false); setEditingDoctor(null); setFormData({}); };
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingDoctor(null);
+    setFormData({});
+  };
   const handleSave = async (e) => {
-      // ... Logic save giữ nguyên, sau khi save xong gọi fetchDoctors() ...
-      e.preventDefault();
-      try {
-        if (editingDoctor) {
-            await doctorService.updateDoctor(editingDoctor._id, formData);
-            toastSuccess("Cập nhật thành công!");
-        } else {
-            // validate...
-            await doctorService.createDoctor(formData);
-            toastSuccess("Tạo mới thành công!");
-        }
-        handleCloseModal();
-        fetchDoctors();
-      } catch (err) { toastError("Lỗi lưu dữ liệu"); }
+    // ... Logic save giữ nguyên, sau khi save xong gọi fetchDoctors() ...
+    e.preventDefault();
+    try {
+      if (editingDoctor) {
+        await doctorService.updateDoctor(editingDoctor._id, formData);
+        toastSuccess("Cập nhật thành công!");
+      } else {
+        // validate...
+        await doctorService.createDoctor(formData);
+        toastSuccess("Tạo mới thành công!");
+      }
+      handleCloseModal();
+      fetchDoctors();
+    } catch (err) {
+      toastError("Lỗi lưu dữ liệu");
+    }
   };
-  const handleInputChange = (e) => { const { name, value } = e.target; setFormData((prev) => ({ ...prev, [name]: value })); };
-  const handleFileChange = (e) => { /* Logic cũ */ };
-  const clearThumbnail = () => { /* Logic cũ */ };
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleFileChange = (e) => {
+    /* Logic cũ */
+  };
+  const clearThumbnail = () => {
+    /* Logic cũ */
+  };
 
+  // 👇 3. VIẾT HÀM MỞ MODAL ĐỔI MẬT KHẨU
+  const handleOpenPasswordModal = (doctor) => {
+    setPasswordDoctor(doctor);
+    setIsPasswordModalOpen(true);
+  };
+
+  // 👇 4. VIẾT HÀM GỌI API ĐỔI MẬT KHẨU
+  const handlePasswordChange = async ({ doctorId, newPassword }) => {
+    try {
+      await doctorService.adminUpdateDoctorPassword(doctorId, newPassword);
+      toastSuccess("Đổi mật khẩu bác sĩ thành công!");
+      setIsPasswordModalOpen(false);
+      setPasswordDoctor(null);
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || "Lỗi khi đổi mật khẩu";
+      toastError(msg);
+    }
+  };
   return (
     <main className="flex-1 p-4 sm:p-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
@@ -183,7 +225,6 @@ const handleStatusFilterChange = (e) => {
           doctors={doctors}
           loading={loading}
           specialtyMap={specialtyMap}
-          
           // Props mới cho Filter/Search/Pagination
           specialties={specialties} // Để render dropdown filter
           filters={filters}
@@ -192,26 +233,66 @@ const handleStatusFilterChange = (e) => {
           pagination={pagination}
           onPageChange={handlePageChange}
           onStatusFilterChange={handleStatusFilterChange}
-
           // Props cũ
           handleAddEdit={handleAddEdit}
-          handleViewDoctor={(doc) => { setViewingDoctor(doc); setIsViewModalOpen(true); }}
+          handleViewDoctor={(doc) => {
+            setViewingDoctor(doc);
+            setIsViewModalOpen(true);
+          }}
           confirmDelete={confirmDelete}
           handleManageSchedule={handleManageSchedule}
+          handleChangePassword={handleOpenPasswordModal}
         />
 
         {/* ... (Phần render Modals giữ nguyên) ... */}
         {isModalOpen && !editingDoctor && (
-          <DoctorAddModal isOpen={isModalOpen} onClose={handleCloseModal} formData={formData} handleInputChange={handleInputChange} handleSave={handleSave} />
+          <DoctorAddModal
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            formData={formData}
+            handleInputChange={handleInputChange}
+            handleSave={handleSave}
+          />
         )}
         {isScheduleModalOpen && scheduleDoctor && (
-          <DoctorScheduleAdminModal isOpen={isScheduleModalOpen} onClose={() => setIsScheduleModalOpen(false)} doctorId={scheduleDoctor?._id || scheduleDoctor?.id} doctorName={scheduleDoctor?.fullName} />
+          <DoctorScheduleAdminModal
+            isOpen={isScheduleModalOpen}
+            onClose={() => setIsScheduleModalOpen(false)}
+            doctorId={scheduleDoctor?._id || scheduleDoctor?.id}
+            doctorName={scheduleDoctor?.fullName}
+          />
         )}
         {isModalOpen && editingDoctor && (
-          <DoctorEditModal isOpen={isModalOpen} onClose={handleCloseModal} formData={formData} handleInputChange={handleInputChange} handleSave={handleSave} editingDoctor={editingDoctor} specialties={specialties} handleFileChange={handleFileChange} clearThumbnail={clearThumbnail} isImagePending={isImagePending} />
+          <DoctorEditModal
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            formData={formData}
+            handleInputChange={handleInputChange}
+            handleSave={handleSave}
+            editingDoctor={editingDoctor}
+            specialties={specialties}
+            handleFileChange={handleFileChange}
+            clearThumbnail={clearThumbnail}
+            isImagePending={isImagePending}
+          />
         )}
-        <DoctorViewModal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} viewingDoctor={viewingDoctor} specialtyMap={specialtyMap} />
-        <DoctorDeleteModal confirmDeleteId={confirmDeleteId} setConfirmDeleteId={setConfirmDeleteId} handleDelete={handleDelete} />
+        <DoctorViewModal
+          isOpen={isViewModalOpen}
+          onClose={() => setIsViewModalOpen(false)}
+          viewingDoctor={viewingDoctor}
+          specialtyMap={specialtyMap}
+        />
+        <DoctorDeleteModal
+          confirmDeleteId={confirmDeleteId}
+          setConfirmDeleteId={setConfirmDeleteId}
+          handleDelete={handleDelete}
+        />
+        <DoctorPasswordModal
+          isOpen={isPasswordModalOpen}
+          onClose={() => setIsPasswordModalOpen(false)}
+          doctorToChangePassword={passwordDoctor}
+          handlePasswordChange={handlePasswordChange}
+        />
       </div>
     </main>
   );

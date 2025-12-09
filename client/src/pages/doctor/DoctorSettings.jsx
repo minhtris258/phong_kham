@@ -126,6 +126,7 @@ export default function DoctorSettings() {
                 message={message}
                 passwordData={passwordData}
                 handlePasswordChange={handlePasswordChange}
+                isGoogleAccount={user?.authType === 'google'}
             />
         </div>
     );

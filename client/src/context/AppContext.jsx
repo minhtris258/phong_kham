@@ -37,6 +37,7 @@ const AppContext = createContext({
   setAuthToken: () => {},
   setUser: () => {}, // <--- Thêm cái này để cập nhật profile thủ công
   apiClient: apiClient,
+  loginGoogle: () => Promise.reject("Not initialized"),
 });
 
 // ----------------------------------------------------
@@ -117,7 +118,7 @@ export const AppProvider = ({ children }) => {
           }
         }
 
-        const finalUserData = { ...basicUser, ...fullProfile };
+        const finalUserData = { ...basicUser, ...fullProfile,authType: basicUser.authType };
         
         // Cập nhật State
         setUser(finalUserData);
@@ -143,7 +144,24 @@ export const AppProvider = ({ children }) => {
     },
     [setAuthToken] 
   );
-
+const loginGoogle = async (credential) => {
+    try {
+      // Gọi API Backend: /auth/google-login
+      const response = await apiClient.post("/auth/google-login", { credential });
+      
+      const { accessToken, user, message } = response.data;
+      
+      if (accessToken) {
+        // Lưu token và load lại thông tin user
+        setAuthToken(accessToken);
+        await loadCurrentUser(accessToken);
+        return response.data; // Trả về data để component xử lý tiếp
+      }
+    } catch (error) {
+      console.error("Lỗi Login Google Context:", error);
+      throw error;
+    }
+  };
   const login = async (email, password) => {
     try {
       const response = await apiClient.post("/auth/login", { email, password });
@@ -247,6 +265,7 @@ export const AppProvider = ({ children }) => {
     handleLogout,
     loadCurrentUser,
     apiClient,
+    loginGoogle,
   };
 
   return (

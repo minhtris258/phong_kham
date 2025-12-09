@@ -744,12 +744,12 @@ export const deleteDoctor = async (req, res, next) => {
 };
 export const updateMyPassword = async (req, res) => {
   try {
-    const currentUserId = req.user.id || req.user._id; // Lấy ID từ Token
+    const currentUserId = req.user.id || req.user._id; 
     const { oldPassword, newPassword, confirmPassword } = req.body;
 
-    // 1. VALIDATION CƠ BẢN
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      return res.status(400).json({ message: "Vui lòng nhập đầy đủ tất cả các trường!" });
+    // 1. VALIDATION CƠ BẢN (Chỉ bắt buộc mật khẩu MỚI)
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "Vui lòng nhập mật khẩu mới và xác nhận!" });
     }
     if (newPassword !== confirmPassword) {
       return res.status(400).json({ message: "Mật khẩu nhập lại không khớp!" });
@@ -761,15 +761,34 @@ export const updateMyPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 3. KIỂM TRA MẬT KHẨU CŨ
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) {
-        return res.status(400).json({ message: "Mật khẩu cũ không chính xác!" });
+    // 3. KIỂM TRA MẬT KHẨU CŨ (LOGIC QUAN TRỌNG)
+    // Chỉ bắt buộc nhập mật khẩu cũ NẾU:
+    // - User ĐÃ CÓ mật khẩu trong DB (user.password có độ dài > 0)
+    // - VÀ User KHÔNG PHẢI đăng nhập bằng Google (authType !== 'google')
+    
+    const isGoogleUser = user.authType === 'google';
+    const hasPassword = user.password && user.password.length > 0;
+
+    if (hasPassword && !isGoogleUser) {
+        // Nếu là user thường, bắt buộc phải có oldPassword gửi lên
+        if (!oldPassword) {
+            return res.status(400).json({ message: "Vui lòng nhập mật khẩu cũ!" });
+        }
+
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Mật khẩu cũ không chính xác!" });
+        }
     }
+    // Nếu là Google User -> Bỏ qua toàn bộ block if ở trên -> Nhảy xuống bước 4 luôn
 
     // 4. CẬP NHẬT MẬT KHẨU MỚI
     const hash = await bcrypt.hash(newPassword, 10);
     user.password = hash;
+    
+    // (Tùy chọn) Nếu muốn chuyển user này thành user thường sau khi tạo pass
+    // user.authType = 'local'; 
+    
     await user.save(); 
 
     // 5. PHẢN HỒI
