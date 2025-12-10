@@ -62,15 +62,13 @@ export default function DoctorDetailPage() {
 
   return (
     // Tăng max-w lên 7xl để chia cột rộng rãi hơn
-    <div className="max-w-7xl mx-auto px-4 py-8 bg-gray-50 mt-15">
-      
+    <div className="max-w-7xl mx-auto px-4 py-8 bg-gray-500 mt-15">
       {/* LAYOUT GRID:
          - Mobile: 1 cột (grid-cols-1)
          - Desktop (lg): 10 cột (grid-cols-10) để chia tỷ lệ 3/7 dễ dàng
          - items-start: Để 2 cột căn dòng bên trên cùng
       */}
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 items-start">
-        
         {/* 1. CỘT TRÁI (30%) - Thông tin bác sĩ */}
         <div className="lg:col-span-3 space-y-6">
           <DoctorInfoCard
@@ -78,7 +76,7 @@ export default function DoctorDetailPage() {
             specialty={specialty}
             experienceYears={experienceYears}
           />
-          
+
           {/* Nếu bạn muốn hiện IntroCard, nên để nó ở cột nhỏ này luôn */}
           {/* <IntroCard doctor={doctor} /> */}
         </div>
@@ -87,7 +85,6 @@ export default function DoctorDetailPage() {
         <div className="lg:col-span-7">
           <BookingSection doctor={doctor} scheduleConfig={scheduleConfig} />
         </div>
-
       </div>
     </div>
   );
