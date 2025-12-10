@@ -1,3 +1,4 @@
+// src/pages/admin/MedicineManagement.jsx
 import React, { useState, useEffect } from 'react';
 import { Plus, Search } from 'lucide-react';
 import medicineService from '../../services/medicineService'; 
@@ -8,23 +9,43 @@ import MedicineFormModal from '../../components/admin/medicine/MedicineFormModal
 import SpecialtyDeleteModal from '../../components/admin/specialty/SpecialtyDeleteModal'; 
 
 const MedicineManagement = () => {
+    // === STATE QUẢN LÝ DỮ LIỆU & PHÂN TRANG ===
     const [medicines, setMedicines] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalDocs, setTotalDocs] = useState(0);
+
     // State Modal & Form
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingMedicine, setEditingMedicine] = useState(null);
     const [formData, setFormData] = useState({});
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-    // Fetch Medicines
-    const fetchMedicines = async (search = '') => {
+    // === FETCH MEDICINES ===
+    const fetchMedicines = async (currentPage = page, search = searchTerm) => {
         setLoading(true);
         try {
-            const response = await medicineService.getMedicines({ search, limit: 100 }); 
+            // Gọi API với tham số page và limit
+            const response = await medicineService.getMedicines({ 
+                search, 
+                page: currentPage, 
+                limit: 10 // Số lượng item mỗi trang
+            }); 
+            
+            // Cập nhật dữ liệu
             const list = response.data?.data || [];
             setMedicines(list);
+
+            // Cập nhật thông tin phân trang từ response API
+            if (response.data?.pagination) {
+                setTotalPages(response.data.pagination.totalPages);
+                setTotalDocs(response.data.pagination.total);
+                setPage(response.data.pagination.page);
+            }
         } catch (err) {
             console.error(err);
             toastError("Không thể tải danh sách thuốc.");
@@ -33,22 +54,31 @@ const MedicineManagement = () => {
         }
     };
 
+    // Load data lần đầu
     useEffect(() => {
         fetchMedicines();
     }, []);
 
-    // Handle Search Enter
+    // === HANDLERS ===
+    
+    // Xử lý tìm kiếm (Reset về trang 1)
     const handleSearch = (e) => {
         if (e.key === 'Enter') {
-            fetchMedicines(searchTerm);
+            setPage(1);
+            fetchMedicines(1, searchTerm);
         }
     };
 
-    // --- SỬA LOGIC KHỞI TẠO FORM ---
+    // Xử lý chuyển trang
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setPage(newPage);
+            fetchMedicines(newPage, searchTerm);
+        }
+    };
+
     const handleAddEdit = (med) => {
         setEditingMedicine(med);
-        // Nếu edit: copy dữ liệu, đảm bảo dosages luôn là mảng
-        // Nếu add: khởi tạo dosages là mảng rỗng
         setFormData(med 
             ? { ...med, dosages: med.dosages || [] } 
             : { name: '', unit: '', description: '', status: 'active', dosages: [] }
@@ -61,7 +91,6 @@ const MedicineManagement = () => {
         if (!formData.name) return toastWarning("Tên thuốc là bắt buộc!");
 
         try {
-            // formData bây giờ đã chứa mảng dosages từ Modal
             if (editingMedicine) {
                 await medicineService.updateMedicine(editingMedicine._id, formData);
                 toastSuccess("Cập nhật thành công!");
@@ -70,7 +99,7 @@ const MedicineManagement = () => {
                 toastSuccess("Thêm thuốc mới thành công!");
             }
             setIsModalOpen(false);
-            fetchMedicines(searchTerm);
+            fetchMedicines(page, searchTerm); // Reload lại trang hiện tại
         } catch (err) {
             toastError(err.response?.data?.error || "Lỗi khi lưu thuốc.");
         }
@@ -81,7 +110,13 @@ const MedicineManagement = () => {
             await medicineService.deleteMedicine(confirmDeleteId);
             toastSuccess("Đã xóa thuốc thành công!");
             setConfirmDeleteId(null);
-            fetchMedicines(searchTerm);
+            
+            // Nếu xóa item cuối cùng của trang, lùi lại 1 trang
+            if (medicines.length === 1 && page > 1) {
+                fetchMedicines(page - 1, searchTerm);
+            } else {
+                fetchMedicines(page, searchTerm);
+            }
         } catch (err) {
             toastError("Xóa thất bại.");
         }
@@ -121,6 +156,9 @@ const MedicineManagement = () => {
                     medicines={medicines}
                     handleAddEdit={handleAddEdit}
                     confirmDelete={setConfirmDeleteId}
+                    // Truyền Props phân trang xuống List
+                    pagination={{ page, totalPages, totalDocs }}
+                    onPageChange={handlePageChange}
                 />
             )}
 
@@ -128,7 +166,6 @@ const MedicineManagement = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 formData={formData}
-                // Quan trọng: Truyền hàm setFormData xuống để Modal thao tác mảng dosages
                 setFormData={setFormData} 
                 handleSave={handleSave}
                 editingMedicine={editingMedicine}

@@ -10,6 +10,7 @@ import {
   getAllDoctors,
   deleteDoctor,
   updateMyPassword,
+  adminUpdateDoctorPassword,
 } from "../controllers/DoctorController.js";
 
 const router = Router();
@@ -24,5 +25,6 @@ router.get("/:id", getDoctorById);
 router.get("/", getAllDoctors);
 router.post("/", verifyToken, requireRole(["admin"]), createDoctor);
 router.put("/:id", verifyToken, requireRole(["admin"]), updateDoctorAdmin);
+router.put("/:id/password", verifyToken, requireRole(["admin"]), adminUpdateDoctorPassword);
 router.delete("/:id", verifyToken, requireRole(["admin"]), deleteDoctor);
 export default router;

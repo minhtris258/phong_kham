@@ -1,65 +1,114 @@
-import React, { useState } from 'react';
-import { initialMockUsers, MOCK_IDS } from '../../mocks/mockdata.js';
+import React, { useState, useEffect } from 'react';
+import { toastSuccess, toastError, toastWarning } from '../../utils/toast'; 
+import authService from '../../services/AuthService'; 
 
 const ProfileSettings = () => {
-    // Lấy dữ liệu Admin từ mock data
-    const adminUser = initialMockUsers.find(u => u.role_id === MOCK_IDS.roles.admin) || {};
-
     const [profile, setProfile] = useState({
-        name: adminUser.name || 'Admin Tổng Quát',
-        email: adminUser.email || 'admin@clinic.com',
-        phone: '0901 234 567', // Phone không có trong UserModel, dùng mock
-        role: 'Quản Trị Viên Hệ Thống',
+        name: '',
+        email: '',
+        phone: '',
+        role: '',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        avatarUrl: 'https://placehold.co/100x100/indigo/white?text=A'
+        avatarUrl: ''
     });
-    const [statusMessage, setStatusMessage] = useState({ type: null, message: '' });
 
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    // === 1. LOAD DATA TỪ API ===
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await authService.getProfile();
+                // Tùy vào AuthController trả về { user: ... } hay trực tiếp object
+                const user = res.data?.user || res.data; 
+
+                if (user) {
+                    setProfile(prev => ({
+                        ...prev,
+                        name: user.name || 'admin', // Backend cần trả về name
+                        email: user.email || '',
+                        role: user.role || '',
+                        // Nếu backend chưa trả về phone, để trống
+                        phone: user.phone || '', 
+                        avatarUrl: 'https://placehold.co/100x100/indigo/white?text=' + (user.name?.charAt(0) || 'U')
+                    }));
+                }
+            } catch (error) {
+                console.error("Lỗi tải profile:", error);
+                toastError("Không thể tải thông tin cá nhân.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+    // === 2. XỬ LÝ NHẬP LIỆU ===
     const handleChange = (e) => {
         const { name, value } = e.target;
         setProfile(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSaveProfile = (e) => {
+    // === 3. XỬ LÝ ĐỔI MẬT KHẨU ===
+    const handleChangePassword = async (e) => {
         e.preventDefault();
-        // Giả lập logic lưu trữ
-        setStatusMessage({ type: 'success', message: 'Thông tin hồ sơ đã được cập nhật thành công!' });
-        setTimeout(() => setStatusMessage({ type: null, message: '' }), 3000);
-        console.log("Saving Profile:", profile);
+        
+        if (!profile.currentPassword) {
+            return toastWarning('Vui lòng nhập mật khẩu hiện tại.');
+        }
+        if (profile.newPassword.length < 6) {
+            return toastWarning('Mật khẩu mới phải có ít nhất 6 ký tự.');
+        }
+        if (profile.newPassword !== profile.confirmPassword) {
+            return toastError('Mật khẩu xác nhận không khớp.');
+        }
+
+        setSaving(true);
+        try {
+            const payload = {
+                currentPassword: profile.currentPassword,
+                newPassword: profile.newPassword
+            };
+
+            await authService.changePassword(payload);
+            
+            toastSuccess('Đổi mật khẩu thành công!');
+            
+            // Reset ô mật khẩu
+            setProfile(prev => ({ 
+                ...prev, 
+                currentPassword: '', 
+                newPassword: '', 
+                confirmPassword: '' 
+            }));
+
+        } catch (error) {
+            console.error(error);
+            const errorMsg = error.response?.data?.error || "Đổi mật khẩu thất bại.";
+            toastError(errorMsg);
+        } finally {
+            setSaving(false);
+        }
     };
 
-    const handleChangePassword = (e) => {
+    // === 4. XỬ LÝ CẬP NHẬT THÔNG TIN (Tạm khóa vì chưa có API) ===
+    const handleSaveProfile = (e) => {
         e.preventDefault();
-        if (profile.newPassword !== profile.confirmPassword) {
-            setStatusMessage({ type: 'error', message: 'Mật khẩu mới và xác nhận mật khẩu không khớp.' });
-            return;
-        }
-        if (profile.currentPassword === '') {
-            setStatusMessage({ type: 'error', message: 'Vui lòng nhập mật khẩu hiện tại.' });
-            return;
-        }
-        
-        // Giả lập logic đổi mật khẩu
-        setStatusMessage({ type: 'success', message: 'Mật khẩu đã được thay đổi thành công!' });
-        setProfile(prev => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
-        setTimeout(() => setStatusMessage({ type: null, message: '' }), 3000);
-        console.log("Changing Password with new:", profile.newPassword);
+        toastWarning("Chức năng cập nhật thông tin đang được bảo trì.");
     };
+
+    if (loading) return <div className="p-8 text-center text-gray-500">Đang tải thông tin...</div>;
 
     return (
         <main className="flex-1 p-4 sm:p-8 bg-gray-50 min-h-[calc(100vh-64px)]">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">Chỉnh Sửa Hồ Sơ Cá Nhân</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">Chỉnh Sửa Hồ Sơ</h2>
             
-            {statusMessage.message && (
-                <div className={`p-4 rounded-lg mb-6 text-sm font-semibold ${statusMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {statusMessage.message}
-                </div>
-            )}
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* 1. Thông tin cơ bản */}
+                {/* FORM THÔNG TIN (READ ONLY hoặc UPDATE nếu có API) */}
                 <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-100">
                     <h3 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Thông Tin Cơ Bản</h3>
                     <form onSubmit={handleSaveProfile} className="space-y-4">
@@ -71,46 +120,38 @@ const ProfileSettings = () => {
                             />
                             <div>
                                 <p className="font-bold text-lg text-gray-900">{profile.name}</p>
-                                <p className="text-sm text-gray-500">{profile.role}</p>
+                                <p className="text-sm text-gray-500 capitalize">{profile.role}</p>
                             </div>
                         </div>
 
-                        <label className="block">
-                            <span className="text-gray-700 font-medium">Họ Tên (UserModel: name):</span>
-                            <input 
-                                type="text" 
-                                name="name"
-                                value={profile.name}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
-                                required
-                            />
-                        </label>
-                        <label className="block">
-                            <span className="text-gray-700 font-medium">Email (UserModel: email):</span>
-                            <input 
-                                type="email" 
-                                name="email"
-                                value={profile.email}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border bg-gray-100 cursor-not-allowed"
-                                disabled
-                            />
-                        </label>
-                        <label className="block">
-                            <span className="text-gray-700 font-medium">Điện Thoại (Mock):</span>
-                            <input 
-                                type="text" 
-                                name="phone"
-                                value={profile.phone}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
-                            />
-                        </label>
+                        <div className="grid grid-cols-1 gap-4">
+                            <label className="block">
+                                <span className="text-gray-700 font-medium">Họ Tên:</span>
+                                <input 
+                                    type="text" 
+                                    name="name"
+                                    value={profile.name}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 p-2 border outline-none"
+                                />
+                            </label>
+                            <label className="block">
+                                <span className="text-gray-700 font-medium">Email (Không thể đổi):</span>
+                                <input 
+                                    type="email" 
+                                    value={profile.email}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border bg-gray-100 text-gray-500 cursor-not-allowed outline-none"
+                                    disabled
+                                />
+                            </label>
+                        </div>
 
                         <div className="pt-4 flex justify-end">
                             <button 
                                 type="submit"
-                                className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md"
+                                className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md opacity-60 cursor-not-allowed"
+                                disabled
+                                title="Chức năng tạm khóa"
                             >
                                 Lưu Thông Tin
                             </button>
@@ -118,7 +159,7 @@ const ProfileSettings = () => {
                     </form>
                 </div>
 
-                {/* 2. Đổi Mật Khẩu */}
+                {/* FORM ĐỔI MẬT KHẨU */}
                 <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-md border border-gray-100 h-fit">
                     <h3 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Đổi Mật Khẩu</h3>
                     <form onSubmit={handleChangePassword} className="space-y-4">
@@ -129,18 +170,18 @@ const ProfileSettings = () => {
                                 name="currentPassword"
                                 value={profile.currentPassword}
                                 onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 p-2 border outline-none"
                                 required
                             />
                         </label>
                         <label className="block">
-                            <span className="text-gray-700 font-medium">Mật khẩu mới (UserModel: password):</span>
+                            <span className="text-gray-700 font-medium">Mật khẩu mới:</span>
                             <input 
                                 type="password" 
                                 name="newPassword"
                                 value={profile.newPassword}
                                 onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 p-2 border outline-none"
                                 required
                             />
                         </label>
@@ -151,16 +192,17 @@ const ProfileSettings = () => {
                                 name="confirmPassword"
                                 value={profile.confirmPassword}
                                 onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 p-2 border outline-none"
                                 required
                             />
                         </label>
                         <div className="pt-4 flex justify-end">
                             <button 
                                 type="submit"
-                                className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition shadow-md"
+                                disabled={saving}
+                                className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition shadow-md disabled:opacity-70 flex items-center gap-2"
                             >
-                                Đổi Mật Khẩu
+                                {saving ? <span className="animate-spin">⏳</span> : null} Đổi Mật Khẩu
                             </button>
                         </div>
                     </form>
@@ -169,4 +211,5 @@ const ProfileSettings = () => {
         </main>
     );
 };
+
 export default ProfileSettings;

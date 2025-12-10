@@ -1,27 +1,25 @@
 // src/pages/admin/posts/PostEditor.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Save,
   ArrowLeft,
-  Plus,
   Trash2,
   Image as ImageIcon,
   Type,
-  Heading1,
   Heading2,
-  Heading3,
   List,
-  ListOrdered,
   Quote,
   Loader2,
   Upload,
-  X
+  X,
+  Link as LinkIcon // <--- 1. Import thêm icon Link
 } from "lucide-react";
-import postService from "../../services/PostService";
-import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
+import postService from "../../services/PostService"; // Sửa lại đường dẫn import tùy project của bạn
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 
-// Chuyển file thành base64
+// ... (Giữ nguyên hàm fileToBase64 và component BlockItem của bạn ở đây) ...
+
 const fileToBase64 = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -30,95 +28,96 @@ const fileToBase64 = (file) =>
     reader.readAsDataURL(file);
   });
 
-// Component Block riêng – dễ bảo trì
 const BlockItem = ({ block, index, onUpdate, onRemove }) => {
-  const [uploading, setUploading] = useState(false);
+    // ... (Giữ nguyên code BlockItem cũ của bạn) ...
+    // Copy lại y nguyên phần BlockItem để code gọn, mình không paste lại để tránh dài dòng
+    const [uploading, setUploading] = useState(false);
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const base64 = await fileToBase64(file);
-      onUpdate(index, "url", base64);
-    } catch (err) {
-      toastError("Upload ảnh thất bại");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <div className="p-5 border rounded-lg bg-gray-50 relative group hover:shadow-md transition">
-      <button
-        onClick={() => onRemove(index)}
-        className="absolute top-3 right-3 text-red-500 hover:bg-red-50 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition"
-      >
-        <Trash2 size={18} />
-      </button>
-
-      <div className="text-xs font-bold text-indigo-600 uppercase mb-3">{block.type}</div>
-
-      {block.type === "heading" && (
-        <div className="space-y-2">
-          <select
-            value={block.level || 2}
-            onChange={(e) => onUpdate(index, "level", Number(e.target.value))}
-            className="text-sm border rounded px-2 py-1"
-          >
-            <option value={1}>Heading 1</option>
-            <option value={2}>Heading 2</option>
-            <option value={3}>Heading 3</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Nhập tiêu đề..."
+    const handleImageUpload = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      setUploading(true);
+      try {
+        const base64 = await fileToBase64(file);
+        onUpdate(index, "url", base64);
+      } catch (err) {
+        toastError("Upload ảnh thất bại");
+      } finally {
+        setUploading(false);
+      }
+    };
+  
+    return (
+      <div className="p-5 shadow-sm rounded-lg bg-gray-50 relative group hover:shadow-md transition">
+        <button
+          onClick={() => onRemove(index)}
+          className="absolute top-3 right-3 text-red-500 hover:bg-red-50 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition"
+        >
+          <Trash2 size={18} />
+        </button>
+  
+        <div className="text-xs font-bold text-indigo-600 uppercase mb-3">{block.type}</div>
+  
+        {block.type === "heading" && (
+          <div className="space-y-2">
+            <select
+              value={block.level || 2}
+              onChange={(e) => onUpdate(index, "level", Number(e.target.value))}
+              className="text-sm shadow-sm rounded px-2 py-1"
+            >
+              <option value={1}>Heading 1</option>
+              <option value={2}>Heading 2</option>
+              <option value={3}>Heading 3</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Nhập tiêu đề..."
+              value={block.text || ""}
+              onChange={(e) => onUpdate(index, "text", e.target.value)}
+              className="w-full px-4 py-2 shadow-sm rounded-lg font-bold text-lg"
+            />
+          </div>
+        )}
+  
+        {(block.type === "paragraph" || block.type === "quote" || block.type === "list") && (
+          <textarea
+            rows={4}
+            placeholder={block.type === "quote" ? "Trích dẫn..." : "Nhập nội dung..."}
             value={block.text || ""}
             onChange={(e) => onUpdate(index, "text", e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg border font-bold text-lg"
+            className={`w-full px-4 py-3 rounded-lg border ${block.type === "quote" ? "italic text-gray-600" : ""}`}
           />
-        </div>
-      )}
-
-      {(block.type === "paragraph" || block.type === "quote" || block.type === "list") && (
-        <textarea
-          rows={4}
-          placeholder={block.type === "quote" ? "Trích dẫn..." : "Nhập nội dung..."}
-          value={block.text || ""}
-          onChange={(e) => onUpdate(index, "text", e.target.value)}
-          className={`w-full px-4 py-3 rounded-lg border ${block.type === "quote" ? "italic text-gray-600" : ""}`}
-        />
-      )}
-
-      {block.type === "image" && (
-        <div className="space-y-3">
-          {block.url ? (
-            <div className="relative">
-              <img src={block.url} alt="preview" className="w-full h-64 object-cover rounded-lg" />
-              <button
-                onClick={() => onUpdate(index, "url", "")}
-                className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          ) : (
-            <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 transition bg-gray-50">
-              {uploading ? (
-                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-              ) : (
-                <>
-                  <Upload size={32} className="text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-500">Click để upload ảnh</span>
-                </>
-              )}
-              <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-            </label>
-          )}
-        </div>
-      )}
-    </div>
-  );
+        )}
+  
+        {block.type === "image" && (
+          <div className="space-y-3">
+            {block.url ? (
+              <div className="relative">
+                <img src={block.url} alt="preview" className="w-full h-64 object-cover rounded-lg" />
+                <button
+                  onClick={() => onUpdate(index, "url", "")}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 transition bg-gray-50">
+                {uploading ? (
+                  <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                ) : (
+                  <>
+                    <Upload size={32} className="text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-500">Click để upload ảnh</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+            )}
+          </div>
+        )}
+      </div>
+    );
 };
 
 const PostEditor = () => {
@@ -129,6 +128,7 @@ const PostEditor = () => {
 
   const [formData, setFormData] = useState({
     name: "",
+    slug: "", // <--- 2. Thêm trường slug vào state
     excerpt: "",
     thumbnail: "",
     status: "draft",
@@ -144,6 +144,7 @@ const PostEditor = () => {
       const post = location.state.post;
       setFormData({
         name: post.name || "",
+        slug: post.slug || "", // <--- 3. Load slug từ bài viết cũ
         excerpt: post.excerpt || "",
         thumbnail: post.thumbnail || "",
         status: post.status || "draft",
@@ -258,7 +259,7 @@ const PostEditor = () => {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Tiêu đề & Mô tả */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border">
+            <div className="bg-white rounded-xl shadow-sm p-6">
               <input
                 type="text"
                 placeholder="Tiêu đề bài viết *"
@@ -272,12 +273,12 @@ const PostEditor = () => {
                 rows={3}
                 value={formData.excerpt}
                 onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                className="w-full px-4 py-3 border rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-4 py-3 shadow-sm rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             </div>
 
             {/* Blocks Editor */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border">
+            <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-lg font-bold mb-6">Nội dung bài viết</h3>
               <div className="space-y-6">
                 {formData.blocks.map((block, index) => (
@@ -298,7 +299,7 @@ const PostEditor = () => {
                     key={type}
                     type="button"
                     onClick={() => addBlock(type)}
-                    className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-indigo-100 hover:border-indigo-500 border rounded-lg transition font-medium text-sm"
+                    className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-indigo-100 hover:border-indigo-500  rounded-lg transition font-medium text-sm"
                   >
                     <Icon size={18} />
                     {label}
@@ -310,8 +311,52 @@ const PostEditor = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Settings */}
+            <div className="bg-white rounded-xl shadow-sm p-6  space-y-5">
+                <h3 className="font-bold text-lg border-b pb-2">Cài đặt bài viết</h3>
+                
+                {/* 4. Thêm phần nhập Slug vào Sidebar */}
+                <div>
+                    <label className="block font-medium mb-1 flex items-center gap-2 text-gray-700">
+                        <LinkIcon size={16} /> Đường dẫn (Slug)
+                    </label>
+                    <input
+                        type="text"
+                        placeholder="tu-dong-theo-tieu-de"
+                        value={formData.slug}
+                        onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                        className="w-full px-4 py-2 shadow-sm rounded-lg text-sm bg-gray-50 text-gray-600 focus:bg-white transition"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Để trống sẽ tự động tạo từ tiêu đề.</p>
+                </div>
+
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Trạng thái</span>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="px-4 py-2 shadow-lg rounded-lg"
+                >
+                  <option value="draft">Nháp</option>
+                  <option value="published">Công khai</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-medium mb-2">Tags</label>
+                <input
+                  type="text"
+                  placeholder="detox, sức khỏe, giảm cân..."
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  className="w-full px-4 py-2 shadow-sm rounded-lg"
+                />
+                <p className="text-xs text-gray-500 mt-1">Cách nhau bởi dấu phẩy</p>
+              </div>
+            </div>
+
             {/* Thumbnail */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border">
+            <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="font-bold text-lg mb-4">Ảnh đại diện</h3>
               {formData.thumbnail ? (
                 <div className="relative group">
@@ -347,33 +392,6 @@ const PostEditor = () => {
                   />
                 </label>
               )}
-            </div>
-
-            {/* Settings */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border space-y-5">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Trạng thái</span>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="px-4 py-2 border rounded-lg"
-                >
-                  <option value="draft">Nháp</option>
-                  <option value="published">Công khai</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-medium mb-2">Tags</label>
-                <input
-                  type="text"
-                  placeholder="detox, sức khỏe, giảm cân..."
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
-                />
-                <p className="text-xs text-gray-500 mt-1">Cách nhau bởi dấu phẩy</p>
-              </div>
             </div>
           </div>
         </form>

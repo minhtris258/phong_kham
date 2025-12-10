@@ -54,7 +54,11 @@ const doctorService = {
         newPassword, 
         confirmPassword 
     });
-    return response;
+    return response; 
+},
+adminUpdateDoctorPassword: async (doctorId, newPassword) => {
+    const response = await api.put(`/doctors/${doctorId}/password`, { newPassword });
+    return response;    
 },
 };
 

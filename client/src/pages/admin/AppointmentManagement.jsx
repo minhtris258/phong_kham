@@ -237,7 +237,7 @@ const fetchData = async () => {
       {/* Content */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         {viewMode === "calendar" ? (
-          <div className="bg-white p-4 rounded-2xl shadow-sm border h-full">
+          <div className=" p-4shadow-sm h-full">
             <AppointmentCalendar
               appointments={appointments}
               currentMonth={currentMonth}

@@ -1,9 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import patientService from "../../services/PatientService";
-// import PatientDashboard from "./PatientDashboard"; // <-- XÓA DÒNG NÀY
 import { Lock, Save } from "lucide-react"; 
+import { useAppContext } from "../../context/AppContext"; // 1. Import Context
 
 export const PatientPassword = () => {
+    const { user } = useAppContext(); // 2. Lấy thông tin user
+    
+    // Kiểm tra xem có phải tài khoản Google không
+    const isGoogleAccount = user?.authType === 'google';
+
     const [passwordData, setPasswordData] = useState({
         oldPassword: "",
         newPassword: "",
@@ -34,31 +39,39 @@ export const PatientPassword = () => {
 
         try {
             setIsLoading(true);
+            
+            // Nếu là Google Account, oldPassword sẽ là chuỗi rỗng (backend đã xử lý việc này)
             await patientService.changeMyPassword(
-        passwordData.oldPassword, 
-        passwordData.newPassword, 
-        passwordData.confirmPassword
-    );
-            setMessage({ type: "success", text: "Đổi mật khẩu thành công!" });
+                isGoogleAccount ? "" : passwordData.oldPassword, 
+                passwordData.newPassword, 
+                passwordData.confirmPassword
+            );
+            
+            setMessage({ type: "success", text: isGoogleAccount ? "Tạo mật khẩu thành công!" : "Đổi mật khẩu thành công!" });
+            
             // Reset form
             setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
         } catch (error) {
-            const errorMsg = error.response?.data?.message || "Mật khẩu cũ không chính xác hoặc lỗi hệ thống.";
+            const errorMsg = error.response?.data?.message || "Lỗi hệ thống hoặc mật khẩu không đúng.";
             setMessage({ type: "error", text: errorMsg });
         } finally {
             setIsLoading(false);
         }
     };
 
-    // --- KHÔNG BỌC <PatientDashboard> ---
     return (
-        <div className="max-w-xl mx-auto mt-6">
+        <div className="max-w-3xl mx-auto mt-6">
             {/* Tiêu đề */}
             <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <Lock className="text-indigo-600" /> Đổi mật khẩu
+                    <Lock className="text-indigo-600" /> 
+                    {isGoogleAccount ? "Tạo mật khẩu mới" : "Đổi mật khẩu"}
                 </h2>
-                <p className="text-gray-500 mt-1">Vui lòng nhập mật khẩu hiện tại để thiết lập mật khẩu mới.</p>
+                <p className="text-gray-500 mt-1">
+                    {isGoogleAccount 
+                        ? "Tạo mật khẩu để có thể đăng nhập bằng Email vào lần sau." 
+                        : "Vui lòng nhập mật khẩu hiện tại để thiết lập mật khẩu mới."}
+                </p>
             </div>
 
             {/* Thông báo */}
@@ -74,21 +87,36 @@ export const PatientPassword = () => {
             {/* Form Card */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu hiện tại</label>
-                        <input 
-                            type="password" 
-                            name="oldPassword"
-                            value={passwordData.oldPassword}
-                            onChange={handlePasswordChange}
-                            required
-                            placeholder="Nhập mật khẩu cũ..."
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition"
-                        />
-                    </div>
+                    
+                    {/* 3. CHỈ HIỆN Ô MẬT KHẨU CŨ NẾU KHÔNG PHẢI GOOGLE */}
+                    {!isGoogleAccount && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Mật khẩu hiện tại <span className="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="password" 
+                                name="oldPassword"
+                                value={passwordData.oldPassword}
+                                onChange={handlePasswordChange}
+                                required
+                                placeholder="Nhập mật khẩu cũ..."
+                                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                            />
+                        </div>
+                    )}
+
+                    {/* Nếu là Google Account thì hiện thông báo nhỏ cho đẹp */}
+                    {isGoogleAccount && (
+                        <div className="bg-blue-50 text-blue-700 px-4 py-3 rounded-lg text-sm">
+                            Bạn đang sử dụng tài khoản Google. Bạn không cần nhập mật khẩu cũ.
+                        </div>
+                    )}
                     
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Mật khẩu mới <span className="text-red-500">*</span>
+                        </label>
                         <input 
                             type="password" 
                             name="newPassword"
@@ -101,7 +129,9 @@ export const PatientPassword = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Xác nhận mật khẩu mới</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Xác nhận mật khẩu mới <span className="text-red-500">*</span>
+                        </label>
                         <input 
                             type="password" 
                             name="confirmPassword"
@@ -121,7 +151,7 @@ export const PatientPassword = () => {
                                 isLoading ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg"
                             }`}
                         >
-                            {isLoading ? "Đang xử lý..." : <><Save size={20} /> Lưu mật khẩu mới</>}
+                            {isLoading ? "Đang xử lý..." : <><Save size={20} /> {isGoogleAccount ? "Tạo mật khẩu" : "Lưu mật khẩu mới"}</>}
                         </button>
                     </div>
                 </form>

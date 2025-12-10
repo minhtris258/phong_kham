@@ -18,7 +18,8 @@ const sendEmail = async (options) => {
     to: options.email,
     subject: options.subject,
     text: options.message,
-    html: options.html // Dùng HTML nếu có, không thì thôi
+    html: options.html, // Dùng HTML nếu có, không thì thôi
+    attachments: options.attachments
   };
 
   // 3. Gửi
