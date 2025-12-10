@@ -149,7 +149,7 @@ export default function DoctorsBySpecialtySection() {
                       className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-sm md:text-base border transition whitespace-nowrap
                         ${
                           isActive
-                            ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                            ? "btn-color border-blue-400 text-white shadow-sm"
                             : "bg-white border-slate-200 text-slate-700 hover:border-blue-500 hover:text-blue-600"
                         }`}
                     >
@@ -257,7 +257,7 @@ export default function DoctorsBySpecialtySection() {
         <div className="mt-8 flex justify-center">
           <Link
             to="/doctors"
-            className="inline-flex items-center px-5 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700 transition"
+            className="inline-flex items-center px-5 py-2.5 rounded-full btn-color text-white text-sm font-semibold shadow transition"
           >
             Xem thêm bác sĩ
             <svg

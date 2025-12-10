@@ -160,7 +160,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Group 2: Khoa / Chuyên khoa */}
+          {/* Group 2: Chuyên khoa */}
           <div className="border-b lg:border-0">
             <input
               id="ft-2"
@@ -172,7 +172,7 @@ export default function Footer() {
               className="flex items-center justify-between py-3 lg:py-0 cursor-pointer lg:cursor-default
                          text-[#083b55] font-roboto text-lg font-bold"
             >
-              Khoa / Chuyên khoa
+              Chuyên khoa
               <svg
                 className="size-4 text-[#083b55] transition-transform peer-checked:rotate-90 lg:hidden"
                 viewBox="0 0 24 24"

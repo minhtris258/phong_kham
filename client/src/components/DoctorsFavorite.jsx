@@ -51,7 +51,7 @@ export default function DoctorsFavorite({ title = "Bác Sĩ Nổi Bật Tuần N
             <p className="text-xs md:text-sm uppercase tracking-[0.2em] text-sky-600 font-bold">
               ĐƯỢC ĐÁNH GIÁ CAO
             </p>
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">
+            <h2 className="text-2xl md:text-3xl font-bold color-title mt-1">
               {title}
             </h2>
             <p className="text-sm md:text-base text-slate-500 mt-2 max-w-2xl">
