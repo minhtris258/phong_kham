@@ -22,6 +22,8 @@ router.post(
   requireRole("patient"),
   completePatientProfile
 ); // POST /api/patients/complete-profile
+router.put("/me", verifyToken, requireRole("patient"), updateMyPatientProfile); // PUT /api/patients/me (Cập nhật hồ sơ cá nhân)
+router.get("/me", verifyToken, requireRole("patient"), getMyPatientProfile); // GET /api/patients/me
 router.put(
   "/me/password",
   verifyToken,
@@ -42,8 +44,7 @@ router.delete("/:id", verifyToken, requireRole("admin"), deletePatientById); // 
 
 
 
-router.put("/me", verifyToken, requireRole("patient"), updateMyPatientProfile); // PUT /api/patients/me (Cập nhật hồ sơ cá nhân)
-router.get("/me", verifyToken, requireRole("patient"), getMyPatientProfile); // GET /api/patients/me
+
 
 // Đổi mật khẩu cá nhân sẽ dùng route khác (ví dụ: /me/password) hoặc dùng route Admin ở trên nếu hàm Admin đủ thông minh.
 // Nếu bạn muốn Patient tự đổi mật khẩu (của CHÍNH họ), hãy dùng route /me
