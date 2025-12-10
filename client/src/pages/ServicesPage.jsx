@@ -175,7 +175,6 @@ export default function ServicesPage() {
             </div>
           </div>
         </aside>
-
         {/* ====== DANH SÁCH DỊCH VỤ BÊN PHẢI ====== */}
         <main className="lg:col-span-9">
           <p className="text-sm text-slate-600 mb-4">
@@ -185,74 +184,87 @@ export default function ServicesPage() {
             </span>{" "}
             dịch vụ phù hợp
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredServices.map((item) => {
-              const fee = item.price || item.fee || 0;
-              const createdAt =
-                item.published_at || item.created_at || item.date;
 
-              return (
-                <div
-                  key={item._id || item.id}
-                  className="bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
-                >
-                  {/* ẢNH LỚN Ở TRÊN */}
-                  <div className="w-full h-40 md:h-48">
-                    <img
-                      src={resolveServiceImage(item)}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+          {/* Giới hạn còn 9 dịch vụ */}
+          {(() => {
+            const limitedServices = filteredServices.slice(0, 9);
+            return (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {limitedServices.map((item) => {
+                    const fee = item.price || item.fee || 0;
+                    const createdAt =
+                      item.published_at || item.created_at || item.date;
 
-                  {/* NỘI DUNG */}
-                  <div className="flex-1 flex flex-col p-4 md:p-5">
-                    {/* Tiêu đề */}
-                    <h3 className="text-base md:text-lg font-bold text-[#0a2463] leading-snug line-clamp-2 mb-1">
-                      {item.name}
-                    </h3>
-
-                    {/* GIÁ DỊCH VỤ */}
-                    <div className="text-[15px] font-semibold text-[#0a2463] mb-3">
-                      {fee
-                        ? Number(fee).toLocaleString("vi-VN") + "đ"
-                        : "Liên hệ"}
-                    </div>
-
-                    {/* Ngày + Đọc tiếp */}
-                    {/* Ngày + Xem chi tiết */}
-                    <div className="mt-auto pt-2 flex items-center justify-between text-xs md:text-sm text-slate-500">
-                      <span>
-                        {createdAt
-                          ? new Date(createdAt).toLocaleDateString("vi-VN")
-                          : ""}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedService(item);
-                          setIsModalOpen(true);
-                        }}
-                        className="inline-flex items-center text-[13px] font-semibold text-sky-600 hover:text-sky-700"
+                    return (
+                      <div
+                        key={item._id || item.id}
+                        className="bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
                       >
-                        Xem Chi Tiết{" "}
-                        <span className="ml-1 text-lg leading-none">→</span>
-                      </button>
-                    </div>
-                    <ServicesModal
-                      isOpen={isModalOpen}
-                      onClose={() => {
-                        setIsModalOpen(false);
-                        setSelectedService(null);
-                      }}
-                      service={selectedService}
-                    />
-                  </div>
+                        {/* ẢNH LỚN */}
+                        <div className="w-full h-40 md:h-48">
+                          <img
+                            src={resolveServiceImage(item)}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* NỘI DUNG */}
+                        <div className="flex-1 flex flex-col p-4 md:p-5">
+                          <h3 className="text-base md:text-lg font-bold text-[#0a2463] leading-snug line-clamp-2 mb-1">
+                            {item.name}
+                          </h3>
+
+                          <div className="text-[15px] font-semibold text-[#0a2463] mb-3">
+                            {fee
+                              ? Number(fee).toLocaleString("vi-VN") + "đ"
+                              : "Liên hệ"}
+                          </div>
+
+                          <div className="mt-auto pt-2 flex items-center justify-between text-xs md:text-sm text-slate-500">
+                            <span>
+                              {createdAt
+                                ? new Date(createdAt).toLocaleDateString(
+                                    "vi-VN"
+                                  )
+                                : ""}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedService(item);
+                                setIsModalOpen(true);
+                              }}
+                              className="inline-flex items-center text-[13px] font-semibold text-sky-600 hover:text-sky-700"
+                            >
+                              Xem Chi Tiết{" "}
+                              <span className="ml-1 text-lg leading-none">
+                                →
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Nút xem thêm nếu > 9 dịch vụ */}
+                {filteredServices.length > 9 && (
+                  <div className="text-center mt-8">
+                    <Link
+                      to="/services/all"
+                      className="inline-block px-6 py-3 rounded-xl btn-color text-white font-semibold hover:bg-opacity-90 transition"
+                    >
+                      Xem thêm dịch vụ
+                    </Link>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </main>
       </div>
     </div>

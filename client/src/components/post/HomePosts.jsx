@@ -83,12 +83,12 @@ export default function HomePosts() {
   const subPosts = posts.slice(1, 5);
 
   return (
-    <section className="py-12 bg-gray-50">
+    <section className="py-12 bg-gradient-to-b from-[#e8f6ffe5] to-[#8fd2fcae] ">
       <div className="container mx-auto px-4">
         
         {/* HEADER */}
         <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-800 uppercase tracking-tight border-l-4 border-blue-600 pl-3">
+          <h2 className="text-2xl md:text-3xl font-bold color-title uppercase tracking-tight pl-3">
             Tin Tức Y Tế
           </h2>
           <Link 
@@ -154,7 +154,7 @@ const HeroCard = ({ post }) => {
             alt={name}
             className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
           />
-          <span className="absolute top-3 left-3 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide">
+          <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide">
             {category}
           </span>
         </div>
