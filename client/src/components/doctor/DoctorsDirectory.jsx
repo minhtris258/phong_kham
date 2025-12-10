@@ -146,7 +146,7 @@ export default function DoctorsDirectory() {
   }
 
   return (
-    <section className="container mx-auto px-4 py-8 lg:py-12 min-h-screen bg-gray-50">
+    <section className="container mx-auto px-4 py-8 lg:py-12 min-h-screen ">
       
       {/* Header */}
       <div className="text-center mb-10 mt-15">
