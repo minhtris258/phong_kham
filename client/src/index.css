@@ -28,6 +28,12 @@ ul > li {
 .color-title-2:hover {
   color: #1da1f2 !important;
 }
+.title-color {
+  color: #00B5F1 !important;
+}
+.bg-blue{
+  background-color: #00B5F1 !important;
+}
 h2 {
   text-transform: uppercase;
 }

@@ -64,7 +64,7 @@ export const PatientPassword = () => {
             {/* Tiêu đề */}
             <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <Lock className="text-indigo-600" /> 
+                    <Lock className="title-color" /> 
                     {isGoogleAccount ? "Tạo mật khẩu mới" : "Đổi mật khẩu"}
                 </h2>
                 <p className="text-gray-500 mt-1">
@@ -101,14 +101,14 @@ export const PatientPassword = () => {
                                 onChange={handlePasswordChange}
                                 required
                                 placeholder="Nhập mật khẩu cũ..."
-                                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-sky-500 outline-none transition"
                             />
                         </div>
                     )}
 
                     {/* Nếu là Google Account thì hiện thông báo nhỏ cho đẹp */}
                     {isGoogleAccount && (
-                        <div className="bg-blue-50 text-blue-700 px-4 py-3 rounded-lg text-sm">
+                        <div className="bg-blue-50 title-color px-4 py-3 rounded-lg text-sm">
                             Bạn đang sử dụng tài khoản Google. Bạn không cần nhập mật khẩu cũ.
                         </div>
                     )}
@@ -124,7 +124,7 @@ export const PatientPassword = () => {
                             onChange={handlePasswordChange}
                             required
                             placeholder="Nhập mật khẩu mới..."
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-sky-500 outline-none transition"
                         />
                     </div>
 
@@ -139,7 +139,7 @@ export const PatientPassword = () => {
                             onChange={handlePasswordChange}
                             required
                             placeholder="Nhập lại mật khẩu mới..."
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-sky-500 outline-none transition"
                         />
                     </div>
 
@@ -148,7 +148,7 @@ export const PatientPassword = () => {
                             type="submit" 
                             disabled={isLoading}
                             className={`w-full flex items-center justify-center gap-2 px-6 py-3 text-white font-bold rounded-lg transition-all ${
-                                isLoading ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg"
+                                isLoading ? "bg-sky-400 cursor-not-allowed" : "bg-[#00B5F1] hover:bg-sky-700 shadow-md hover:shadow-lg"
                             }`}
                         >
                             {isLoading ? "Đang xử lý..." : <><Save size={20} /> {isGoogleAccount ? "Tạo mật khẩu" : "Lưu mật khẩu mới"}</>}

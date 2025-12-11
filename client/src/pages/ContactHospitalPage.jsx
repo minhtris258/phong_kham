@@ -79,12 +79,14 @@ export default function ContactHospitalPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white py-10 md:py-16">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <div className="bg-gray-50 min-h-screen mt-15">
+      <div className="bg-gradient-to-b from-[#ffffffe5] to-[#e8f6ffe5] h-20"></div>
+      <div className="bg-[#e8f6ffe5]">
+      <div className="container mx-auto px-4 max-w-6xl ">
         {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold color-title mt-8">
-            Liên hệ với Bệnh viện
+        <div className="text-center mb-10 ">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold color-title">
+           LIÊN HỆ VỚI BỆNH VIỆN 
           </h1>
           <p className="text-sm md:text-base text-slate-600 mt-3 max-w-2xl mx-auto">
             Nếu bạn có bất kỳ thắc mắc nào về đặt lịch khám, kết quả xét nghiệm
@@ -312,6 +314,8 @@ export default function ContactHospitalPage() {
           </div>
         </div>
       </div>
+      </div>
+      <div className="bg-gradient-to-b from-[#e8f6ffe5] to-[#ffffffe5] h-20"></div>
     </div>
   );
 }

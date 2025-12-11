@@ -83,8 +83,10 @@ export default function HomePosts() {
   const subPosts = posts.slice(1, 5);
 
   return (
-    <section className="py-12 bg-gradient-to-b from-[#e8f6ffe5] to-[#8fd2fcae] ">
-      <div className="container mx-auto px-4">
+    <section className="py-12">
+      <div className="bg-gradient-to-b from-[#ffffffe5] to-[#e8f6ffe5] h-20"></div>
+      <div className="bg-[#e8f6ffe5]">
+      <div className="container mx-auto px-4 ">
         
         {/* HEADER */}
         <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
@@ -136,6 +138,8 @@ export default function HomePosts() {
         </div>
 
       </div>
+      </div>
+      <div className="bg-gradient-to-b from-[#e8f6ffe5] to-[#ffffffe5] h-20"></div>
     </section>
   );
 }

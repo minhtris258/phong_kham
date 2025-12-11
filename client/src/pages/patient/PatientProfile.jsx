@@ -74,9 +74,9 @@ export const PatientProfile = () => {
     }
 
     // --- KHÔNG BỌC <PatientDashboard> Ở ĐÂY NỮA ---
-    return (
+   return (
         <>
-            {/* Thông báo */}
+            {/* Thông báo (Giữ nguyên) */}
             {message.text && (
                 <div className={`mb-6 p-4 rounded-xl border-l-4 shadow-sm bg-white animate-fade-in ${
                     message.type === "success" ? "border-green-500 text-green-700" : "border-red-500 text-red-700"
@@ -91,30 +91,31 @@ export const PatientProfile = () => {
                  <div className="flex justify-center p-10"><div className="animate-spin rounded-full h-10 w-10 border-t-2 border-blue-500"></div></div>
             ) : (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full">
-                    <div className="px-6 py-5 border-b border-gray-100 bg-white flex justify-between items-center">
+                    <div className="px-4 py-4 md:px-6 md:py-5 border-b border-gray-100 bg-white flex justify-between items-center">
                         <div>
-                            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                <User className="text-indigo-600" /> Thông tin cá nhân
+                            <h3 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <User className="title-color w-5 h-5" /> Thông tin cá nhân
                             </h3>
-                            <p className="text-sm text-gray-500 mt-1">Quản lý thông tin hồ sơ và liên lạc của bạn</p>
+                            <p className="text-xs md:text-sm text-gray-500 mt-1 hidden md:block">Quản lý thông tin hồ sơ và liên lạc của bạn</p>
                         </div>
                         <button 
                             onClick={openEditModal}
-                            className="flex items-center gap-2 text-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-4 py-2 rounded-lg transition font-medium"
+                            className="flex items-center gap-2 text-xs md:text-sm title-color bg-blue-50 hover:bg-indigo-100 border border-indigo-50 px-3 py-2 md:px-4 md:py-2 rounded-lg transition font-medium whitespace-nowrap"
                         >
-                            <Edit3 size={16} /> Chỉnh sửa
+                            <Edit3 size={14} className="md:w-4 md:h-4" /> <span className="hidden md:inline">Chỉnh sửa</span><span className="md:hidden">Sửa</span>
                         </button>
                     </div>
                     
-                    <div className="p-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
+                    {/* THAY ĐỔI LỚN NHẤT Ở ĐÂY: p-4 cho mobile, p-8 cho desktop */}
+                    <div className="p-4 md:p-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 md:gap-y-8 gap-x-12">
                             <InfoItem label="Họ và tên" value={profile.fullName} />
-                            <InfoItem label="Email (Tên đăng nhập)" value={profile.email} />
+                            <InfoItem label="Email" value={profile.email} />
                             <InfoItem label="Ngày sinh" value={renderDate(profile.dob)} />
                             <InfoItem label="Giới tính" value={renderGender(profile.gender)} />
                             <InfoItem label="Số điện thoại" value={profile.phone || "Chưa cập nhật"} />
                             <InfoItem label="Địa chỉ" value={profile.address || "Chưa cập nhật"} />
-                            <div className="md:col-span-2 border-t pt-6 mt-2">
+                            <div className="md:col-span-2 border-t pt-4 md:pt-6 mt-2">
                                 <InfoItem label="Ghi chú sức khỏe" value={profile.note || "Không có ghi chú"} />
                             </div>
                         </div>

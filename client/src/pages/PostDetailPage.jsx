@@ -193,14 +193,14 @@ export default function PostDetailPage() {
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-tight mb-8">
+            <h1 className="text-2xl md:text-2xl lg:text-4xl font-extrabold text-slate-800 leading-tight mb-8">
               {post.name}
             </h1>
 
             {/* Author & Stats Bar */}
             <div className="flex flex-wrap items-center gap-4 text-slate-500 text-sm border-t border-b border-slate-100 py-4 mb-10">
               <div className="flex items-center gap-3 pr-6 border-r border-slate-100">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                <div className="w-10 h-10 rounded-full bg-[#00B5F1] flex items-center justify-center text-white shadow-sm">
                    <User size={20} />
                 </div>
                 <div>
@@ -219,7 +219,7 @@ export default function PostDetailPage() {
 
             {/* Excerpt (Sapo) */}
             {post.excerpt && (
-              <div className="text-xl md:text-2xl font-medium text-slate-800 mb-12 leading-relaxed font-serif">
+              <div className="text-xs md:text-lg font-medium text-slate-800 mb-12 leading-relaxed border-l-4 border-[#00B5F1] pl-4 italic">
                 {post.excerpt}
               </div>
             )}
@@ -260,7 +260,7 @@ export default function PostDetailPage() {
                     <span className="w-1 h-8 bg-indigo-600 rounded-full"></span>
                     Bài viết liên quan
                 </h3>
-                <Link to="/post" className="text-indigo-600 hover:text-indigo-700 text-sm font-semibold flex items-center group">
+                <Link to="/post" className="text-sky-500 hover:text-sky-600 text-sm font-semibold flex items-center group">
                     Xem tất cả <ArrowLeft size={16} className="rotate-180 ml-1 group-hover:translate-x-1 transition-transform" />
                 </Link>
             </div>
@@ -281,13 +281,13 @@ export default function PostDetailPage() {
                     <div className="text-xs text-slate-400 mb-2 flex items-center gap-1 font-medium">
                         <Calendar size={12} /> {new Date(item.createdAt).toLocaleDateString("vi-VN")}
                     </div>
-                    <h4 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                    <h4 className="text-lg font-bold color-title-2 mb-2 line-clamp-2  transition-colors">
                       {item.name}
                     </h4>
                     <p className="text-slate-500 text-sm line-clamp-3 mb-4 flex-grow leading-relaxed">
                       {item.excerpt || "Không có mô tả ngắn..."}
                     </p>
-                    <span className="text-indigo-600 text-sm font-semibold mt-auto flex items-center">
+                    <span className="title-color text-sm font-semibold mt-auto flex items-center">
                         Đọc tiếp <ArrowLeft size={14} className="rotate-180 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </span>
                   </div>

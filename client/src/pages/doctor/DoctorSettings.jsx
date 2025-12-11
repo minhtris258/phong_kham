@@ -3,20 +3,25 @@ import React, { useState } from 'react';
 import { Bell, Lock, HelpCircle, Phone, Mail } from 'lucide-react';
 import SettingsCard from '../../components/doctor/settings/SettingsCard'; 
 import NotificationToggle from '../../components/doctor/settings/NotificationToggle'; 
-import PasswordModal from '../../components/doctor/settings/PasswordModal'; // Đảm bảo đường dẫn đúng
-import doctorService from '../../services/DoctorService'; // Import service
+import PasswordModal from '../../components/doctor/settings/PasswordModal'; 
+import doctorService from '../../services/DoctorService'; 
 import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 
 export default function DoctorSettings() {
+    // === KHẮC PHỤC LỖI Ở ĐÂY ===
+    // Lấy thông tin user từ localStorage (để dùng cho biến 'user' ở dòng cuối)
+    // Nếu bạn dùng Context, hãy thay bằng: const { user } = useAuth();
+    const user = JSON.parse(localStorage.getItem("user") || "{}"); 
+
     // --- 1. STATE QUẢN LÝ MODAL VÀ DỮ LIỆU ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [message, setMessage] = useState(''); // Để hiển thị lỗi trong modal (nếu modal hỗ trợ)
+    const [message, setMessage] = useState(''); 
     
     const [passwordData, setPasswordData] = useState({
         oldPassword: '',
         newPassword: '',
-        confirmNewPassword: '' // Lưu ý: Tên này phải khớp với name input trong PasswordModal
+        confirmNewPassword: '' 
     });
 
     // --- 2. CÁC HÀM XỬ LÝ (HANDLERS) ---
@@ -46,7 +51,7 @@ export default function DoctorSettings() {
 
         // Validation cơ bản
         if (passwordData.newPassword !== passwordData.confirmNewPassword) {
-            toastError("Mật khẩu xác nhận không khớp!"); // Hoặc set Message nếu Modal hiển thị nó
+            toastError("Mật khẩu xác nhận không khớp!"); 
             return;
         }
 
@@ -57,23 +62,20 @@ export default function DoctorSettings() {
 
         try {
             setIsLoading(true);
-            // Gọi API từ DoctorService
-            // Lưu ý: tham số thứ 3 service nhận là confirmPassword, nhưng state mình đặt là confirmNewPassword
             await doctorService.changeMyPassword(
                 passwordData.oldPassword, 
                 passwordData.newPassword, 
                 passwordData.confirmNewPassword
             );
             
-            // Thành công
-            toastSuccess("Đổi mật khẩu thành công!"); // Có thể thay bằng toast.success()
+            toastSuccess("Đổi mật khẩu thành công!");
             handleCloseModal();
             
         } catch (error) {
             console.error(error);
             const errorMsg = error.response?.data?.message || "Lỗi khi đổi mật khẩu";
             setMessage(errorMsg);
-            toastError(errorMsg); // Hiển thị lỗi
+            toastError(errorMsg); 
         } finally {
             setIsLoading(false);
         }
@@ -94,7 +96,7 @@ export default function DoctorSettings() {
                 {/* 2. KHỐI BẢO MẬT */}
                 <SettingsCard title="Bảo mật" icon={Lock} iconColorClass="text-red-600">
                     <button 
-                        onClick={handleOpenModal} // <--- GẮN SỰ KIỆN MỞ MODAL
+                        onClick={handleOpenModal} 
                         className="w-full text-left px-6 py-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition"
                     >
                         <div className="flex justify-between items-center">
@@ -117,7 +119,7 @@ export default function DoctorSettings() {
                 </SettingsCard>
             </div>
 
-            {/* --- RENDER MODAL Ở CUỐI COMPONENT --- */}
+            {/* --- RENDER MODAL --- */}
             <PasswordModal 
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
@@ -126,6 +128,7 @@ export default function DoctorSettings() {
                 message={message}
                 passwordData={passwordData}
                 handlePasswordChange={handlePasswordChange}
+                // Bây giờ biến user đã được định nghĩa ở đầu function
                 isGoogleAccount={user?.authType === 'google'}
             />
         </div>

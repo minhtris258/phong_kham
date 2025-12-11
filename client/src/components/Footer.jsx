@@ -87,7 +87,7 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer className="bg-white  inset-shadow-sm inset-shadow-gray-300">
+    <footer className="bg-white  inset-shadow-sm inset-shadow-gray-100">
       <div className="container mx-auto px-4 py-6 lg:py-10 lg:grid lg:grid-cols-5 lg:gap-8">
         {/* Cột thông tin */}
         <div className="lg:col-span-2">

@@ -11,6 +11,7 @@ const toastConfig = {
   draggable: true,
   progress: undefined,
   theme: "dark",
+  
 };
 
 // Xuất các hàm dùng chung

@@ -28,7 +28,7 @@ const PatientDashboard = () => { // Bỏ props { children }
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <Sidebar />
 
-                    <div className="lg:col-span-3">
+                    <div className="lg:col-span-3 mt-4">
                         {/* Thay {children} bằng <Outlet /> */}
                         {/* Đây là nơi React Router sẽ nhét PatientProfile hoặc PatientPassword vào */}
                         <Outlet /> 

@@ -86,7 +86,7 @@ const AppointmentTrendChart = ({ data, onFilterChange }) => {
 
                         {/* Bar */}
                         <div 
-                            className="w-full max-w-[40px] rounded-t-lg bg-gradient-to-t from-indigo-500 to-purple-500 opacity-80 group-hover:opacity-100 group-hover:from-indigo-600 group-hover:to-purple-600 transition-all duration-500 ease-out shadow-sm cursor-pointer"
+                            className="w-full max-w-[40px] rounded-t-lg bg-blue opacity-80 group-hover:opacity-100 group-hover:from-indigo-600 group-hover:to-purple-600 transition-all duration-500 ease-out shadow-sm cursor-pointer"
                             style={{ height: `${heightPercent}%` }}
                         ></div>
                         

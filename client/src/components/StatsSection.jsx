@@ -30,8 +30,10 @@ export default function StatsSection() {
   }, []);
 
   return (
-    <section className="w-full bg-gradient-to-b from-[#e8f6ffe5] to-[#8fd2fcae] py-12 md:py-16 ">
-      <div className="container mx-auto px-4">
+    <section className="w-full py-12 md:py-16 ">
+      <div className="bg-gradient-to-b from-[#ffffffe5] to-[#e8f6ffe5] h-20"></div>
+      <div className="bg-[#e8f6ffe5]">
+      <div className="container mx-auto px-4 ">
         {/* Title */}
         <h2 className="text-center text-2xl md:text-3xl font-bold color-title mb-8">
           THỐNG KÊ
@@ -97,6 +99,8 @@ export default function StatsSection() {
           </div>
         </div>
       </div>
+      </div>
+      <div className="bg-gradient-to-b from-[#e8f6ffe5] to-[#ffffffe5] h-20"></div>
     </section>
   );
 }
