@@ -39,18 +39,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { handleLogout } = useAppContext();
   
   const linkClasses =
-    "flex items-center px-4 py-2 rounded-lg transition duration-150 text-indigo-200 hover:bg-indigo-700 hover:text-white";
-  const activeClasses = "bg-indigo-900 text-white shadow-md";
+    " flex items-center px-4 py-2 rounded-lg transition duration-150 text-white hover:bg-indigo-700 hover:text-white";
+  const activeClasses = "bg-indigo-900  text-white shadow-md";
 
   return (
     <aside
       className={`fixed inset-y-0 left-0 transform ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       } lg:relative lg:translate-x-0 transition duration-300 ease-in-out 
-                      w-64 bg-indigo-800 text-white flex flex-col z-30 shadow-2xl lg:shadow-none lg:flex-shrink-0`}
+                      w-64 bg-[#00B5F1] text-white flex flex-col z-30 shadow-2xl lg:shadow-none lg:flex-shrink-0`}
     >
       {/* --- HEADER --- */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-indigo-700 bg-indigo-900">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-indigo-700 bg-[#00B5F1]">
         
         {/* Left Side: Home Button & Title */}
         <div className="flex items-center gap-3">
@@ -69,14 +69,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
             {/* 2. Logo & Tên Brand */}
             <div className="flex items-center gap-2 select-none">
-               <Stethoscope className="h-5 w-5 text-indigo-300" />
+               <Stethoscope className="h-5 w-5 text-white" />
                <h2 className="text-lg font-bold tracking-wide text-white">Admin</h2>
             </div>
         </div>
         
         {/* Mobile Toggle Button */}
         <button
-            className="lg:hidden text-indigo-200 hover:text-white focus:outline-none p-1 rounded-md hover:bg-indigo-700"
+            className="lg:hidden text-white hover:text-white focus:outline-none p-1 rounded-md hover:bg-indigo-700"
             onClick={toggleSidebar}
         >
             <Menu className="h-6 w-6" />
@@ -104,11 +104,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       </nav>
 
       {/* --- FOOTER / LOGOUT --- */}
-      <div className="p-4 border-t border-indigo-700 bg-indigo-900/30">
+      <div className="p-4 border-t border-indigo-700 bg-[#00B5F1]">
         <button
           type="button"
           onClick={handleLogout}
-          className="flex items-center w-full px-4 py-2 text-sm text-red-300 bg-red-900/20 hover:bg-red-900/40 rounded-lg transition-colors border border-transparent hover:border-red-800 group"
+          className="flex items-center w-full px-4 py-2 text-sm text-white bg-red-900/20 hover:bg-red-900/40 rounded-lg transition-colors border border-transparent hover:border-red-800 group"
         >
           <LogOut className="h-4 w-4 mr-3 group-hover:text-red-200" />
           <span className="font-medium group-hover:text-red-100">Đăng xuất</span>
