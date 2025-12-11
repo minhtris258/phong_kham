@@ -127,11 +127,11 @@ export default function Header() {
             {/* Nav Desktop */}
             <nav className="hidden md:flex items-center gap-8 ">
               <ul className="flex gap-6 text-black font-raleway font-semibold text-sm lg:text-lg">
-                <li><Link className="hover:text-cyan-300 transition" to="/">Trang Chủ</Link></li>
-                <li><Link className="hover:text-cyan-300 transition" to="/post">Bài Viết</Link></li>
-                <li><Link className="hover:text-cyan-300 transition" to="/services">Dịch Vụ</Link></li>
-                <li><Link className="hover:text-cyan-300 transition" to="/doctors">Bác Sĩ</Link></li>
-                <li><Link className="hover:text-cyan-300 transition" to="/about-us">Liên Hệ</Link></li>
+                <li><Link className="hover:text-[#0095D5] transition" to="/">Trang Chủ</Link></li>
+                <li><Link className="hover:text-[#0095D5] transition" to="/post">Bài Viết</Link></li>
+                <li><Link className="hover:text-[#0095D5] transition" to="/services">Dịch Vụ</Link></li>
+                <li><Link className="hover:text-[#0095D5] transition" to="/doctors">Bác Sĩ</Link></li>
+                <li><Link className="hover:text-[#0095D5] transition" to="/about-us">Liên Hệ</Link></li>
               </ul>
             </nav>
 
@@ -193,7 +193,7 @@ export default function Header() {
                         {dashboardPath && (
                           <Link
                             to={dashboardPath}
-                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-indigo-600"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#00B5F1]"
                             onClick={() => setAccountOpen(false)}
                           >
                             <LayoutDashboard size={16} className="mr-2" />

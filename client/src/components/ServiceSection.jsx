@@ -84,11 +84,7 @@ export default function ServiceSection() {
         </Link>
       </div>
 
-      {error && (
-        <p className="text-sm text-red-500 mb-4">
-          {error}
-        </p>
-      )}
+      {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
       {/* GRID GIỐNG ẢNH: 1 ô to bên trái + 4 ô bên phải */}
       <div className="grid gap-6 lg:grid-cols-4 auto-rows-[1fr]">
@@ -99,7 +95,6 @@ export default function ServiceSection() {
             onClick={() => openModal(featured)}
             className="lg:col-span-2 lg:row-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden text-left flex flex-col"
           >
-            
             <div className="relative">
               <div className="w-full h-56 md:h-72 overflow-hidden">
                 <img
@@ -155,7 +150,7 @@ export default function ServiceSection() {
             onClick={() => openModal(sv)}
             className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden text-left flex flex-col"
           >
-            <div className="w-full h-36 md:h-40 overflow-hidden">
+            <div className="w-full h-40 md:h-40 overflow-hidden">
               <img
                 src={resolveServiceImage(sv)}
                 alt={sv.name}
@@ -171,17 +166,17 @@ export default function ServiceSection() {
                 </span>
               )}
 
-              <h4 className="text-sm md:text-base font-bold text-[#0a2463] mb-1 line-clamp-2">
+              <h4 className="text-3xl md:text-base font-bold text-[#0a2463] mb-1 line-clamp-2">
                 {sv.name}
               </h4>
 
-              <p className="text-xs md:text-sm text-slate-600 mb-2 line-clamp-2">
+              <p className="text-base md:text-sm text-slate-600 mb-2 md:line-clamp-2 line-clamp-10 ">
                 {sv.shortDescription ||
                   sv.description ||
                   "Dịch vụ sẽ được cập nhật chi tiết."}
               </p>
 
-              <p className="text-sm font-semibold text-[#0a2463]">
+              <p className="md:text-sm text-2xl font-semibold text-[#0a2463]">
                 {formatPrice(sv.price || sv.fee)}
               </p>
 

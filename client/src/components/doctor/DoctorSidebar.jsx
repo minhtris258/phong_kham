@@ -69,10 +69,10 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
       )}
 
       {/* Sidebar chính */}
-      <aside className={`fixed top-0 left-0 z-50 h-full w-72 bg-gradient-to-b from-blue-700 to-blue-900 text-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed top-0 left-0 z-50 h-full w-72 bg-[#00B5F1] text-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         
         {/* Logo Header & Home Button */}
-        <div className="flex items-center justify-between p-6 border-b border-blue-800">
+        <div className="flex items-center justify-between p-6 ">
           <div className="flex items-center gap-3">
             {/* --- NÚT VỀ TRANG CHỦ (Đã OK) --- */}
             <Link 
@@ -85,7 +85,7 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
             
             <div className="flex flex-col">
                 <h1 className="text-lg font-bold leading-none">DOCTOR</h1>
-                <span className="text-xs text-blue-300 tracking-wider">PORTAL</span>
+                <span className="text-xs text-white tracking-wider">PORTAL</span>
             </div>
           </div>
 
@@ -95,7 +95,7 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
         </div>
 
         {/* User Info Card */}
-        <div className="p-6 border-b border-blue-800">
+        <div className="p-6 ">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-white text-blue-700 rounded-full flex items-center justify-center text-2xl font-bold shadow-xl overflow-hidden border-2 border-white shrink-0">
                {doctor?.thumbnail || doctor?.image ? (
@@ -110,7 +110,7 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
             </div>
             <div className="overflow-hidden">
               <p className="font-bold text-lg truncate block" title={doctorName}>BS. {lastName}</p>
-              <p className="text-blue-200 text-sm truncate block" title={specialtyName}>{specialtyName}</p>
+              <p className="text-white text-sm truncate block" title={specialtyName}>{specialtyName}</p>
             </div>
           </div>
         </div>
@@ -127,8 +127,8 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${
                   active 
-                    ? 'bg-white text-blue-700 shadow-xl font-bold transform scale-[1.02]' 
-                    : 'hover:bg-blue-800 hover:bg-opacity-60 text-blue-100'
+                    ? 'bg-white text-blue-600 shadow-xl font-bold transform scale-[1.02]' 
+                    : 'hover:bg-blue-800 hover:bg-opacity-60 text-white'
                 }`}
               >
                 <Icon className={`w-5 h-5 ${active ? 'stroke-2' : ''}`} />
@@ -139,10 +139,10 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
         </nav>
 
         {/* Logout Button (Sử dụng hàm onLogoutClick mới) */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-800 bg-blue-900 bg-opacity-50">
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-[#00B5F1] ">
           <button 
             onClick={onLogoutClick} 
-            className="flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-red-600 hover:text-white transition-all w-full text-blue-100 group"
+            className="flex items-center gap-4 px-5 py-3 rounded-xl bg-blue-600 hover:bg-red-600 hover:text-white transition-all w-full text-blue-100 group"
           >
             <LogOut className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
             <span className="font-medium">Đăng xuất</span>
