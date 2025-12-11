@@ -177,7 +177,7 @@ const HeroCard = ({ post }) => {
             {excerpt}
           </p>
 
-          <span className="text-blue-600 font-semibold text-xs flex items-center gap-1 mt-auto">
+          <span className="text-[#00B5F1] font-semibold text-xs flex items-center gap-1 mt-auto">
             Đọc tiếp <ArrowRight size={12} />
           </span>
         </div>

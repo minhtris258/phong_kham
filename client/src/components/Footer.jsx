@@ -150,8 +150,8 @@ export default function Footer() {
                 services.slice(0, 8).map((sv) => (
                   <li key={sv._id || sv.id}>
                     <a
-                      href={getServiceLink(sv)}
-                      className="text-slate-700 hover:text-slate-900"
+                      href="/services"
+                      className="text-slate-700 hover:text-[#083b55]"
                     >
                       {getItemName(sv)}
                     </a>

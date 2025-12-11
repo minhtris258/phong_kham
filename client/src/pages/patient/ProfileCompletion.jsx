@@ -84,7 +84,7 @@ const ProfileCompletion = () => {
         <div className="grid lg:grid-cols-5">
           
           {/* Cột trái: Thông tin & Progress Bar */}
-          <div className="bg-indigo-600 text-white p-8 lg:col-span-2 flex flex-col justify-center">
+          <div className="bg-[#00B5F1] text-white p-8 lg:col-span-2 flex flex-col justify-center">
             <h1 className="text-2xl font-bold mb-4">Hoàn tất hồ sơ</h1>
             <p className="text-indigo-100 mb-6 text-sm">
               Bạn đã hoàn thành bước đăng ký. Hãy bổ sung thông tin cá nhân để hoàn tất.
@@ -93,7 +93,7 @@ const ProfileCompletion = () => {
             <div className="relative pt-1">
               <div className="flex mb-2 items-center justify-between">
                 <div>
-                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-600 bg-indigo-200">
+                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-white bg-blue-500">
                     Tiến độ
                   </span>
                 </div>
@@ -112,7 +112,7 @@ const ProfileCompletion = () => {
                 ></div>
               </div>
             </div>
-            <p className="text-xs mt-2 text-indigo-200 italic">
+            <p className="text-xs mt-2 text-white italic">
               {progress === 100 ? "Tuyệt vời! Bạn đã sẵn sàng." : "Vui lòng điền đủ các trường bên phải."}
             </p>
           </div>
@@ -215,7 +215,7 @@ const ProfileCompletion = () => {
                   className={`w-full py-2.5 rounded-lg text-white font-medium text-sm transition duration-300
                     ${loading || progress < 100 
                         ? 'bg-slate-400 cursor-not-allowed' 
-                        : 'bg-indigo-600 hover:bg-indigo-700 shadow-md transform hover:-translate-y-0.5'}
+                        : 'btn-color shadow-md transform hover:-translate-y-0.5'}
                   `}
                 >
                   {loading ? "Đang xử lý..." : "Lưu & Hoàn tất (100%)"}
