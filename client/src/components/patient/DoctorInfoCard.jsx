@@ -67,7 +67,7 @@ export default function DoctorInfoCard({ doctor, specialty, experienceYears }) {
                     </div>
                     <div>
                         <p className="text-sm text-gray-500">Giới thiệu</p>
-                        <p className="text-sm text-gray-700 line-clamp-3">
+                        <p className="text-sm text-gray-700 ">
                             {doctor.introduction || "Bác sĩ chuyên khoa giàu kinh nghiệm, tận tâm với nghề, luôn đặt sức khỏe bệnh nhân lên hàng đầu."}
                         </p>
                     </div>

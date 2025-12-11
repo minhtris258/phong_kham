@@ -53,16 +53,16 @@ export default function DoctorDetailPage() {
     );
 
   // Tính năm kinh nghiệm
-  const experienceYears = doctor.dob
-    ? new Date().getFullYear() - new Date(doctor.dob).getFullYear()
-    : 0;
+  const experienceYears = doctor.career_start_year
+    ? new Date().getFullYear() - new Date(doctor.career_start_year)
+    : "chưa cập nhật";
 
   // Lấy object chuyên khoa
   const specialty = doctor.specialty_id || { name: "Chuyên khoa" };
 
   return (
     // Tăng max-w lên 7xl để chia cột rộng rãi hơn
-    <div className="max-w-7xl mx-auto px-4 py-8 bg-gray-500 mt-15">
+    <div className="max-w-7xl mx-auto px-4 py-8  mt-20">
       {/* LAYOUT GRID:
          - Mobile: 1 cột (grid-cols-1)
          - Desktop (lg): 10 cột (grid-cols-10) để chia tỷ lệ 3/7 dễ dàng

@@ -409,8 +409,12 @@ export const myAppointments = async (req, res, next) => {
     const items = await Appointment.find({ patient_id: patientProfile._id })
       .populate({
         path: "doctor_id",
-        select: "fullName email phone avatar specialty", // Chọn các trường cần hiển thị từ bảng Doctor
+       select: "fullName email phone thumbnail specialty_id", // Chọn các trường cần hiển thị từ bảng Doctor
         model: "Doctor", // Đảm bảo populate từ model Doctor nếu doctor_id ref sang Doctor
+        populate: {
+            path: "specialty_id",
+            select: "name",
+        }
       })
       .sort({ createdAt: -1 })
       .lean();

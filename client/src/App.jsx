@@ -3,7 +3,7 @@ import "./index.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { GoogleOAuthProvider } from '@react-oauth/google'; // Đã import
+import { GoogleOAuthProvider } from "@react-oauth/google"; // Đã import
 
 import AdminLayout from "./layouts/AdminLayout";
 import UserLayout from "./layouts/UserLayout";
@@ -49,7 +49,7 @@ import PatientDashboard from "./pages/patient/PatientDashboard.jsx";
 import PatientPassword from "./pages/patient/PatientPassword.jsx";
 import PatientAppointment from "./pages/patient/PatientAppointment.jsx";
 import PatientVisitDetail from "./pages/patient/PatientVisitDetail.jsx";
-import DoctorList from "./pages/doctor/DoctorList";
+import DoctorList from "./pages/DoctorList.jsx";
 import ServiceManagement from "./pages/admin/MedicalServiceManagement.jsx";
 import MedicineManagement from "./pages/admin/MedicalManagement.jsx";
 import VisitManagement from "./pages/admin/VisitManagement.jsx";
@@ -58,7 +58,8 @@ import ServicesPage from "./pages/ServicesPage.jsx";
 import ContactManagement from "./pages/admin/ContactManagement.jsx";
 
 // 👇 1. KHAI BÁO CLIENT ID (Lấy từ Google Cloud Console)
-const GOOGLE_CLIENT_ID = "531603412890-micqhn0cd162qolhcpfv9cj62envka2v.apps.googleusercontent.com"; 
+const GOOGLE_CLIENT_ID =
+  "531603412890-micqhn0cd162qolhcpfv9cj62envka2v.apps.googleusercontent.com";
 // Ví dụ: "123456-abcdef.apps.googleusercontent.com"
 
 export default function App() {
@@ -68,31 +69,31 @@ export default function App() {
       <BrowserRouter>
         <ScrollToTop />
         <Routes>
-          
           {/* ==================== USER LAYOUT ==================== */}
           <Route path="/" element={<UserLayout />}>
-            
             {/* --- PUBLIC ROUTES --- */}
             <Route path="Login" element={<LoginPage />} />
             <Route path="Register" element={<RegisterPage />} />
             <Route path="about-us" element={<AboutUsPage />} />
             <Route path="services" element={<ServicesPage />} />
-            
-            
+
             {/* --- ONBOARDING ROUTES --- */}
             <Route element={<RequireProfile />}>
-               <Route path="/onboarding/profile-patient" element={<ProfileCompletion />} />
+              <Route
+                path="/onboarding/profile-patient"
+                element={<ProfileCompletion />}
+              />
 
-               <Route 
-                 path="/onboarding/profile-doctor" 
-                 element={
-                   <DoctorRoute>
-                       <CompletedProfileDoctor />
-                   </DoctorRoute>
-                 } 
-               />
+              <Route
+                path="/onboarding/profile-doctor"
+                element={
+                  <DoctorRoute>
+                    <CompletedProfileDoctor />
+                  </DoctorRoute>
+                }
+              />
             </Route>
-            
+
             {/* 2. CÁC TRANG CẦN BẢO VỆ */}
             <Route element={<RequireProfile />}>
               <Route index element={<HomePage />} />
@@ -101,8 +102,11 @@ export default function App() {
               <Route path="doctors/:id" element={<DoctorDetailPage />} />
               <Route path="doctors" element={<DoctorList />} />
               <Route path="post" element={<PostList />} />
-              <Route path="/visit-detail/:appointmentId" element={<PatientVisitDetail />} />
-              
+              <Route
+                path="/visit-detail/:appointmentId"
+                element={<PatientVisitDetail />}
+              />
+
               {/* Dashboard Patient */}
               <Route path="/profile" element={<PatientDashboard />}>
                 <Route index element={<PatientProfile />} />
@@ -151,13 +155,13 @@ export default function App() {
             }
           >
             <Route element={<RequireProfile />}>
-            <Route index element={<DoctorProfile />} />
-            <Route path="appointments" element={<DoctorAppointment />} />
-            <Route path="schedule" element={<DoctorSchedule />} />
-            <Route path="visits" element={<DoctorVisit />} />
-            <Route path="settings" element={<DoctorSettings />} />
-            
-            <Route path="*" element={<NotFound />} />
+              <Route index element={<DoctorProfile />} />
+              <Route path="appointments" element={<DoctorAppointment />} />
+              <Route path="schedule" element={<DoctorSchedule />} />
+              <Route path="visits" element={<DoctorVisit />} />
+              <Route path="settings" element={<DoctorSettings />} />
+
+              <Route path="*" element={<NotFound />} />
             </Route>
           </Route>
         </Routes>

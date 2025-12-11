@@ -24,7 +24,7 @@ export default function BookingSection({ doctor, scheduleConfig }) {
     // 1. Logic tạo 10 ngày (Giữ nguyên)
     const weekDays = useMemo(() => {
         const days = [];
-        for (let i = 0; i < 14; i++) { // Tăng lên 14 ngày cho thoải mái
+        for (let i = 0; i < 7; i++) { // Tăng lên 14 ngày cho thoải mái
             const date = new Date();
             date.setDate(date.getDate() + i);
             const year = date.getFullYear();

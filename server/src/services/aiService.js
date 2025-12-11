@@ -74,7 +74,7 @@ const tools = [
 // --- 2. HÀM XỬ LÝ CHÍNH ---
 export const handleAIChat = async (userMessage, socketId, userId, io) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash", tools: tools });
+    const model = genAI.getGenerativeModel({ model: "gemini-robotics-er-1.5-preview", tools: tools });
     const today = new Date().toLocaleDateString("en-CA"); 
 
     // Khởi tạo session chat nếu chưa có

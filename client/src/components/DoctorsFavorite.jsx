@@ -1,7 +1,9 @@
 // src/components/DoctorsFavorite.jsx
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Star, MapPin, Banknote, CalendarCheck, ArrowRight } from "lucide-react";
+// 1. Thêm useNavigate
+import { Link, useNavigate } from "react-router-dom";
+// 2. Thêm icon Briefcase (Kinh nghiệm)
+import { Star, MapPin, Banknote, CalendarCheck, ArrowRight, Briefcase } from "lucide-react";
 import doctorService from "../services/DoctorService";
 
 // Format tiền tệ
@@ -12,6 +14,7 @@ const formatVND = (value) => {
 };
 
 export default function DoctorsFavorite({ title = "Bác Sĩ Nổi Bật Tuần Này" }) {
+  const navigate = useNavigate(); // Hook điều hướng
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,6 +44,11 @@ export default function DoctorsFavorite({ title = "Bác Sĩ Nổi Bật Tuần N
 
     fetchTopDoctors();
   }, []);
+
+  // Hàm xử lý click thẻ
+  const handleCardClick = (id) => {
+    navigate(`/doctors/${id}`);
+  };
 
   return (
     <section className="w-full bg-white py-12 md:py-16 border-b border-slate-100">
@@ -107,15 +115,22 @@ export default function DoctorsFavorite({ title = "Bác Sĩ Nổi Bật Tuần N
                 consultation_fee,
                 averageRating,
                 address,
+                // Lấy thêm trường kinh nghiệm
+               career_start_year
               } = doctor;
 
               const doctorId = _id || id;
               const rating = averageRating ? Number(averageRating).toFixed(1) : "0";
+             const experienceYears =career_start_year
+    ? new Date().getFullYear() - new Date(career_start_year)
+    : "chưa cập nhật";
 
               return (
                 <div
                   key={doctorId}
-                  className="group bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                  // THAY ĐỔI: Thêm onClick và cursor-pointer
+                  onClick={() => handleCardClick(doctorId)}
+                  className="group bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full cursor-pointer"
                 >
                   {/* Phần trên: Ảnh + Tên + Chuyên khoa */}
                   <div className="flex gap-4 items-start mb-4">
@@ -142,8 +157,17 @@ export default function DoctorsFavorite({ title = "Bác Sĩ Nổi Bật Tuần N
                     </div>
                   </div>
 
-                  {/* Phần giữa: Địa chỉ + Giá */}
+                  {/* Phần giữa: Kinh nghiệm + Địa chỉ + Giá */}
                   <div className="space-y-2 mb-5 text-sm text-slate-500 flex-1 border-t border-dashed border-slate-100 pt-3">
+                    
+                    {/* THÊM: Năm kinh nghiệm */}
+                    <div className="flex items-center gap-2">
+                       <Briefcase size={14} className="shrink-0 text-slate-400" />
+                       <span className="text-xs">
+                         {experienceYears > 0 ? `${experienceYears} năm kinh nghiệm` : "chưa cập nhật kinh nghiệm"}
+                       </span>
+                    </div>
+
                     <div className="flex items-start gap-2">
                       <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
                       <span className="line-clamp-2 text-xs">
@@ -159,13 +183,12 @@ export default function DoctorsFavorite({ title = "Bác Sĩ Nổi Bật Tuần N
                     </div>
                   </div>
 
-                  {/* Nút Đặt lịch */}
-                  <Link
-                    to={`/doctors/${doctorId}`}
-                    className="mt-auto w-full py-2.5 rounded-xl bg-slate-50 text-slate-600 text-sm font-bold text-center hover:bg-sky-600 hover:text-white transition-all flex items-center justify-center gap-2 group-hover:shadow-md"
+                  {/* Nút Đặt lịch (Chuyển thành div) */}
+                  <div
+                    className="mt-auto w-full py-2.5 rounded-xl bg-slate-50 text-slate-600 text-sm font-bold text-center group-hover:bg-sky-500 group-hover:text-white transition-all flex items-center justify-center gap-2 group-hover:shadow-md"
                   >
                     <CalendarCheck size={16} /> Đặt lịch ngay
-                  </Link>
+                  </div>
                 </div>
               );
             })}

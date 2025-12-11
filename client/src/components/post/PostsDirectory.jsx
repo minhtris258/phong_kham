@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+// 1. Thêm useNavigate
+import { useNavigate } from "react-router-dom";
 import postService from "../../services/PostService";
 import { toastError } from "../../utils/toast";
 import { 
@@ -25,6 +26,8 @@ const formatDate = (value) => {
 };
 
 export default function PostsDirectory() {
+  const navigate = useNavigate(); // Hook chuyển trang
+
   // 1. STATE QUẢN LÝ DỮ LIỆU & BỘ LỌC
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,22 +35,21 @@ export default function PostsDirectory() {
   // State phân trang
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 6, // Số bài trên 1 trang
+    limit: 6, 
     total: 0,
     pages: 1
   });
 
   // State bộ lọc
   const [filters, setFilters] = useState({
-    q: "",        // Từ khóa tìm kiếm
-    tag: "",      // Lọc theo tag
-    status: "published", // Mặc định chỉ hiện bài đã đăng
+    q: "",        
+    tag: "",      
+    status: "published", 
   });
 
   // State debounce search
   const [debouncedSearch, setDebouncedSearch] = useState(filters.q);
 
-  // Debounce effect: Chờ người dùng ngừng gõ 500ms mới set lại từ khóa search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(filters.q);
@@ -59,7 +61,6 @@ export default function PostsDirectory() {
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
-      // Chuẩn bị params gửi lên server
       const params = {
         page: pagination.page,
         limit: pagination.limit,
@@ -68,10 +69,7 @@ export default function PostsDirectory() {
         status: filters.status,
       };
 
-      // Gọi API qua Service
       const res = await postService.getPosts(params);
-      
-      // Xử lý dữ liệu trả về từ PostController
       const { items, pagination: apiPagination } = res.data;
 
       setPosts(items || []);
@@ -89,18 +87,15 @@ export default function PostsDirectory() {
     }
   }, [pagination.page, pagination.limit, debouncedSearch, filters.tag, filters.status]);
 
-  // Gọi API mỗi khi filter hoặc page thay đổi
   useEffect(() => {
     fetchPosts();
-    // Cuộn lên đầu phần danh sách khi chuyển trang (nếu cần)
-    // document.getElementById('post-list-top')?.scrollIntoView({ behavior: 'smooth' });
   }, [fetchPosts]);
 
-  // 3. HANDLERS (Xử lý sự kiện)
+  // 3. HANDLERS
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset về trang 1 khi lọc
+    setPagination(prev => ({ ...prev, page: 1 })); 
   };
 
   const handlePageChange = (newPage) => {
@@ -113,6 +108,11 @@ export default function PostsDirectory() {
     setFilters({ q: "", tag: "", status: "published" });
     setDebouncedSearch("");
     setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  // === HÀM XỬ LÝ CLICK CARD ===
+  const handleCardClick = (slug) => {
+    navigate(`/post/${slug}`);
   };
 
   // 4. RENDER
@@ -132,24 +132,24 @@ export default function PostsDirectory() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
-          {/* === SIDEBAR BỘ LỌC (CỘT TRÁI) === */}
+          {/* === SIDEBAR BỘ LỌC === */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-24">
               
               <div className="flex items-center justify-between mb-6 border-b pb-4">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <Filter size={20} className="text-indigo-600" /> Bộ lọc
+                  <Filter size={20} className="color-title-hover" /> Bộ lọc
                 </h3>
                 <button 
                   onClick={handleResetFilter}
-                  className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium bg-indigo-50 px-2 py-1 rounded transition"
+                  className="text-xs color-title-hover flex items-center gap-1 font-medium bg-indigo-50 px-2 py-1 rounded transition"
                   title="Xóa tất cả bộ lọc"
                 >
-                  <RotateCcw size={12} /> Reset
+                  <RotateCcw size={12} /> Xoá
                 </button>
               </div>
 
-              {/* 1. Tìm kiếm */}
+              {/* Tìm kiếm */}
               <div className="mb-5">
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Tìm kiếm</label>
                 <div className="relative group">
@@ -165,7 +165,7 @@ export default function PostsDirectory() {
                 </div>
               </div>
 
-              {/* 2. Lọc theo Tag */}
+              {/* Lọc theo Tag */}
               <div className="mb-5">
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Chủ đề (Tag)</label>
                 <div className="relative group">
@@ -181,7 +181,7 @@ export default function PostsDirectory() {
                 </div>
               </div>
 
-              {/* 3. Số lượng hiển thị */}
+              {/* Số lượng hiển thị */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Hiển thị</label>
                 <select
@@ -199,10 +199,9 @@ export default function PostsDirectory() {
             </div>
           </div>
 
-          {/* === DANH SÁCH BÀI VIẾT (CỘT PHẢI) === */}
+          {/* === DANH SÁCH BÀI VIẾT === */}
           <div className="lg:col-span-3">
             
-            {/* Loading Skeleton */}
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -218,10 +217,8 @@ export default function PostsDirectory() {
               </div>
             ) : posts.length > 0 ? (
               <>
-                {/* Grid Posts */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-10" id="post-list-top">
                   {posts.map((post) => {
-                    // Logic xử lý dữ liệu giống cũ
                     const { _id, id, slug, name, title, thumbnail, cover_image, excerpt, summary, published_at, publishedAt, createdAt, tags } = post;
                     
                     const displayTitle = name || title;
@@ -232,23 +229,30 @@ export default function PostsDirectory() {
                     const tagName = (tags && tags.length > 0) ? tags[0] : null;
 
                     return (
-                      <article key={displayId} className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100 flex flex-col hover:shadow-lg transition-all duration-300 group">
-                        <Link to={`/post/${slug}`} className="relative block overflow-hidden aspect-[4/3]">
+                      <article 
+                        key={displayId} 
+                        // THAY ĐỔI: Thêm onClick và cursor-pointer
+                        onClick={() => handleCardClick(slug)}
+                        className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100 flex flex-col hover:shadow-lg transition-all duration-300 group cursor-pointer"
+                      >
+                        {/* Ảnh: Đổi Link thành div để tránh lỗi lồng nhau, nhưng giữ style */}
+                        <div className="relative block overflow-hidden aspect-[4/3]">
                           <img src={img} alt={displayTitle} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                           {tagName && (
                             <span className="absolute top-3 left-3 bg-white/90 backdrop-blur text-indigo-600 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
                               #{tagName}
                             </span>
                           )}
-                        </Link>
+                        </div>
 
                         <div className="p-5 flex flex-col flex-1">
                           <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
                              <Calendar size={14} /> {formatDate(displayDate)}
                           </div>
                           
-                          <h3 className="text-lg font-bold text-slate-800 mb-3 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-                            <Link to={`/post/${slug}`} title={displayTitle}>{displayTitle}</Link>
+                          {/* Tiêu đề: Bỏ Link, chỉ giữ text */}
+                          <h3 className="text-lg font-bold text-slate-800 mb-3 line-clamp-2 color-title-2 transition-colors group-hover:text-indigo-600">
+                            {displayTitle}
                           </h3>
 
                           {displayExcerpt && (
@@ -256,9 +260,10 @@ export default function PostsDirectory() {
                           )}
 
                           <div className="mt-auto pt-4 border-t border-slate-50 flex justify-between items-center">
-                             <Link to={`/post/${slug}`} className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 group-hover:gap-2 transition-all">
+                             {/* Nút xem thêm: Đổi thành span giả lập link */}
+                             <span className="text-sm font-semibold color-title-2 flex items-center gap-1 group-hover:gap-2 transition-all">
                                 Đọc chi tiết <ChevronRight size={16} />
-                             </Link>
+                             </span>
                           </div>
                         </div>
                       </article>
@@ -307,7 +312,7 @@ export default function PostsDirectory() {
                 </p>
                 <button 
                   onClick={handleResetFilter}
-                  className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium shadow-lg shadow-indigo-200"
+                  className="px-8 py-3 bg-[#00B5F1] text-white rounded-xl hover:bg-[#0095D5] transition font-medium shadow-lg shadow-indigo-200"
                 >
                   Xóa bộ lọc & Thử lại
                 </button>

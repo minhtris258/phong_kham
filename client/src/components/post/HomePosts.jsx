@@ -93,7 +93,7 @@ export default function HomePosts() {
           </h2>
           <Link 
             to="/post" 
-            className="hidden md:flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+            className="hidden md:flex items-center gap-2 text-sm font-semibold color-title-hover transition-colors"
           >
             Xem tất cả <ArrowRight size={16} />
           </Link>
@@ -165,7 +165,7 @@ const HeroCard = ({ post }) => {
              <span>{formatDate(createdAt)}</span>
           </div>
 
-          <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-3 group-hover:text-blue-600 transition-colors leading-snug">
+          <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-3 color-title-2 transition-colors leading-snug">
             {name}
           </h3>
           
@@ -199,7 +199,7 @@ const SubCard = ({ post }) => {
 
         <div className="p-4 flex flex-col flex-1">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded">
+            <span className="text-[10px] font-bold color-title-hover uppercase bg-blue-50 px-2 py-0.5 rounded">
                 {category}
             </span>
             <span className="text-[10px] text-gray-400 flex items-center gap-1">
@@ -207,7 +207,7 @@ const SubCard = ({ post }) => {
             </span>
           </div>
 
-          <h3 className="text-sm font-bold text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors leading-relaxed" title={name}>
+          <h3 className="text-sm font-bold text-gray-800 line-clamp-2 color-title-2 transition-colors leading-relaxed" title={name}>
             {name}
           </h3>
         </div>

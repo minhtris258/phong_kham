@@ -1,10 +1,9 @@
 // src/components/DoctorsDirectory.jsx
 import React, { useEffect, useState, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom"; // Thêm useNavigate
 
 import { 
   Star, 
-  Stethoscope, 
   MapPin, 
   Banknote, 
   Search, 
@@ -12,12 +11,12 @@ import {
   ChevronDown,
   ChevronUp,
   Filter,
-  SortAsc, // Icon sắp xếp
+  SortAsc,
   SortDesc
 } from "lucide-react"; 
 import doctorService from "../../services/DoctorService";
 import specialtyService from "../../services/SpecialtyService";
-import { toastSuccess, toastError } from "../../utils/toast";
+import { toastError } from "../../utils/toast";
 
 const formatVND = (value) => {
   if (value === null || value === undefined || value === "") return "—";
@@ -27,14 +26,15 @@ const formatVND = (value) => {
 };
 
 const ITEMS_PER_PAGE = 9; 
-const SIDEBAR_SPECS_LIMIT = 5; // Số lượng khoa hiển thị trong sidebar trước khi xem thêm
+const SIDEBAR_SPECS_LIMIT = 5;
 
 export default function DoctorsDirectory() {
+  const navigate = useNavigate(); // Hook chuyển trang
   const [doctors, setDoctors] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [loading, setLoading] = useState(false);
 
-    // === LẤY CHUYÊN KHOA TỪ URL ===
+  // === LẤY CHUYÊN KHOA TỪ URL ===
   const [searchParams] = useSearchParams();
   const urlSpecialtyId = searchParams.get("specialtyId") || "ALL";
 
@@ -42,24 +42,23 @@ export default function DoctorsDirectory() {
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState("ALL");
   const [filterPrice, setFilterPrice] = useState("ALL");
   const [filterRating, setFilterRating] = useState(0);
-  const [sortOrder, setSortOrder] = useState("DEFAULT"); // DEFAULT, ASC, DESC
+  const [sortOrder, setSortOrder] = useState("DEFAULT");
 
   // === STATE HIỂN THỊ ===
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
-  const [isSpecsExpanded, setIsSpecsExpanded] = useState(false); // Toggle xem thêm khoa ở sidebar
+  const [isSpecsExpanded, setIsSpecsExpanded] = useState(false);
 
-   useEffect(() => {
+  useEffect(() => {
     setSelectedSpecialtyId(urlSpecialtyId || "ALL");
   }, [urlSpecialtyId])
+
   useEffect(() => {
     const fetchAll = async () => {
       try {
         setLoading(true);
         const [doctorRes, specialtyRes] = await Promise.all([
-          // 👇 SỬA DÒNG NÀY: Truyền thêm { limit: 1000 } để lấy hết danh sách
           doctorService.getAllDoctors({ limit: 1000 }), 
-          
           specialtyService.getAllSpecialties({ limit: 100 })
         ]);
         
@@ -87,7 +86,6 @@ export default function DoctorsDirectory() {
 
   // === LOGIC LỌC VÀ SẮP XẾP ===
   const processedDoctors = useMemo(() => {
-    // 1. Lọc
     let result = doctors.filter((doctor) => {
       // Chuyên khoa
       let matchSpec = true;
@@ -111,7 +109,7 @@ export default function DoctorsDirectory() {
       return matchSpec && matchPrice && matchRating;
     });
 
-    // 2. Sắp xếp (A-Z / Z-A)
+    // Sắp xếp
     if (sortOrder === "ASC") {
       result.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
     } else if (sortOrder === "DESC") {
@@ -122,19 +120,19 @@ export default function DoctorsDirectory() {
   }, [doctors, selectedSpecialtyId, filterPrice, filterRating, sortOrder]);
 
   const displayedDoctors = processedDoctors.slice(0, visibleCount);
-
-  // Danh sách khoa hiển thị ở Sidebar
   const displayedSpecs = isSpecsExpanded ? specialties : specialties.slice(0, SIDEBAR_SPECS_LIMIT);
 
-  const handleLoadMore = () => {
-    setVisibleCount(prev => prev + ITEMS_PER_PAGE);
-  };
+  const handleLoadMore = () => { setVisibleCount(prev => prev + ITEMS_PER_PAGE); };
 
   const clearFilters = () => {
     setSelectedSpecialtyId("ALL");
     setFilterPrice("ALL");
     setFilterRating(0);
     setSortOrder("DEFAULT");
+  };
+
+  const handleCardClick = (id) => {
+    navigate(`/doctors/${id}`);
   };
 
   if (loading) {
@@ -147,7 +145,6 @@ export default function DoctorsDirectory() {
 
   return (
     <section className="container mx-auto px-4 py-8 lg:py-12 min-h-screen ">
-      
       {/* Header */}
       <div className="text-center mb-10 mt-15">
         <h2 className="text-3xl font-bold color-title mb-2">Đội ngũ chuyên gia</h2>
@@ -167,38 +164,33 @@ export default function DoctorsDirectory() {
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         
-        {/* === SIDEBAR (GỘP TẤT CẢ VÀO ĐÂY) === */}
+        {/* === SIDEBAR === */}
         <aside className={`w-full lg:w-1/5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-24 ${showMobileFilter ? 'block' : 'hidden lg:block'}`}>
-          
           <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-            <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-              <Filter size={20} className="text-sky-500"/> Bộ lọc
-            </h3>
-            <button onClick={clearFilters} className="text-xs text-red-500 hover:text-red-700 font-semibold hover:underline transition">
-              Đặt lại
-            </button>
+            <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2"><Filter size={20} className="text-sky-500"/> Bộ lọc</h3>
+            <button onClick={clearFilters} className="text-xs text-red-500 hover:text-red-700 font-semibold hover:underline transition">Đặt lại</button>
           </div>
 
-          {/* 1. SẮP XẾP (A-Z) */}
+          {/* Sắp xếp */}
           <div className="mb-8">
             <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Sắp xếp tên</h4>
             <div className="space-y-2">
-               <label className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
+                <label className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
                   <input type="radio" name="sort" className="accent-sky-500 w-4 h-4" checked={sortOrder === "DEFAULT"} onChange={() => setSortOrder("DEFAULT")} />
                   <span className="text-sm text-slate-600">Mặc định</span>
-               </label>
-               <label className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
                   <input type="radio" name="sort" className="accent-sky-500 w-4 h-4" checked={sortOrder === "ASC"} onChange={() => setSortOrder("ASC")} />
                   <span className="text-sm text-slate-600 flex items-center gap-2"><SortAsc size={14}/> Tên (A - Z)</span>
-               </label>
-               <label className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
                   <input type="radio" name="sort" className="accent-sky-500 w-4 h-4" checked={sortOrder === "DESC"} onChange={() => setSortOrder("DESC")} />
                   <span className="text-sm text-slate-600 flex items-center gap-2"><SortDesc size={14}/> Tên (Z - A)</span>
-               </label>
+                </label>
             </div>
           </div>
 
-          {/* 2. CHUYÊN KHOA (ĐÃ GỘP VÀO ĐÂY) */}
+          {/* Chuyên khoa */}
           <div className="mb-8">
             <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Chuyên khoa</h4>
             <div className="space-y-1">
@@ -220,28 +212,18 @@ export default function DoctorsDirectory() {
                 </label>
               ))}
             </div>
-            
-            {/* Nút xem thêm khoa */}
             {specialties.length > SIDEBAR_SPECS_LIMIT && (
-               <button 
-                  onClick={() => setIsSpecsExpanded(!isSpecsExpanded)}
-                  className="mt-2 text-xs font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1 transition"
-               >
+               <button onClick={() => setIsSpecsExpanded(!isSpecsExpanded)} className="mt-2 text-xs font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1 transition">
                   {isSpecsExpanded ? <>Thu gọn <ChevronUp size={12}/></> : <>Xem thêm {specialties.length - SIDEBAR_SPECS_LIMIT} khoa <ChevronDown size={12}/></>}
                </button>
             )}
           </div>
 
-          {/* 3. GIÁ */}
+          {/* Phí & Đánh giá (Giữ nguyên) */}
           <div className="mb-8">
             <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Phí tư vấn</h4>
             <div className="space-y-2">
-              {[
-                { label: "Tất cả", value: "ALL" },
-                { label: "Dưới 200k", value: "UNDER_200" },
-                { label: "200k - 500k", value: "200_500" },
-                { label: "Trên 500k", value: "ABOVE_500" },
-              ].map((opt) => (
+              {[ { label: "Tất cả", value: "ALL" }, { label: "Dưới 200k", value: "UNDER_200" }, { label: "200k - 500k", value: "200_500" }, { label: "Trên 500k", value: "ABOVE_500" } ].map((opt) => (
                 <label key={opt.value} className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
                   <input type="radio" name="price" className="accent-sky-500 w-4 h-4" checked={filterPrice === opt.value} onChange={() => setFilterPrice(opt.value)} />
                   <span className="text-sm text-slate-600">{opt.label}</span>
@@ -249,8 +231,6 @@ export default function DoctorsDirectory() {
               ))}
             </div>
           </div>
-
-          {/* 4. ĐÁNH GIÁ */}
           <div>
             <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Đánh giá</h4>
             <div className="space-y-2">
@@ -261,23 +241,16 @@ export default function DoctorsDirectory() {
                {[5, 4, 3].map(star => (
                  <label key={star} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded-lg -mx-2 transition">
                     <input type="radio" name="rating" className="accent-sky-500 w-4 h-4" checked={filterRating === star} onChange={() => setFilterRating(star)} />
-                    <div className="flex text-sm text-slate-600 items-center">
-                       <span className="mr-1">Từ {star}</span> <Star size={12} className="fill-amber-400 text-amber-400"/>
-                    </div>
+                    <div className="flex text-sm text-slate-600 items-center"><span className="mr-1">Từ {star}</span> <Star size={12} className="fill-amber-400 text-amber-400"/></div>
                  </label>
                ))}
             </div>
           </div>
-
         </aside>
 
-        {/* === MAIN CONTENT (DANH SÁCH BÁC SĨ) === */}
+        {/* === MAIN CONTENT === */}
         <div className="w-full lg:w-4/5">
-          
-          {/* Thông báo kết quả tìm kiếm */}
-          <div className="mb-4 text-sm text-slate-500 font-medium">
-             Tìm thấy <span className="text-sky-600 font-bold">{processedDoctors.length}</span> bác sĩ phù hợp
-          </div>
+          <div className="mb-4 text-sm text-slate-500 font-medium">Tìm thấy <span className="text-sky-600 font-bold">{processedDoctors.length}</span> bác sĩ phù hợp</div>
 
           {displayedDoctors.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
@@ -290,7 +263,13 @@ export default function DoctorsDirectory() {
                 {displayedDoctors.map((doctor) => {
                   const { _id, fullName, thumbnail, specialty_id, consultation_fee, averageRating, address } = doctor;
                   return (
-                    <div key={_id} className="group bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+                    <div 
+                      key={_id} 
+                      // 1. CLICK VÀO DIV CHA
+                      onClick={() => handleCardClick(_id)}
+                      // 2. THÊM cursor-pointer
+                      className="group bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer"
+                    >
                       <div className="flex gap-4 items-start mb-4">
                         <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 border border-slate-100 shadow-inner">
                           <img src={thumbnail || "https://ui-avatars.com/api/?name=Doctor&background=random"} alt={fullName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -310,26 +289,26 @@ export default function DoctorsDirectory() {
                       </div>
 
                       <div className="space-y-2 mb-5 text-sm text-slate-500 flex-1">
-                         <div className="flex items-start gap-2">
-                            <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400"/>
-                            <span className="line-clamp-2 text-xs">{address || "Chưa cập nhật địa chỉ"}</span>
-                         </div>
-                         <div className="flex items-center gap-2">
-                            <Banknote size={14} className="shrink-0 text-slate-400"/>
-                            <span className="font-bold text-sky-700">{formatVND(consultation_fee)}</span>
-                         </div>
+                          <div className="flex items-start gap-2">
+                             <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400"/>
+                             <span className="line-clamp-2 text-xs">{address || "Chưa cập nhật địa chỉ"}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <Banknote size={14} className="shrink-0 text-slate-400"/>
+                             <span className="font-bold text-sky-700">{formatVND(consultation_fee)}</span>
+                          </div>
                       </div>
 
-                      <Link to={`/doctors/${_id}`} className="mt-auto w-full py-2.5 rounded-xl bg-slate-50 text-slate-600 text-sm font-bold text-center hover:bg-sky-500 hover:text-white transition-all flex items-center justify-center gap-2 group-hover:shadow-md">
-                         <CalendarCheck size={16}/> Đặt lịch
-                      </Link>
+                      {/* 3. Nút giả lập (Thay Link bằng div để tránh conflict click) */}
+                      <div className="mt-auto w-full py-2.5 rounded-xl bg-slate-50 text-slate-600 text-sm font-bold text-center group-hover:bg-sky-500 group-hover:text-white transition-all flex items-center justify-center gap-2 group-hover:shadow-md">
+                          <CalendarCheck size={16}/> Đặt lịch
+                      </div>
                     </div>
                   );
                 })}
             </div>
           )}
 
-          {/* Load More */}
           {visibleCount < processedDoctors.length && (
             <div className="mt-12 text-center">
                 <button onClick={handleLoadMore} className="px-8 py-3 rounded-full bg-white border border-slate-200 text-slate-600 font-bold shadow-sm hover:border-sky-300 hover:text-sky-600 transition-all inline-flex items-center gap-2">

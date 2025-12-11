@@ -19,6 +19,15 @@ ul > li {
 .color-title-hover {
   color: #1da1f2 !important;
 }
+.color-title-hover:hover {
+  color: #0d8ddb !important;
+}
+.color-title-2 {
+  color: #003553 !important;
+}
+.color-title-2:hover {
+  color: #1da1f2 !important;
+}
 h2 {
   text-transform: uppercase;
 }
