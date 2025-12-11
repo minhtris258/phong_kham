@@ -77,7 +77,7 @@ export default function ServiceSection() {
 
         <Link
           to="/services"
-          className="text-base font-semibold color-title hover:underline flex items-center gap-1"
+          className="text-base text-[#00B5F1] font-semibold hover:underline flex items-center gap-1"
         >
           Xem tất cả
           <span aria-hidden="true">→</span>
@@ -134,7 +134,7 @@ export default function ServiceSection() {
                 Giá từ: {formatPrice(featured.price || featured.fee)}
               </p>
 
-              <span className="mt-4 inline-flex items-center gap-1 text-base font-medium text-[#0a2463]">
+              <span className="mt-4 inline-flex items-center gap-1 text-base font-medium text-[#00B5F1]">
                 Xem chi tiết
                 <span aria-hidden="true">→</span>
               </span>
@@ -180,7 +180,7 @@ export default function ServiceSection() {
                 {formatPrice(sv.price || sv.fee)}
               </p>
 
-              <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#0a2463]">
+              <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#00B5F1]">
                 Xem chi tiết
                 <span aria-hidden="true">→</span>
               </span>
