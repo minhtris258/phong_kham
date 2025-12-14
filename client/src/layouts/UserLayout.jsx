@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from '../components/Header'; 
 import Footer from '../components/Footer'; 
+import Chatbox from '../components/Chatbox';
 
 // Thêm destructuring { children } vào props
 const UserLayout = ({ children }) => {
@@ -17,7 +18,7 @@ const UserLayout = ({ children }) => {
         */}
         {children ? children : <Outlet />}
       </main>
-
+      <Chatbox />
       <Footer />
     </div>
   );

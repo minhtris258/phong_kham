@@ -27,7 +27,7 @@ const AppointmentDayModal = ({
                         handleAddEdit(null); 
                         onClose(); // Đóng modal ngày và mở modal form
                     }}
-                    className="flex items-center bg-indigo-600 text-white px-3 py-2 text-sm rounded-xl font-semibold shadow-md hover:bg-indigo-700 transition"
+                    className="flex items-center bg-sky-500 text-white px-3 py-2 text-sm rounded-xl font-semibold shadow-md hover:bg-sky-700 transition"
                 >
                     <Plus className="w-5 h-5 mr-1" /> Thêm Lịch Hẹn
                 </button>
@@ -57,7 +57,7 @@ const AppointmentDayModal = ({
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-right text-sm font-medium flex justify-end items-center">
-                                        <button onClick={() => { handleAddEdit(app); onClose(); }} className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full" title="Sửa">Sửa</button>
+                                        <button onClick={() => { handleAddEdit(app); onClose(); }} className="text-sky-600 hover:text-sky-900 p-1 rounded-full" title="Sửa">Sửa</button>
                                         <button onClick={() => confirmDelete(app._id)} className="text-red-600 hover:text-red-900 p-1 rounded-full ml-1" title="Xóa">Xóa</button>
                                     </td>
                                 </tr>

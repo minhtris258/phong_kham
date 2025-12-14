@@ -33,7 +33,7 @@ const ProfileSettings = () => {
                         role: user.role || '',
                         // Nếu backend chưa trả về phone, để trống
                         phone: user.phone || '', 
-                        avatarUrl: 'https://placehold.co/100x100/indigo/white?text=' + (user.name?.charAt(0) || 'U')
+                        avatarUrl: 'https://placehold.co/100x100/sky/white?text=' + (user.name?.charAt(0) || 'U')
                     }));
                 }
             } catch (error) {
@@ -114,7 +114,7 @@ const ProfileSettings = () => {
                     <form onSubmit={handleSaveProfile} className="space-y-4">
                         <div className="flex items-center space-x-4 pb-4 border-b border-gray-100">
                             <img 
-                                className="h-20 w-20 rounded-full object-cover shadow-lg border-2 border-indigo-500" 
+                                className="h-20 w-20 rounded-full object-cover shadow-lg border-2 border-sky-500" 
                                 src={profile.avatarUrl} 
                                 alt="Avatar"
                             />
@@ -132,7 +132,7 @@ const ProfileSettings = () => {
                                     name="name"
                                     value={profile.name}
                                     onChange={handleChange}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 p-2 border outline-none"
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-500 p-2 border outline-none"
                                 />
                             </label>
                             <label className="block">
@@ -149,7 +149,7 @@ const ProfileSettings = () => {
                         <div className="pt-4 flex justify-end">
                             <button 
                                 type="submit"
-                                className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md opacity-60 cursor-not-allowed"
+                                className="px-6 py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-700 transition shadow-md opacity-60 cursor-not-allowed"
                                 disabled
                                 title="Chức năng tạm khóa"
                             >
@@ -170,7 +170,7 @@ const ProfileSettings = () => {
                                 name="currentPassword"
                                 value={profile.currentPassword}
                                 onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 p-2 border outline-none"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-500 p-2 border outline-none"
                                 required
                             />
                         </label>
@@ -181,7 +181,7 @@ const ProfileSettings = () => {
                                 name="newPassword"
                                 value={profile.newPassword}
                                 onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 p-2 border outline-none"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-500 p-2 border outline-none"
                                 required
                             />
                         </label>
@@ -192,7 +192,7 @@ const ProfileSettings = () => {
                                 name="confirmPassword"
                                 value={profile.confirmPassword}
                                 onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 p-2 border outline-none"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-500 p-2 border outline-none"
                                 required
                             />
                         </label>

@@ -93,7 +93,7 @@ const AppointmentCalendar = ({
 
             <div className="grid grid-cols-7 gap-1 text-center text-sm font-medium text-gray-500">
                 {daysOfWeek.map(day => (
-                    <div key={day} className="py-2 text-indigo-600 font-bold">{day}</div>
+                    <div key={day} className="py-2 text-gray-600 font-bold">{day}</div>
                 ))}
             </div>
 
@@ -112,9 +112,9 @@ const AppointmentCalendar = ({
                     const dateString = `${year}-${month}-${d}`;
                     
                     const isBusy = hasAppointment(day);
-                    const todayClass = isToday(day) ? 'ring-2 ring-indigo-500 border-2 border-white' : '';
-                    const busyClass = isBusy ? 'bg-indigo-100 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50';
-                    const selectedClass = selectedDate === dateString ? 'bg-indigo-500 text-white hover:bg-indigo-500' : '';
+                    const todayClass = isToday(day) ? 'ring-2 ring-sky-500 border-2 border-white' : '';
+                    const busyClass = isBusy ? 'bg-sky-100 text-sky-700 font-semibold' : 'text-gray-700 hover:bg-gray-50';
+                    const selectedClass = selectedDate === dateString ? 'bg-sky-500 text-white hover:bg-sky-500' : '';
 
                     return (
                         <div

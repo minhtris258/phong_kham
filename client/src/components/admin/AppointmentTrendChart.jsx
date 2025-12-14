@@ -40,7 +40,7 @@ const AppointmentTrendChart = ({ data, onFilterChange }) => {
                     onClick={() => handleModeChange(mode)}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
                         viewMode === mode 
-                        ? 'bg-white text-indigo-600 shadow-sm' 
+                        ? 'bg-white text-sky-600 shadow-sm' 
                         : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
                     }`}
                 >
@@ -86,7 +86,7 @@ const AppointmentTrendChart = ({ data, onFilterChange }) => {
 
                         {/* Bar */}
                         <div 
-                            className="w-full max-w-[40px] rounded-t-lg bg-blue opacity-80 group-hover:opacity-100 group-hover:from-indigo-600 group-hover:to-purple-600 transition-all duration-500 ease-out shadow-sm cursor-pointer"
+                            className="w-full max-w-[40px] rounded-t-lg bg-blue opacity-80 group-hover:opacity-100 group-hover:from-sky-600 group-hover:to-purple-600 transition-all duration-500 ease-out shadow-sm cursor-pointer"
                             style={{ height: `${heightPercent}%` }}
                         ></div>
                         

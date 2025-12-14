@@ -42,14 +42,14 @@ const DoctorViewModal = ({ isOpen, onClose, viewingDoctor, specialtyMap }) => {
                             <img
                                 src={viewingDoctor.thumbnail || 'https://via.placeholder.com/150'} 
                                 alt={`Ảnh ${viewingDoctor.fullName}`}
-                                className="w-24 h-24 object-cover rounded-full border-2 border-indigo-400 shadow-md"
+                                className="w-24 h-24 object-cover rounded-full border-2 border-sky-400 shadow-md"
                             />
                         </div>
 
                         <div className="flex-1 space-y-2">
                             <div>
                                 <p className="text-sm font-semibold">Chuyên Khoa:</p>
-                                <p className="text-lg font-bold text-indigo-600">
+                                <p className="text-lg font-bold text-sky-600">
                                     {specialtyMap.get(viewingDoctor.specialty_id?._id || viewingDoctor.specialty_id) || 'N/A'}
                                 </p>
                             </div>

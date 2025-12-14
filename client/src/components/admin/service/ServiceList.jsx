@@ -23,7 +23,7 @@ const ServiceList = ({
                     onClick={() => onPageChange(i)}
                     className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold border 
                     ${pagination.page === i 
-                        ? 'z-10 bg-indigo-600 text-white border-indigo-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600' 
+                        ? 'z-10 bg-sky-600 text-white border-sky-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600' 
                         : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
                     }`}
                 >
@@ -68,7 +68,7 @@ const ServiceList = ({
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{svc.code || 'N/A'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{svc.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 font-semibold">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-sky-600 font-semibold">
                                         {svc.price?.toLocaleString('vi-VN')} đ
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -79,7 +79,7 @@ const ServiceList = ({
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end items-center gap-2">
-                                        <button onClick={() => handleAddEdit(svc)} className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 transition"><Edit className="w-4 h-4" /></button>
+                                        <button onClick={() => handleAddEdit(svc)} className="text-sky-600 hover:text-sky-900 p-1 hover:bg-sky-50 transition"><Edit className="w-4 h-4" /></button>
                                         <button onClick={() => confirmDelete(svc._id || svc.id)} className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 transition"><Trash2 className="w-4 h-4" /></button>
                                     </td>
                                 </tr>

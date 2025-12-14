@@ -44,7 +44,7 @@ const DoctorEditModal = ({
                         onChange={handleInputChange}
                         required
                         placeholder="Nguyễn Văn A"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 transition"
                     />
                 </div>
 
@@ -59,7 +59,7 @@ const DoctorEditModal = ({
                             value={formData.gender || ''}
                             onChange={handleInputChange}
                             required
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500"
                         >
                             <option value="">-- Chọn --</option>
                             <option value="male">Nam</option>
@@ -78,7 +78,7 @@ const DoctorEditModal = ({
                             value={formatDateForInput(formData.dob)}
                             onChange={handleInputChange}
                             required
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                         />
                     </div>
 
@@ -91,7 +91,7 @@ const DoctorEditModal = ({
                             value={formData.specialty_id || ''}
                             onChange={handleInputChange}
                             required
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500"
                         >
                             <option value="">-- Chọn chuyên khoa --</option>
                             {specialties.map(spec => (
@@ -113,10 +113,10 @@ const DoctorEditModal = ({
                             type="file"
                             accept="image/*"
                             onChange={handleFileChange}
-                            className="w-full border border-gray-300 rounded-lg p-2 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                            className="w-full border border-gray-300 rounded-lg p-2 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100"
                             disabled={isImagePending}
                         />
-                        {isImagePending && <p className="text-sm text-indigo-600 mt-1">Đang tải ảnh lên...</p>}
+                        {isImagePending && <p className="text-sm text-sky-600 mt-1">Đang tải ảnh lên...</p>}
                     </div>
                     <div className="col-span-1">
                         {currentThumbnail && (
@@ -171,7 +171,7 @@ const DoctorEditModal = ({
                             min="0"
                             step="10000"
                             placeholder="200000"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                         />
                     </div>
 
@@ -188,11 +188,11 @@ const DoctorEditModal = ({
                                 min="1950"
                                 max={currentYear}
                                 placeholder={`VD: ${currentYear - 5}`}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 pr-32" 
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 pr-32" 
                             />
                             {/* Hiển thị số năm kinh nghiệm tự động */}
                             {formData.career_start_year && (
-                                <span className="absolute right-3 top-2.5 text-sm font-semibold text-indigo-600 bg-indigo-50 px-2 rounded">
+                                <span className="absolute right-3 top-2.5 text-sm font-semibold text-sky-600 bg-sky-50 px-2 rounded">
                                     {Math.max(0, currentYear - formData.career_start_year)} năm KN
                                 </span>
                             )}
@@ -213,7 +213,7 @@ const DoctorEditModal = ({
                         onChange={handleInputChange}
                         required
                         placeholder="Số 123 Đường ABC, Quận 1, TP.HCM"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                     />
                 </div>
 
@@ -227,7 +227,7 @@ const DoctorEditModal = ({
                             onChange={handleInputChange}
                             rows="3"
                             placeholder="Bác sĩ có nhiều năm kinh nghiệm trong lĩnh vực..."
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                         />
                     </div>
                     <div>
@@ -238,7 +238,7 @@ const DoctorEditModal = ({
                             onChange={handleInputChange}
                             rows="3"
                             placeholder="Chỉ admin thấy..."
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                         />
                     </div>
                 </div>
@@ -252,7 +252,7 @@ const DoctorEditModal = ({
                         name="status"
                         value={formData.status || editingDoctor?.status || 'pending_profile'}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500"
                     >
                         <option value="active">Hoạt động (Hiển thị cho bệnh nhân)</option>
                         <option value="inactive">Tạm dừng</option>
@@ -270,7 +270,7 @@ const DoctorEditModal = ({
                     </button>
                     <button
                         type="submit"
-                        className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium shadow-sm flex items-center justify-center min-w-[140px]"
+                        className="px-8 py-3 bg-sky-500 text-white rounded-lg hover:bg-sky-700 transition font-medium shadow-sm flex items-center justify-center min-w-[140px]"
                         disabled={isImagePending}
                     >
                         {isImagePending ? (

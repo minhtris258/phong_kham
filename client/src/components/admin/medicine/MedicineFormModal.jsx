@@ -64,7 +64,7 @@ const MedicineFormModal = ({ isOpen, onClose, formData, setFormData, handleSave,
                             value={formData.name || ''} 
                             onChange={handleChange}
                             placeholder="Ví dụ: Panadol Extra"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border outline-none"
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-500 focus:ring-opacity-50 p-2 border outline-none"
                             required
                         />
                     </label>
@@ -79,7 +79,7 @@ const MedicineFormModal = ({ isOpen, onClose, formData, setFormData, handleSave,
                                 value={formData.unit || ''} 
                                 onChange={handleChange}
                                 placeholder="Viên, Vỉ..."
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border outline-none"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-500 focus:ring-opacity-50 p-2 border outline-none"
                             />
                         </label>
 
@@ -90,7 +90,7 @@ const MedicineFormModal = ({ isOpen, onClose, formData, setFormData, handleSave,
                                 name="status"
                                 value={formData.status || 'active'}
                                 onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border outline-none"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-500 focus:ring-opacity-50 p-2 border outline-none"
                             >
                                 <option value="active">Đang sử dụng</option>
                                 <option value="inactive">Ngừng sử dụng</option>
@@ -108,12 +108,12 @@ const MedicineFormModal = ({ isOpen, onClose, formData, setFormData, handleSave,
                                 onChange={(e) => setDosageInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Nhập liều (vd: 500mg) rồi Enter"
-                                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 p-2 border text-sm outline-none"
+                                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-500 p-2 border text-sm outline-none"
                             />
                             <button 
                                 type="button" 
                                 onClick={handleAddDosage}
-                                className="bg-indigo-100 text-indigo-700 px-3 py-2 rounded-md hover:bg-indigo-200 transition flex items-center"
+                                className="bg-sky-100 text-sky-700 px-3 py-2 rounded-md hover:bg-sky-200 transition flex items-center"
                             >
                                 <Plus size={18} />
                             </button>
@@ -149,14 +149,14 @@ const MedicineFormModal = ({ isOpen, onClose, formData, setFormData, handleSave,
                             value={formData.description || ''} 
                             onChange={handleChange}
                             rows="3"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 p-2 border outline-none"
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-500 focus:ring-opacity-50 p-2 border outline-none"
                         ></textarea>
                     </label>
                 </div>
 
                 <div className="mt-6 flex justify-end space-x-3">
                     <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">Hủy</button>
-                    <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold">Lưu Thông Tin</button>
+                    <button type="submit" className="px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-700 transition font-semibold">Lưu Thông Tin</button>
                 </div>
             </form>
         </Modal>

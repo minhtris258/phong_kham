@@ -113,6 +113,7 @@ export default function App() {
                 <Route path="appointments" element={<PatientAppointment />} />
                 <Route path="password" element={<PatientPassword />} />
               </Route>
+              
             </Route>
 
             <Route path="*" element={<NotFound />} />
@@ -166,7 +167,7 @@ export default function App() {
           </Route>
         </Routes>
         <ToastContainer />
-        <Chatbox />
+       
       </BrowserRouter>
     </GoogleOAuthProvider>
   );

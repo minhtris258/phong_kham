@@ -39,8 +39,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { handleLogout } = useAppContext();
   
   const linkClasses =
-    " flex items-center px-4 py-2 rounded-lg transition duration-150 text-white hover:bg-indigo-700 hover:text-white";
-  const activeClasses = "bg-indigo-900  text-white shadow-md";
+    " flex items-center px-4 py-2 rounded-lg transition duration-150 text-white hover:bg-sky-800 hover:text-white";
+  const activeClasses = "bg-sky-700  text-white shadow-md";
 
   return (
     <aside
@@ -50,7 +50,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                       w-64 bg-[#00B5F1] text-white flex flex-col z-30 shadow-2xl lg:shadow-none lg:flex-shrink-0`}
     >
       {/* --- HEADER --- */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-indigo-700 bg-[#00B5F1]">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-sky-600 bg-[#00B5F1]">
         
         {/* Left Side: Home Button & Title */}
         <div className="flex items-center gap-3">
@@ -59,13 +59,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <Link 
                 to="/" 
                 title="Về trang chủ Website"
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-700/50 hover:bg-indigo-600 text-indigo-100 transition-all hover:scale-105 border border-transparent hover:border-indigo-400"
+                className="flex items-center justify-center w-8 h-8 rounded-lg bg-sky-700/50 hover:bg-sky-600 text-sky-100 transition-all hover:scale-105 border border-transparent hover:border-sky-400"
             >
                 <Home size={18} />
             </Link>
 
             {/* Đường kẻ dọc ngăn cách */}
-            <div className="h-5 w-[1px] bg-indigo-600/60"></div>
+            <div className="h-5 w-[1px] bg-sky-600/60"></div>
 
             {/* 2. Logo & Tên Brand */}
             <div className="flex items-center gap-2 select-none">
@@ -76,7 +76,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         
         {/* Mobile Toggle Button */}
         <button
-            className="lg:hidden text-white hover:text-white focus:outline-none p-1 rounded-md hover:bg-indigo-700"
+            className="lg:hidden text-white hover:text-white focus:outline-none p-1 rounded-md hover:bg-sky-700"
             onClick={toggleSidebar}
         >
             <Menu className="h-6 w-6" />
@@ -104,11 +104,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       </nav>
 
       {/* --- FOOTER / LOGOUT --- */}
-      <div className="p-4 border-t border-indigo-700 bg-[#00B5F1]">
+      <div className="p-4 border-t border-sky-600 bg-[#00B5F1]">
         <button
           type="button"
           onClick={handleLogout}
-          className="flex items-center w-full px-4 py-2 text-sm text-white bg-red-900/20 hover:bg-red-900/40 rounded-lg transition-colors border border-transparent hover:border-red-800 group"
+          className="flex items-center w-full px-4 py-2 text-sm text-white bg-red-600/70 hover:bg-red-700 rounded-lg transition-colors border border-transparent hover:border-red-700 group"
         >
           <LogOut className="h-4 w-4 mr-3 group-hover:text-red-200" />
           <span className="font-medium group-hover:text-red-100">Đăng xuất</span>

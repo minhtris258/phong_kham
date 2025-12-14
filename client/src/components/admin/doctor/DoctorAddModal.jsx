@@ -29,7 +29,7 @@ const DoctorAddModal = ({
                         onChange={handleInputChange}
                         required
                         placeholder="Ví dụ: dr.nguyenvana"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
                     />
                     <p className="text-xs text-gray-500 mt-1">Sẽ hiển thị khi bác sĩ đăng nhập</p>
                 </div>
@@ -64,7 +64,7 @@ const DoctorAddModal = ({
                         required
                         minLength="6"
                         placeholder="Ít nhất 6 ký tự"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
                     />
                     <p className="text-xs text-gray-500 mt-1">Bác sĩ có thể đổi sau khi đăng nhập lần đầu</p>
                 </div>
@@ -80,7 +80,7 @@ const DoctorAddModal = ({
                     </button>
                     <button 
                         type="submit"
-                        className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium shadow-sm"
+                        className="px-6 py-2.5 bg-sky-500 text-white rounded-lg hover:bg-sky-700 transition font-medium shadow-sm"
                     >
                         Tạo Tài Khoản Bác Sĩ
                     </button>

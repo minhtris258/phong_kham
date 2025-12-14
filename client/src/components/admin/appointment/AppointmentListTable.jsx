@@ -113,7 +113,7 @@ const AppointmentListTable = ({
                 </h3>
                 <button 
                     onClick={() => handleAddEdit(null)}
-                    className="flex items-center bg-indigo-600 text-white px-4 py-2 text-sm rounded-xl font-semibold shadow-md hover:bg-indigo-700 transition transform hover:scale-105"
+                    className="flex items-center bg-sky-500 text-white px-4 py-2 text-sm rounded-xl font-semibold shadow-md hover:bg-sky-700 transition transform hover:scale-105"
                 >
                     <Plus className="w-5 h-5 mr-1" /> Thêm Lịch Hẹn
                 </button>
@@ -194,7 +194,7 @@ const AppointmentListTable = ({
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                                            <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded mr-2">{app.start}</span>
+                                            <span className="bg-sky-50 text-sky-600 px-2 py-1 rounded mr-2">{app.start}</span>
                                             <span className="text-gray-500">
                                                 {app.date ? new Date(app.date).toLocaleDateString('vi-VN') : ''}
                                             </span>
@@ -210,7 +210,7 @@ const AppointmentListTable = ({
                                             <div className="flex justify-end items-center gap-2">
                                                 <button 
                                                     onClick={() => handleAddEdit(app)}
-                                                    className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full hover:bg-indigo-100 transition"
+                                                    className="text-sky-600 hover:text-sky-900 p-2 rounded-full hover:bg-sky-100 transition"
                                                     title="Sửa"
                                                 >
                                                     <Edit className="w-4 h-4" />
@@ -245,7 +245,7 @@ const AppointmentListTable = ({
             {totalPages > 1 && (
                 <div className="flex items-center justify-between border-t border-gray-200 pt-4 mt-4 shrink-0">
                     <div className="hidden sm:block text-sm text-gray-500">
-                        Trang <span className="font-bold text-indigo-600">{currentPage}</span> / {totalPages}
+                        Trang <span className="font-bold text-sky-600">{currentPage}</span> / {totalPages}
                     </div>
                     <div className="flex items-center gap-2 mx-auto sm:mx-0">
                         <button
@@ -262,7 +262,7 @@ const AppointmentListTable = ({
                                 onClick={() => handlePageChange(page)}
                                 className={`hidden sm:block px-3 py-1 text-sm font-medium rounded-lg border ${
                                     currentPage === page
-                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                        ? 'bg-sky-600 text-white border-sky-600'
                                         : 'text-gray-600 border-gray-300 hover:bg-gray-50'
                                 }`}
                             >

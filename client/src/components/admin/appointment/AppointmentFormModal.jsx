@@ -46,7 +46,7 @@ const SearchableSelect = ({
             {/* Ô hiển thị giá trị đã chọn */}
             <div 
                 onClick={() => !disabled && setIsOpen(!isOpen)}
-                className={`w-full rounded-xl border border-gray-300 shadow-sm p-3 bg-white flex justify-between items-center cursor-pointer ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'hover:border-indigo-500'}`}
+                className={`w-full rounded-xl border border-gray-300 shadow-sm p-3 bg-white flex justify-between items-center cursor-pointer ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'hover:border-sky-500'}`}
             >
                 <span className={`block truncate ${selectedOption ? 'text-gray-900' : 'text-gray-500'}`}>
                     {/* Dùng getLabel để hiển thị text thuần khi đã chọn */}
@@ -65,7 +65,7 @@ const SearchableSelect = ({
                             <input 
                                 type="text"
                                 autoFocus
-                                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500"
+                                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-sky-500"
                                 placeholder="Gõ để tìm kiếm..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -234,7 +234,7 @@ const AppointmentFormModal = ({
                         renderItem={(d) => (
                             <div className="flex flex-col">
                                 <span className="font-medium text-gray-900">{d.fullName || d.name}</span>
-                                <span className="text-xs text-indigo-600 bg-indigo-50 px-1 py-0.5 rounded w-fit mt-1">
+                                <span className="text-xs text-sky-600 bg-sky-50 px-1 py-0.5 rounded w-fit mt-1">
                                     {d.specialty?.name || d.specialty_id?.name || "Đa khoa"}
                                 </span>
                             </div>
@@ -269,7 +269,7 @@ const AppointmentFormModal = ({
                             onChange={handleSlotChange}
                             required
                             disabled={availableSlots.length === 0}
-                            className="w-full rounded-xl border border-gray-300 shadow-sm p-3 bg-white focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                            className="w-full rounded-xl border border-gray-300 shadow-sm p-3 bg-white focus:ring-sky-500 focus:border-sky-500 disabled:bg-gray-100"
                         >
                             <option value="">
                                 {availableSlots.length === 0 ? (formData.date ? "Hết lịch trống" : "Chọn ngày trước") : "-- Chọn giờ khám --"}
@@ -291,7 +291,7 @@ const AppointmentFormModal = ({
                             name="status"
                             value={formData.status || 'pending'}
                             onChange={handleInputChange}
-                            className="w-full rounded-xl border border-gray-300 shadow-sm p-3 bg-white focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full rounded-xl border border-gray-300 shadow-sm p-3 bg-white focus:ring-sky-500 focus:border-sky-500"
                         >
                             <option value="pending">Đang chờ (Pending)</option>
                             <option value="confirmed">Đã xác nhận (Confirmed)</option>
@@ -310,13 +310,13 @@ const AppointmentFormModal = ({
                         onChange={handleInputChange}
                         rows="3"
                         placeholder="Nhập ghi chú..."
-                        className="w-full rounded-xl border border-gray-300 shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full rounded-xl border border-gray-300 shadow-sm p-3 focus:ring-sky-500 focus:border-sky-500"
                     ></textarea>
                 </div>
                 
                 <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-gray-100">
                     <button type="button" onClick={onClose} className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-medium">Hủy</button>
-                    <button type="submit" className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl shadow-md hover:bg-indigo-700 transition font-medium">
+                    <button type="submit" className="px-6 py-2.5 bg-sky-500 text-white rounded-xl shadow-md hover:bg-sky-700 transition font-medium">
                         {isEditing ? 'Lưu Thay Đổi' : 'Tạo Lịch Hẹn'}
                     </button>
                 </div>

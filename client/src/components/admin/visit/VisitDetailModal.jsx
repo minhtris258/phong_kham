@@ -28,10 +28,10 @@ const VisitDetailModal = ({ isOpen, onClose, visit }) => {
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                 
                 {/* 1. THÔNG TIN CHUNG (Giữ nguyên) */}
-                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <div className="bg-sky-50 p-4 rounded-xl border border-sky-100">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="flex items-start gap-3">
-                            <div className="p-2 bg-white rounded-full shadow-sm"><User className="w-5 h-5 text-indigo-600" /></div>
+                            <div className="p-2 bg-white rounded-full shadow-sm"><User className="w-5 h-5 text-sky-600" /></div>
                             <div>
                                 <p className="text-xs text-gray-500 uppercase font-bold tracking-wide">Bệnh Nhân</p>
                                 <p className="font-bold text-gray-900">{visit.patient_id?.fullName || "N/A"}</p>
@@ -46,7 +46,7 @@ const VisitDetailModal = ({ isOpen, onClose, visit }) => {
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
-                            <div className="p-2 bg-white rounded-full shadow-sm"><Calendar className="w-5 h-5 text-blue-600" /></div>
+                            <div className="p-2 bg-white rounded-full shadow-sm"><Calendar className="w-5 h-5 text-sky-600" /></div>
                             <div>
                                 <p className="text-xs text-gray-500 uppercase font-bold tracking-wide">Ngày Khám</p>
                                 <p className="font-bold text-gray-900">{new Date(visit.date || visit.createdAt).toLocaleDateString('vi-VN')}</p>
@@ -67,7 +67,7 @@ const VisitDetailModal = ({ isOpen, onClose, visit }) => {
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-gray-500 uppercase mb-1">Chẩn đoán:</p>
-                            <p className="text-gray-900 font-medium text-lg text-indigo-700">{visit.diagnosis || "Chưa có chẩn đoán"}</p>
+                            <p className="text-gray-900 font-medium text-lg">{visit.diagnosis || "Chưa có chẩn đoán"}</p>
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-gray-500 uppercase mb-1">Lời dặn:</p>
@@ -151,7 +151,7 @@ const VisitDetailModal = ({ isOpen, onClose, visit }) => {
                                             <td className="px-4 py-3 text-sm text-gray-900 font-bold">
                                                 {getMedicineName(med)}
                                             </td>
-                                            <td className="px-4 py-3 text-center text-sm font-medium text-indigo-600">
+                                            <td className="px-4 py-3 text-center text-sm font-medium text-sky-600">
                                                 {med.quantity} {med.unit || "Viên"}
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600">

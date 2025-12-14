@@ -22,7 +22,7 @@ const MedicineList = ({
                     onClick={() => onPageChange(i)}
                     className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold border 
                     ${pagination.page === i 
-                        ? 'z-10 bg-indigo-600 text-white border-indigo-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600' 
+                        ? 'z-10 bg-sky-500 text-white border-sky-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600' 
                         : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
                     }`}
                 >
@@ -77,7 +77,7 @@ const MedicineList = ({
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end items-center gap-2">
-                                        <button onClick={() => handleAddEdit(med)} className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 transition"><Edit className="w-4 h-4" /></button>
+                                        <button onClick={() => handleAddEdit(med)} className="text-sky-600 hover:text-sky-900 p-1 hover:bg-sky-50 transition"><Edit className="w-4 h-4" /></button>
                                         <button onClick={() => confirmDelete(med._id || med.id)} className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 transition"><Trash2 className="w-4 h-4" /></button>
                                     </td>
                                 </tr>

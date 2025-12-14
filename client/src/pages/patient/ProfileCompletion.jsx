@@ -86,7 +86,7 @@ const ProfileCompletion = () => {
           {/* Cột trái: Thông tin & Progress Bar */}
           <div className="bg-[#00B5F1] text-white p-8 lg:col-span-2 flex flex-col justify-center">
             <h1 className="text-2xl font-bold mb-4">Hoàn tất hồ sơ</h1>
-            <p className="text-indigo-100 mb-6 text-sm">
+            <p className="text-sky-100 mb-6 text-sm">
               Bạn đã hoàn thành bước đăng ký. Hãy bổ sung thông tin cá nhân để hoàn tất.
             </p>
             
@@ -103,7 +103,7 @@ const ProfileCompletion = () => {
                   </span>
                 </div>
               </div>
-              <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-indigo-200">
+              <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-sky-200">
                 <div
                   style={{ width: `${progress}%`, transition: "width 0.5s ease-in-out" }}
                   className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
@@ -139,7 +139,7 @@ const ProfileCompletion = () => {
                   value={formData.fullName}
                   onChange={handleChange}
                   placeholder="Ví dụ: Nguyễn Văn A"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none"
                 />
               </div>
 
@@ -154,7 +154,7 @@ const ProfileCompletion = () => {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="0912..."
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -166,7 +166,7 @@ const ProfileCompletion = () => {
                     name="dob"
                     value={formData.dob}
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -184,7 +184,7 @@ const ProfileCompletion = () => {
                         value={g}
                         checked={formData.gender === g}
                         onChange={handleChange}
-                        className="text-indigo-600 focus:ring-indigo-500"
+                        className="text-sky-600 focus:ring-sky-500"
                       />
                       <span className="text-sm capitalize">
                         {g === "male" ? "Nam" : g === "female" ? "Nữ" : "Khác"}
@@ -204,7 +204,7 @@ const ProfileCompletion = () => {
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="Số nhà, đường, phường, quận..."
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none"
                 />
               </div>
 

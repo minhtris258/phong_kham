@@ -272,16 +272,17 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                 {/* Book Button */}
                 <button
                     onClick={handleOpenBooking}
-                    disabled={loadingSlots || availableSlots.length === 0}
+                    // 👇 SỬA LẠI ĐIỀU KIỆN DISABLED TẠI ĐÂY
+                    disabled={loadingSlots || availableSlots.length === 0 || !selectedSlot} 
                     className={`
                         w-full h-full py-4 rounded-xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-2
-                        ${loadingSlots || availableSlots.length === 0
+                        ${loadingSlots || availableSlots.length === 0 || !selectedSlot // 👈 CẬP NHẬT CẢ CLASS STYLE
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
                             : 'bg-gradient-to-r from-[#00B5F1] to-[#0099CC] text-white hover:shadow-2xl hover:-translate-y-1'
                         }
                     `}
                 >
-                    {selectedSlot ? 'XÁC NHẬN ĐẶT LỊCH' : 'CHỌN GIỜ KHÁM'}
+                    {selectedSlot ? 'XÁC NHẬN ĐẶT LỊCH' : 'VUI LÒNG CHỌN GIỜ'} 
                 </button>
             </div>
 
@@ -294,7 +295,7 @@ export default function BookingSection({ doctor, scheduleConfig }) {
                     selectedSlot={selectedSlot}
                     onClose={() => {
                         setOpenBooking(false);
-                        setSelectedSlot(null);
+                        // setSelectedSlot(null);
                     }}
                 />
             )}

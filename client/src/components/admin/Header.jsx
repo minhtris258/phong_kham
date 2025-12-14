@@ -25,7 +25,7 @@ const Header = ({ toggleSidebar, setView }) => {
     <header className="flex items-center justify-between p-4 bg-white shadow-sm h-16 sticky top-0 z-20 border-b border-gray-200">
       {/* Mobile Menu Button */}
       <button
-        className="lg:hidden text-gray-600 hover:text-indigo-600 focus:outline-none"
+        className="lg:hidden text-gray-600 hover:text-sky-600 focus:outline-none"
         onClick={toggleSidebar}
       >
         <Menu className="h-6 w-6" />
@@ -41,14 +41,14 @@ const Header = ({ toggleSidebar, setView }) => {
         <input
           type="text"
           placeholder="Tìm kiếm..."
-          className="hidden sm:block p-2 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
+          className="hidden sm:block p-2 border border-gray-300 rounded-lg text-sm focus:ring-sky-500 focus:border-sky-500"
         />
 
         {/* Profile Dropdown Area */}
         <div className="relative">
           <button
             onClick={toggleDropdown}
-            className="flex items-center space-x-2 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="flex items-center space-x-2 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
           >
             <img
               className="h-8 w-8 rounded-full object-cover"
@@ -70,7 +70,7 @@ const Header = ({ toggleSidebar, setView }) => {
                 }}
                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
               >
-                <Users className="w-4 h-4 mr-2 text-indigo-500" /> Chỉnh Profile
+                <Users className="w-4 h-4 mr-2 text-sky-500" /> Chỉnh Profile
               </a>
               <a
                 href="#"
@@ -80,7 +80,7 @@ const Header = ({ toggleSidebar, setView }) => {
                 }}
                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
               >
-                <Settings className="w-4 h-4 mr-2 text-indigo-500" /> Cài Đặt
+                <Settings className="w-4 h-4 mr-2 text-sky-500" /> Cài Đặt
               </a>
               <div className="border-t border-gray-100 my-1"></div>
               <button

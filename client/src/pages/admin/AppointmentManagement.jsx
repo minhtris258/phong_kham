@@ -207,7 +207,7 @@ const fetchData = async () => {
   }, []);
 
   // === Render ===
-  if (loading) return <div className="flex h-screen items-center justify-center text-blue-600"><Loader2 className="w-10 h-10 animate-spin"/></div>;
+  if (loading) return <div className="flex h-screen items-center justify-center text-sky-600"><Loader2 className="w-10 h-10 animate-spin"/></div>;
 
   return (
     <main className="flex-1 p-4 sm:p-8 bg-gray-50 min-h-[calc(100vh-64px)]">
@@ -221,14 +221,14 @@ const fetchData = async () => {
         
         <div className="flex items-center gap-3">
             <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-200 flex">
-                <button onClick={() => setViewMode("calendar")} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'calendar' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <button onClick={() => setViewMode("calendar")} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'calendar' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}>
                     <Calendar className="w-4 h-4 inline-block mr-2"/>Lịch
                 </button>
-                <button onClick={() => setViewMode("list")} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <button onClick={() => setViewMode("list")} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'list' ? 'bg-sky-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'}`}>
                     <List className="w-4 h-4 inline-block mr-2"/>Danh sách
                 </button>
             </div>
-            <button onClick={() => handleAddEdit(null)} className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-md hover:bg-indigo-700 transition flex items-center gap-2">
+            <button onClick={() => handleAddEdit(null)} className="bg-sky-500 text-white px-5 py-2.5 rounded-xl font-semibold shadow-md hover:bg-sky-600 transition flex items-center gap-2">
                 <Plus size={20} /> <span className="hidden sm:inline">Thêm Lịch</span>
             </button>
         </div>

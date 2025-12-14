@@ -111,7 +111,7 @@ const PartnersManagement = () => {
           </div>
           <button
             onClick={() => openModal(null)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium"
+            className="flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-lg hover:bg-sky-700 transition shadow-sm font-medium"
           >
             <Plus size={18} />
             Thêm Đối Tác
@@ -155,7 +155,7 @@ const PartnersManagement = () => {
                       <td className="px-6 py-4 text-right space-x-2">
                         <button
                           onClick={() => openModal(partner)}
-                          className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition"
+                          className="p-2 text-gray-500 hover:text-sky-600 hover:bg-sky-50 rounded-md transition"
                           title="Chỉnh sửa"
                         >
                           <Edit size={18} />
@@ -208,7 +208,7 @@ const PartnersManagement = () => {
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="Ví dụ: Bảo hiểm Bảo Việt"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition"
                   required
                 />
               </div>
@@ -256,7 +256,7 @@ const PartnersManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium shadow-md transition flex items-center gap-2"
+                  className="px-4 py-2 text-white bg-sky-500 hover:bg-sky-700 rounded-lg font-medium shadow-md transition flex items-center gap-2"
                 >
                   <Check size={18} />
                   {editingItem ? "Lưu Thay Đổi" : "Tạo Mới"}

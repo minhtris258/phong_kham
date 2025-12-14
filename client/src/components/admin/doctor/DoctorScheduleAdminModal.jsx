@@ -171,7 +171,7 @@ const DoctorScheduleAdminModal = ({
             {/* CỘT 1: Lịch mặc định + Lịch tháng */}
             <div className="lg:col-span-2 space-y-6">
               {/* Header info */}
-              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-5 rounded-2xl shadow-lg">
+              <div className="bg-gradient-to-r from-sky-500 to-blue-600 text-white p-5 rounded-2xl shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-bold">Lịch làm việc cố định</h3>
@@ -203,7 +203,7 @@ const DoctorScheduleAdminModal = ({
                           key={d}
                           className="border-r border-b last:border-r-0 p-4 text-center"
                         >
-                          <div className="font-bold text-indigo-600 text-lg">
+                          <div className="font-bold text-sky-900 text-lg">
                             {d}
                           </div>
                           {sch ? (
@@ -269,7 +269,7 @@ const DoctorScheduleAdminModal = ({
                   </button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-2 text-center font-semibold text-indigo-600 mb-3">
+                <div className="grid grid-cols-7 gap-2 text-center font-semibold text-sky-600 mb-3">
                   {daysOfWeek.map((d) => (
                     <div key={d}>{d}</div>
                   ))}
@@ -326,12 +326,12 @@ const DoctorScheduleAdminModal = ({
                         className={`relative h-12 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200 font-medium
                           ${bg} ${
                           isSelected
-                            ? "ring-2 ring-indigo-600 shadow-xl scale-110 z-10"
+                            ? "ring-2 ring-sky-500 shadow-xl scale-110 z-10 bg-sky-500 text-white"
                             : ""
                         }
                           ${
                             isToday && !isSelected
-                              ? "ring-2 ring-indigo-400"
+                              ? "ring-2 ring-sky-400"
                               : ""
                           }
                           hover:shadow-md hover:scale-105`}
@@ -375,7 +375,7 @@ const DoctorScheduleAdminModal = ({
               <div className="lg:col-span-1">
                 <div className="sticky top-6 bg-white rounded-2xl shadow-xl border p-6">
                   <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-3">
-                    <Calendar className="w-6 h-6 text-indigo-600" />
+                    <Calendar className="w-6 h-6 text-sky-600" />
                     {selectedDateStr.split("-").reverse().join("/")}
                   </h3>
 
@@ -411,7 +411,7 @@ const DoctorScheduleAdminModal = ({
                       </label>
                       <textarea
                         rows={2}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"
                         placeholder="Ví dụ: Bác sĩ xin nghỉ phép, Đi công tác..."
                         value={exceptionFormData.reason}
                         onChange={(e) =>
@@ -472,7 +472,7 @@ const DoctorScheduleAdminModal = ({
                                 setTempTimeInput({ start: "", end: "" });
                               }
                             }}
-                            className="bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+                            className="bg-green-500 text-white py-3 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
                           >
                             <Plus className="w-5 h-5" /> Làm thêm
                           </button>
@@ -552,7 +552,7 @@ const DoctorScheduleAdminModal = ({
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700"
+                        className="flex-1 bg-sky-500 text-white py-3 rounded-lg hover:bg-sky-700"
                       >
                         Lưu thay đổi
                       </button>

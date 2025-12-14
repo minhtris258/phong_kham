@@ -65,32 +65,37 @@ const Chatbox = () => {
         return;
     }
 
-    // Hiển thị tin nhắn user
     setMessages((prev) => [...prev, { sender: 'user', text: input }]);
     
-    // --- PHẦN SỬA LỖI ---
+    // --- 🛠️ PHẦN SỬA LỖI: Ưu tiên lấy user_id ---
     let userId = null;
-    
-    // 1. Lấy đúng key "user" như trong ảnh bạn gửi
     const storedUser = localStorage.getItem('user');
     
     if (storedUser) {
         try {
             const parsed = JSON.parse(storedUser);
-            // 2. Lấy _id (Trong ảnh bạn gửi có trường "_id")
-            userId = parsed._id; 
             
-            // Log ra để kiểm tra chắc chắn lấy được chưa
-            console.log("Found User ID:", userId); 
+            // 🔍 Logic lấy ID mới (Dựa trên dữ liệu thực tế của bạn):
+            if (parsed.user_id) {
+                userId = parsed.user_id;        // ✅ Ưu tiên 1: Lấy user_id (Account ID chuẩn)
+            } else if (parsed._id) {
+                userId = parsed._id;            // Ưu tiên 2: Lấy _id (Có thể là User hoặc Patient)
+            } else if (parsed.id) {
+                userId = parsed.id;
+            } else if (parsed.user && parsed.user._id) {
+                userId = parsed.user._id;
+            }
+            
+            console.log("👉 [DEBUG] User ID gửi đi:", userId); 
         } catch (error) {
-            toastError("Lỗi parse JSON user:", error);
+            console.error("Lỗi parse user:", error);
         }
     }
 
-    // Gửi event lên server kèm userId
+    // Gửi tin nhắn kèm userId chuẩn
     socket.emit('client_chat_ai', { 
         message: input,
-        userId: userId // Server cần cái này
+        userId: userId 
     });
     
     setInput('');

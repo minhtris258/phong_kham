@@ -132,7 +132,7 @@ const MedicineManagement = () => {
                         <input 
                             type="text" 
                             placeholder="Tìm kiếm thuốc..." 
-                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 w-full sm:w-64"
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500 w-full sm:w-64"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             onKeyDown={handleSearch}
@@ -142,7 +142,7 @@ const MedicineManagement = () => {
 
                     <button 
                         onClick={() => handleAddEdit(null)}
-                        className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition whitespace-nowrap"
+                        className="flex items-center bg-sky-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-sky-700 transition whitespace-nowrap"
                     >
                         <Plus className="w-5 h-5 mr-1" /> Thêm Thuốc
                     </button>

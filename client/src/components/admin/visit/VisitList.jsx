@@ -39,7 +39,7 @@ const VisitList = ({
                     </div>
                     <input
                         type="text"
-                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm transition"
+                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm transition"
                         placeholder="Tìm theo tên bệnh nhân, bác sĩ, chẩn đoán..."
                         value={filters?.search || ''}
                         onChange={onSearchChange}
@@ -106,7 +106,7 @@ const VisitList = ({
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex justify-end items-center gap-2">
-                                                <button onClick={() => handleViewVisit(visit)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Xem chi tiết">
+                                                <button onClick={() => handleViewVisit(visit)} className="p-2 text-sky-600 hover:bg-sky-100 rounded-lg transition" title="Xem chi tiết">
                                                     <Eye className="w-4 h-4" />
                                                 </button>
                                                 <button onClick={() => confirmDelete(visit._id)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition" title="Xóa phiếu khám">
@@ -136,7 +136,7 @@ const VisitList = ({
             {pagination && pagination.totalPages > 1 && (
                 <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center shrink-0">
                     <span className="text-sm text-gray-500">
-                        Trang <span className="font-bold text-indigo-600">{pagination.page}</span> / {pagination.totalPages}
+                        Trang <span className="font-bold text-sky-600">{pagination.page}</span> / {pagination.totalPages}
                     </span>
                     <div className="flex gap-2">
                         <button 

@@ -50,7 +50,7 @@ const DashboardContent = () => {
                             period: 'tháng trước',
                             isPositive: true,
                             icon: Calendar,
-                            color: 'indigo',
+                            color: 'sky',
                         },
                         {
                             title: 'Tổng Doanh Thu',
@@ -131,7 +131,7 @@ const DashboardContent = () => {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+                    <Loader2 className="h-10 w-10 animate-spin text-sky-600" />
                     <p className="text-gray-500 text-sm">Đang tải dữ liệu tổng quan...</p>
                 </div>
             </div>

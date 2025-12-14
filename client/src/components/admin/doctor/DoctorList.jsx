@@ -161,7 +161,7 @@ const DoctorList = ({
                     key={spec._id || spec.id}
                     className={`cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-sky-50 ${
                       isSelected
-                        ? "bg-sky-100 text-sky-700 font-semibold"
+                        ? "bg-sky-100 text-sky-500 font-semibold"
                         : "text-gray-900"
                     }`}
                     onClick={() => handleSelectSpec(spec._id || spec.id)}
@@ -269,7 +269,7 @@ const DoctorList = ({
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-md text-xs font-semibold border border-indigo-100">
+                      <span className="px-2.5 py-1 bg-sky-50 text-sky-600 rounded-md text-xs font-semibold border border-sky-100">
                         {doc.specialty_id?.name ||
                           specialtyMap?.get(doc.specialty_id) ||
                           "Chưa chọn"}
@@ -305,7 +305,7 @@ const DoctorList = ({
                         </button>
                         <button
                           onClick={() => handleAddEdit(doc)}
-                          className="text-indigo-600 hover:bg-indigo-100 p-2 rounded-lg transition"
+                          className="text-sky-600 hover:bg-sky-100 p-2 rounded-lg transition"
                           title="Sửa"
                         >
                           <Edit className="w-4 h-4" />
