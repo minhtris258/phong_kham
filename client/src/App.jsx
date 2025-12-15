@@ -56,10 +56,10 @@ import VisitManagement from "./pages/admin/VisitManagement.jsx";
 import AboutUsPage from "./pages/ContactHospitalPage.jsx";
 import ServicesPage from "./pages/ServicesPage.jsx";
 import ContactManagement from "./pages/admin/ContactManagement.jsx";
+import RejectAuth from "./components/RejectAuth.jsx";
 
 // 👇 1. KHAI BÁO CLIENT ID (Lấy từ Google Cloud Console)
-const GOOGLE_CLIENT_ID =
-  "531603412890-micqhn0cd162qolhcpfv9cj62envka2v.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 // Ví dụ: "123456-abcdef.apps.googleusercontent.com"
 
 export default function App() {
@@ -72,8 +72,10 @@ export default function App() {
           {/* ==================== USER LAYOUT ==================== */}
           <Route path="/" element={<UserLayout />}>
             {/* --- PUBLIC ROUTES --- */}
-            <Route path="Login" element={<LoginPage />} />
-            <Route path="Register" element={<RegisterPage />} />
+            <Route element={<RejectAuth />}>
+               <Route path="Login" element={<LoginPage />} />
+               <Route path="Register" element={<RegisterPage />} />
+            </Route>
             <Route path="about-us" element={<AboutUsPage />} />
             <Route path="services" element={<ServicesPage />} />
 

@@ -39,7 +39,7 @@ const DownloadAppSection = () => {
 
               <div className="mr-5">
                 <h2 className="color-title font-bold font-roboto text-xl text-end">
-                  Lấy số thứ tự khám nhanh trực tuyến
+                  Đặt Lịch Khám Trực Tuyến
                 </h2>
                 <p className="pb-8 text-end text-base text-gray-500">
                   Đăng ký khám / tái khám nhanh theo ngày
@@ -70,7 +70,7 @@ const DownloadAppSection = () => {
               className="z-10 absolute top-20"
             />
             <img
-              src="https://medpro.vn/_next/image?url=https%3A%2F%2Fcdn.medpro.vn%2Fprod-partner%2F858c322c-7f26-48d3-a5df-e633e9a3592e-20240325-095443.png&w=1920&q=75"
+              src="src/assets/phone.png"
               alt="app2"
               className="absolute z-40 top-0 w-auto h-150 mx-auto left-[50%] transform -translate-x-1/2"
             />
@@ -81,11 +81,12 @@ const DownloadAppSection = () => {
             <div className="py-20 mt-8">
               <div>
                 <h2 className="color-title font-bold font-roboto text-xl">
-                  Thanh toán viện phí
+                  Đặt Lịch Khám Nhanh
                 </h2>
                 <p className="pb-8 text-base text-gray-500">
-                  Đa dạng hệ thống thanh toán trực tuyến. Hỗ trợ các ví điện tử
-                  thịnh hành hiện nay.
+                  Đặt lịch khám nhanh chóng với giao diện thân thiện, dễ sử
+                  <br />
+                  AI hỗ trợ đặt lịch thông minh, gợi ý bác sĩ phù hợp
                 </p>
               </div>
 

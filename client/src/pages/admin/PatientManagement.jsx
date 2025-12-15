@@ -166,8 +166,27 @@ const PatientManagement = () => {
     setIsPasswordModalOpen(true);
   };
   const handlePasswordChangeSave = async (data) => {
-    /* Code cũ gọi API changePass, sau đó setIsPasswordModalOpen(false) */
-  };
+  try {
+    // 1. Lấy dữ liệu từ Modal gửi ra ({ patientId, newPassword })
+    const { patientId, newPassword } = data;
+
+    // 2. Gọi Service để gửi API xuống Backend
+    await patientService.changePatientPassword(patientId, newPassword);
+
+    // 3. Thông báo thành công
+    toastSuccess("Đổi mật khẩu thành công!");
+
+    // 4. Đóng Modal và reset state
+    setIsPasswordModalOpen(false);
+    setPatientToChangePassword(null);
+    
+  } catch (err) {
+    console.error("Lỗi đổi pass:", err);
+    // Hiển thị lỗi từ backend trả về nếu có
+    const mess = err.response?.data?.message || err.response?.data?.error || "Đổi mật khẩu thất bại!";
+    toastError(mess);
+  }
+};
 
   return (
     <main className="flex-1 p-4 sm:p-8 bg-gray-50 min-h-screen">

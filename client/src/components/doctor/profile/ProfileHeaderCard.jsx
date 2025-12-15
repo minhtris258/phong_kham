@@ -12,7 +12,7 @@ export default function ProfileHeaderCard({
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
       <div
-        className="bg-[url('https://cdn-pkh.longvan.net/prod-partner/0f04db66-ff2a-49b5-9f63-e18f4c7ef354-bg-contact-desktop.webp')] h-32 relative object-cover bg-center"
+        className="bg-[url('https://cdn.medpro.vn/prod-partner/e351b2c8-5d2f-40f5-94b3-41c68c20bc36-bg_dvyt.webp')] h-48 w-full relative bg-cover bg-center bg-no-repeat"
       >
         {/* Avatar Section */}
         <div className="absolute -bottom-16 left-8">
