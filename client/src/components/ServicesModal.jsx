@@ -26,7 +26,6 @@ export default function ServicesModal({ isOpen, onClose, service }) {
       maxWidth="2xl"
     >
       <div className="flex flex-col gap-4">
-
         {/* ẢNH FULL TRÊN CÙNG */}
         <div className="w-full h-60 md:h-72 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
           <img
@@ -38,14 +37,11 @@ export default function ServicesModal({ isOpen, onClose, service }) {
 
         {/* NỘI DUNG BÊN DƯỚI */}
         <div className="space-y-3 pt-2">
-          <h3 className="text-xl font-bold text-[#0a2463]">
-            {service.name}
-          </h3>
+          <h3 className="text-xl font-bold text-[#0a2463]">{service.name}</h3>
 
           {service.code && (
             <p className="text-sm text-slate-500">
-              Mã dịch vụ:{" "}
-              <span className="font-medium">{service.code}</span>
+              Mã dịch vụ: <span className="font-medium">{service.code}</span>
             </p>
           )}
 

@@ -1,10 +1,18 @@
-import React from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import React from "react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
-const KPICard = ({ title, value, change, period, isPositive, icon: Icon, color }) => {
-  const changeColor = isPositive ? 'text-green-500' : 'text-red-500';
+const KPICard = ({
+  title,
+  value,
+  change,
+  period,
+  isPositive,
+  icon: Icon,
+  color,
+}) => {
+  const changeColor = isPositive ? "text-green-500" : "text-red-500";
   const ChangeIcon = isPositive ? TrendingUp : TrendingDown;
-  const ChangeBg = isPositive ? 'bg-green-100' : 'bg-red-100';
+  const ChangeBg = isPositive ? "bg-green-100" : "bg-red-100";
   const IconColor = `text-${color}-500`;
 
   return (
@@ -15,7 +23,9 @@ const KPICard = ({ title, value, change, period, isPositive, icon: Icon, color }
       </div>
       <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
       <div className="mt-4 flex items-center">
-        <div className={`flex items-center text-xs font-semibold px-2 py-1 rounded-full ${changeColor} ${ChangeBg}`}>
+        <div
+          className={`flex items-center text-xs font-semibold px-2 py-1 rounded-full ${changeColor} ${ChangeBg}`}
+        >
           <ChangeIcon className="h-3 w-3 mr-1" />
           {change}
         </div>

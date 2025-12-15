@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Plus, Edit, Trash2, Calendar, X, Check, 
-  ChevronLeft, ChevronRight // Thêm icon cho nút phân trang
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Calendar,
+  X,
+  Check,
+  ChevronLeft,
+  ChevronRight, // Thêm icon cho nút phân trang
 } from "lucide-react";
-import holidayService from "../../services/HolidayService"; 
+import holidayService from "../../services/HolidayService";
 import { toastSuccess, toastError } from "../../utils/toast";
 
 const HolidayManagement = () => {
@@ -82,14 +88,17 @@ const HolidayManagement = () => {
     e.preventDefault();
     try {
       if (editingItem) {
-        await holidayService.updateHoliday(editingItem._id || editingItem.id, formData);
+        await holidayService.updateHoliday(
+          editingItem._id || editingItem.id,
+          formData
+        );
         toastSuccess("Cập nhật ngày lễ thành công!");
       } else {
         await holidayService.createHoliday(formData);
         toastSuccess("Thêm ngày lễ thành công!");
       }
       setIsModalOpen(false);
-      fetchHolidays(); 
+      fetchHolidays();
     } catch (error) {
       toastError("Lỗi: " + (error.response?.data?.error || error.message));
     }
@@ -103,11 +112,13 @@ const HolidayManagement = () => {
         const res = await holidayService.getAllHolidays();
         const newHolidays = Array.isArray(res) ? res : res.data || [];
         setHolidays(newHolidays);
-        
+
         // Logic kiểm tra nếu xóa hết item ở trang cuối thì lùi về trang trước
-        const totalPagesAfterDelete = Math.ceil(newHolidays.length / itemsPerPage);
+        const totalPagesAfterDelete = Math.ceil(
+          newHolidays.length / itemsPerPage
+        );
         if (currentPage > totalPagesAfterDelete && totalPagesAfterDelete > 0) {
-            setCurrentPage(totalPagesAfterDelete);
+          setCurrentPage(totalPagesAfterDelete);
         }
       } catch (error) {
         toastError("Xóa thất bại: " + error.message);
@@ -132,8 +143,12 @@ const HolidayManagement = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Quản Lý Lịch Nghỉ Lễ</h1>
-            <p className="text-sm text-gray-500 mt-1">Cấu hình các ngày nghỉ lễ chung cho toàn hệ thống</p>
+            <h1 className="text-2xl font-bold text-gray-800">
+              Quản Lý Lịch Nghỉ Lễ
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Cấu hình các ngày nghỉ lễ chung cho toàn hệ thống
+            </p>
           </div>
           <button
             onClick={() => openModal(null)}
@@ -147,7 +162,9 @@ const HolidayManagement = () => {
         {/* Table Content */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {loading ? (
-            <div className="p-8 text-center text-gray-500">Đang tải dữ liệu...</div>
+            <div className="p-8 text-center text-gray-500">
+              Đang tải dữ liệu...
+            </div>
           ) : holidays.length === 0 ? (
             <div className="p-12 text-center text-gray-400 flex flex-col items-center">
               <Calendar size={48} className="mb-3 opacity-20" />
@@ -159,7 +176,8 @@ const HolidayManagement = () => {
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
                     <tr>
-                      <th className="px-6 py-4">STT</th> {/* Thêm cột STT để dễ theo dõi */}
+                      <th className="px-6 py-4">STT</th>{" "}
+                      {/* Thêm cột STT để dễ theo dõi */}
                       <th className="px-6 py-4">Tên Ngày Lễ</th>
                       <th className="px-6 py-4">Ngày (DD/MM/YYYY)</th>
                       <th className="px-6 py-4 text-center">Loại Nghỉ</th>
@@ -169,11 +187,16 @@ const HolidayManagement = () => {
                   <tbody className="divide-y divide-gray-100">
                     {/* Render currentHolidays thay vì holidays */}
                     {currentHolidays.map((holiday, index) => (
-                      <tr key={holiday._id || holiday.id} className="hover:bg-gray-50 transition">
+                      <tr
+                        key={holiday._id || holiday.id}
+                        className="hover:bg-gray-50 transition"
+                      >
                         <td className="px-6 py-4 text-gray-500 text-sm">
                           {indexOfFirstItem + index + 1}
                         </td>
-                        <td className="px-6 py-4 font-medium text-gray-800">{holiday.name}</td>
+                        <td className="px-6 py-4 font-medium text-gray-800">
+                          {holiday.name}
+                        </td>
                         <td className="px-6 py-4 text-sky-600 font-medium">
                           {formatDateVN(holiday.date)}
                         </td>
@@ -197,7 +220,9 @@ const HolidayManagement = () => {
                             <Edit size={18} />
                           </button>
                           <button
-                            onClick={() => handleDelete(holiday._id || holiday.id)}
+                            onClick={() =>
+                              handleDelete(holiday._id || holiday.id)
+                            }
                             className="p-2 text-red-600 hover:bg-red-50 rounded-md transition"
                             title="Xóa"
                           >
@@ -214,13 +239,21 @@ const HolidayManagement = () => {
               {totalPages > 0 && (
                 <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-4">
                   <div className="text-sm text-gray-500">
-                    Hiển thị <span className="font-medium text-gray-800">{indexOfFirstItem + 1}</span> đến{" "}
+                    Hiển thị{" "}
+                    <span className="font-medium text-gray-800">
+                      {indexOfFirstItem + 1}
+                    </span>{" "}
+                    đến{" "}
                     <span className="font-medium text-gray-800">
                       {Math.min(indexOfLastItem, holidays.length)}
                     </span>{" "}
-                    trong tổng số <span className="font-medium text-gray-800">{holidays.length}</span> kết quả
+                    trong tổng số{" "}
+                    <span className="font-medium text-gray-800">
+                      {holidays.length}
+                    </span>{" "}
+                    kết quả
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
@@ -233,22 +266,24 @@ const HolidayManagement = () => {
                     >
                       <ChevronLeft size={18} />
                     </button>
-                    
+
                     {/* Render Page Numbers */}
                     <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
-                        <button
-                          key={number}
-                          onClick={() => handlePageChange(number)}
-                          className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition ${
-                            currentPage === number
-                              ? "bg-sky-500 text-white shadow-md"
-                              : "text-gray-600 hover:bg-gray-200"
-                          }`}
-                        >
-                          {number}
-                        </button>
-                      ))}
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                        (number) => (
+                          <button
+                            key={number}
+                            onClick={() => handlePageChange(number)}
+                            className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition ${
+                              currentPage === number
+                                ? "bg-sky-500 text-white shadow-md"
+                                : "text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            {number}
+                          </button>
+                        )
+                      )}
                     </div>
 
                     <button
@@ -274,8 +309,8 @@ const HolidayManagement = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden transform transition-all scale-100">
-             {/* ... (Phần Modal giữ nguyên như cũ) ... */}
-             {/* Tôi đã rút gọn phần render modal ở đây để code không quá dài, 
+            {/* ... (Phần Modal giữ nguyên như cũ) ... */}
+            {/* Tôi đã rút gọn phần render modal ở đây để code không quá dài, 
                  bạn giữ nguyên phần modal trong code cũ của bạn nhé */}
             <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50">
               <h3 className="text-lg font-bold text-gray-800">
@@ -328,10 +363,14 @@ const HolidayManagement = () => {
                   onChange={handleInputChange}
                   className="w-5 h-5 text-sky-600 rounded border-gray-300 focus:ring-sky-500 cursor-pointer"
                 />
-                <label htmlFor="isMandatoryDayOff" className="text-sm text-gray-700 cursor-pointer select-none">
+                <label
+                  htmlFor="isMandatoryDayOff"
+                  className="text-sm text-gray-700 cursor-pointer select-none"
+                >
                   <span className="font-semibold block">Nghỉ bắt buộc?</span>
                   <span className="text-xs text-gray-500">
-                    Nếu chọn, hệ thống sẽ tự động đóng lịch khám của bác sĩ vào ngày này.
+                    Nếu chọn, hệ thống sẽ tự động đóng lịch khám của bác sĩ vào
+                    ngày này.
                   </span>
                 </label>
               </div>

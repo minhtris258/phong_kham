@@ -3,14 +3,14 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import postService from "../../services/PostService";
 import { toastError } from "../../utils/toast";
-import { 
-  Search, 
-  Filter, 
-  Calendar, 
-  Tag, 
-  ChevronLeft, 
+import {
+  Search,
+  Filter,
+  Calendar,
+  Tag,
+  ChevronLeft,
   ChevronRight,
-  RotateCcw
+  RotateCcw,
 } from "lucide-react";
 
 // Hàm format ngày (Helper)
@@ -31,20 +31,20 @@ export default function PostsDirectory() {
   // 1. STATE QUẢN LÝ DỮ LIỆU & BỘ LỌC
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+
   // State phân trang
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 6, 
+    limit: 6,
     total: 0,
-    pages: 1
+    pages: 1,
   });
 
   // State bộ lọc
   const [filters, setFilters] = useState({
-    q: "",        
-    tag: "",      
-    status: "published", 
+    q: "",
+    tag: "",
+    status: "published",
   });
 
   // State debounce search
@@ -73,19 +73,24 @@ export default function PostsDirectory() {
       const { items, pagination: apiPagination } = res.data;
 
       setPosts(items || []);
-      setPagination(prev => ({
+      setPagination((prev) => ({
         ...prev,
         total: apiPagination?.total || 0,
-        pages: apiPagination?.pages || 1
+        pages: apiPagination?.pages || 1,
       }));
-
     } catch (err) {
       console.error("Lỗi tải bài viết:", err);
       toastError("Không tải được danh sách bài viết.");
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, debouncedSearch, filters.tag, filters.status]);
+  }, [
+    pagination.page,
+    pagination.limit,
+    debouncedSearch,
+    filters.tag,
+    filters.status,
+  ]);
 
   useEffect(() => {
     fetchPosts();
@@ -94,20 +99,20 @@ export default function PostsDirectory() {
   // 3. HANDLERS
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-    setPagination(prev => ({ ...prev, page: 1 })); 
+    setFilters((prev) => ({ ...prev, [name]: value }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.pages) {
-      setPagination(prev => ({ ...prev, page: newPage }));
+      setPagination((prev) => ({ ...prev, page: newPage }));
     }
   };
 
   const handleResetFilter = () => {
     setFilters({ q: "", tag: "", status: "published" });
     setDebouncedSearch("");
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   // === HÀM XỬ LÝ CLICK CARD ===
@@ -119,30 +124,28 @@ export default function PostsDirectory() {
   return (
     <section className="bg-gray-50 min-h-screen py-12 mt-15">
       <div className="container mx-auto px-4">
-        
         {/* --- Header --- */}
         <div className="text-center mb-12">
           <h2 className="text-3xl lg:text-4xl font-bold text-[#081839] mb-4">
             Tin Tức & Cẩm Nang
           </h2>
           <p className="text-slate-600 max-w-2xl mx-auto">
-            Cập nhật những thông tin y tế mới nhất, kiến thức sức khỏe bổ ích từ đội ngũ chuyên gia.
+            Cập nhật những thông tin y tế mới nhất, kiến thức sức khỏe bổ ích từ
+            đội ngũ chuyên gia.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
           {/* === SIDEBAR BỘ LỌC === */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-24">
-              
               <div className="flex items-center justify-between mb-6 border-b pb-4">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
                   <Filter size={20} className="color-title-hover" /> Bộ lọc
                 </h3>
-                <button 
+                <button
                   onClick={handleResetFilter}
-                  className="text-xs color-title-hover flex items-center gap-1 font-medium bg-indigo-50 px-2 py-1 rounded transition"
+                  className="text-xs color-title-hover flex items-center gap-1 font-medium bg-sky-50 px-2 py-1 rounded transition"
                   title="Xóa tất cả bộ lọc"
                 >
                   <RotateCcw size={12} /> Xoá
@@ -151,7 +154,9 @@ export default function PostsDirectory() {
 
               {/* Tìm kiếm */}
               <div className="mb-5">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Tìm kiếm</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Tìm kiếm
+                </label>
                 <div className="relative group">
                   <input
                     type="text"
@@ -159,15 +164,20 @@ export default function PostsDirectory() {
                     value={filters.q}
                     onChange={handleFilterChange}
                     placeholder="Nhập từ khóa..."
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm transition group-hover:bg-white"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none text-sm transition group-hover:bg-white"
                   />
-                  <Search className="absolute left-3 top-3 text-slate-400 group-hover:text-indigo-500 transition" size={18} />
+                  <Search
+                    className="absolute left-3 top-3 text-slate-400 group-hover:text-sky-500 transition"
+                    size={18}
+                  />
                 </div>
               </div>
 
               {/* Lọc theo Tag */}
               <div className="mb-5">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Chủ đề (Tag)</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Chủ đề (Tag)
+                </label>
                 <div className="relative group">
                   <input
                     type="text"
@@ -175,21 +185,30 @@ export default function PostsDirectory() {
                     value={filters.tag}
                     onChange={handleFilterChange}
                     placeholder="Ví dụ: vac-xin..."
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm transition group-hover:bg-white"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none text-sm transition group-hover:bg-white"
                   />
-                  <Tag className="absolute left-3 top-3 text-slate-400 group-hover:text-indigo-500 transition" size={18} />
+                  <Tag
+                    className="absolute left-3 top-3 text-slate-400 group-hover:text-sky-500 transition"
+                    size={18}
+                  />
                 </div>
               </div>
 
               {/* Số lượng hiển thị */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Hiển thị</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Hiển thị
+                </label>
                 <select
                   value={pagination.limit}
                   onChange={(e) => {
-                    setPagination(prev => ({ ...prev, limit: Number(e.target.value), page: 1 }));
+                    setPagination((prev) => ({
+                      ...prev,
+                      limit: Number(e.target.value),
+                      page: 1,
+                    }));
                   }}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm cursor-pointer hover:bg-white transition"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none text-sm cursor-pointer hover:bg-white transition"
                 >
                   <option value="6">6 bài / trang</option>
                   <option value="9">9 bài / trang</option>
@@ -201,11 +220,13 @@ export default function PostsDirectory() {
 
           {/* === DANH SÁCH BÀI VIẾT === */}
           <div className="lg:col-span-3">
-            
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <div key={n} className="bg-white rounded-3xl h-96 animate-pulse border border-slate-100 shadow-sm">
+                  <div
+                    key={n}
+                    className="bg-white rounded-3xl h-96 animate-pulse border border-slate-100 shadow-sm"
+                  >
                     <div className="h-48 bg-slate-200 w-full rounded-t-3xl"></div>
                     <div className="p-5 space-y-3">
                       <div className="h-4 bg-slate-200 rounded w-3/4"></div>
@@ -217,29 +238,55 @@ export default function PostsDirectory() {
               </div>
             ) : posts.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-10" id="post-list-top">
+                <div
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-10"
+                  id="post-list-top"
+                >
                   {posts.map((post) => {
-                    const { _id, id, slug, name, title, thumbnail, cover_image, excerpt, summary, published_at, publishedAt, createdAt, tags } = post;
-                    
+                    const {
+                      _id,
+                      id,
+                      slug,
+                      name,
+                      title,
+                      thumbnail,
+                      cover_image,
+                      excerpt,
+                      summary,
+                      published_at,
+                      publishedAt,
+                      createdAt,
+                      tags,
+                    } = post;
+
                     const displayTitle = name || title;
                     const displayId = _id || id || slug;
                     const displayExcerpt = excerpt || summary;
-                    const img = (thumbnail && !thumbnail.includes("undefined")) ? thumbnail : (cover_image || "https://placehold.co/600x360?text=No+Image");
-                    const displayDate = published_at || publishedAt || createdAt;
-                    const tagName = (tags && tags.length > 0) ? tags[0] : null;
+                    const img =
+                      thumbnail && !thumbnail.includes("undefined")
+                        ? thumbnail
+                        : cover_image ||
+                          "https://placehold.co/600x360?text=No+Image";
+                    const displayDate =
+                      published_at || publishedAt || createdAt;
+                    const tagName = tags && tags.length > 0 ? tags[0] : null;
 
                     return (
-                      <article 
-                        key={displayId} 
+                      <article
+                        key={displayId}
                         // THAY ĐỔI: Thêm onClick và cursor-pointer
                         onClick={() => handleCardClick(slug)}
                         className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100 flex flex-col hover:shadow-lg transition-all duration-300 group cursor-pointer"
                       >
                         {/* Ảnh: Đổi Link thành div để tránh lỗi lồng nhau, nhưng giữ style */}
                         <div className="relative block overflow-hidden aspect-[4/3]">
-                          <img src={img} alt={displayTitle} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                          <img
+                            src={img}
+                            alt={displayTitle}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
                           {tagName && (
-                            <span className="absolute top-3 left-3 bg-white/90 backdrop-blur text-indigo-600 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                            <span className="absolute top-3 left-3 bg-white/90 backdrop-blur text-sky-600 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
                               #{tagName}
                             </span>
                           )}
@@ -247,23 +294,25 @@ export default function PostsDirectory() {
 
                         <div className="p-5 flex flex-col flex-1">
                           <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
-                             <Calendar size={14} /> {formatDate(displayDate)}
+                            <Calendar size={14} /> {formatDate(displayDate)}
                           </div>
-                          
+
                           {/* Tiêu đề: Bỏ Link, chỉ giữ text */}
-                          <h3 className="text-lg font-bold text-slate-800 mb-3 line-clamp-2 color-title-2 transition-colors group-hover:text-indigo-600">
+                          <h3 className="text-lg font-bold text-slate-800 mb-3 line-clamp-2 color-title-2 transition-colors group-hover:text-sky-600">
                             {displayTitle}
                           </h3>
 
                           {displayExcerpt && (
-                            <p className="text-sm text-slate-600 mb-4 line-clamp-3 flex-1">{displayExcerpt}</p>
+                            <p className="text-sm text-slate-600 mb-4 line-clamp-3 flex-1">
+                              {displayExcerpt}
+                            </p>
                           )}
 
                           <div className="mt-auto pt-4 border-t border-slate-50 flex justify-between items-center">
-                             {/* Nút xem thêm: Đổi thành span giả lập link */}
-                             <span className="text-sm font-semibold color-title-2 flex items-center gap-1 group-hover:gap-2 transition-all">
-                                Đọc chi tiết <ChevronRight size={16} />
-                             </span>
+                            {/* Nút xem thêm: Đổi thành span giả lập link */}
+                            <span className="text-sm font-semibold color-title-2 flex items-center gap-1 group-hover:gap-2 transition-all">
+                              Đọc chi tiết <ChevronRight size={16} />
+                            </span>
                           </div>
                         </div>
                       </article>
@@ -295,7 +344,7 @@ export default function PostsDirectory() {
                     </button>
                   </div>
                 )}
-                
+
                 <div className="text-center text-xs text-slate-400 mt-4">
                   Hiển thị {posts.length} / {pagination.total} kết quả
                 </div>
@@ -306,13 +355,16 @@ export default function PostsDirectory() {
                 <div className="bg-slate-50 p-6 rounded-full mb-6">
                   <Search size={48} className="text-slate-300" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">Không tìm thấy bài viết nào</h3>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                  Không tìm thấy bài viết nào
+                </h3>
                 <p className="text-slate-500 max-w-md mb-8">
-                  Rất tiếc, chúng tôi không tìm thấy bài viết phù hợp với từ khóa "{filters.q}" hoặc bộ lọc hiện tại.
+                  Rất tiếc, chúng tôi không tìm thấy bài viết phù hợp với từ
+                  khóa "{filters.q}" hoặc bộ lọc hiện tại.
                 </p>
-                <button 
+                <button
                   onClick={handleResetFilter}
-                  className="px-8 py-3 bg-[#00B5F1] text-white rounded-xl hover:bg-[#0095D5] transition font-medium shadow-lg shadow-indigo-200"
+                  className="px-8 py-3 bg-[#00B5F1] text-white rounded-xl hover:bg-[#0095D5] transition font-medium shadow-lg shadow-sky-200"
                 >
                   Xóa bộ lọc & Thử lại
                 </button>

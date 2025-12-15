@@ -14,17 +14,18 @@ const RequireProfile = () => {
   // 2. Xác định đường dẫn onboarding chuẩn cho từng Role
   const patientOnboarding = "/onboarding/profile-patient";
   const doctorOnboarding = "/onboarding/profile-doctor";
-  
-  const myOnboardingPath = role === "doctor" ? doctorOnboarding : patientOnboarding;
 
-  // 3. CHẶN CHÉO ROLE: 
+  const myOnboardingPath =
+    role === "doctor" ? doctorOnboarding : patientOnboarding;
+
+  // 3. CHẶN CHÉO ROLE:
   // Nếu là Doctor mà đang đứng ở trang Patient Onboarding -> Đẩy về Doctor Onboarding
   if (role === "doctor" && location.pathname === patientOnboarding) {
-      return <Navigate to={doctorOnboarding} replace />;
+    return <Navigate to={doctorOnboarding} replace />;
   }
   // Nếu là Patient mà đang đứng ở trang Doctor Onboarding -> Đẩy về Patient Onboarding
   if (role === "patient" && location.pathname === doctorOnboarding) {
-      return <Navigate to={patientOnboarding} replace />;
+    return <Navigate to={patientOnboarding} replace />;
   }
 
   // 4. LOGIC CHƯA HOÀN THIỆN HỒ SƠ (profileCompleted === "false")
@@ -40,7 +41,10 @@ const RequireProfile = () => {
   // 5. LOGIC ĐÃ HOÀN THIỆN HỒ SƠ (profileCompleted === "true")
   if (profileCompleted === "true") {
     // Nếu cố tình quay lại trang onboarding -> Đẩy về trang chủ/dashboard
-    if (location.pathname === patientOnboarding || location.pathname === doctorOnboarding) {
+    if (
+      location.pathname === patientOnboarding ||
+      location.pathname === doctorOnboarding
+    ) {
       const homePath = role === "doctor" ? "/doctor" : "/";
       return <Navigate to={homePath} replace />;
     }

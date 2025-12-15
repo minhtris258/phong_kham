@@ -1,6 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
-import { toastSuccess,toastError, toastWarning, toastInfo } from "../utils/toast";
-import partnerService from "../services/partnersService"; 
+import {
+  toastSuccess,
+  toastError,
+  toastWarning,
+  toastInfo,
+} from "../utils/toast";
+import partnerService from "../services/PartnersService";
 
 const PartnersSection = () => {
   const [partners, setPartners] = useState([]);
@@ -14,7 +19,6 @@ const PartnersSection = () => {
       try {
         const res = await partnerService.listPartners();
 
-        
         const items = Array.isArray(res.data) ? res.data : res.data.data || [];
         setPartners(items);
       } catch (err) {

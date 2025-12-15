@@ -1,16 +1,30 @@
 import React from "react";
-import { User, Clock, Calendar, QrCode, Star, FileText, ArrowRight } from "lucide-react";
+import {
+  User,
+  Clock,
+  Calendar,
+  QrCode,
+  Star,
+  FileText,
+  ArrowRight,
+} from "lucide-react";
 import Modal from "../Modal";
 
 // Nhận thêm props: onRate (xử lý đánh giá), onViewResult (xử lý xem kết quả)
-const NotificationDetailModal = ({ notification, onClose, onRate, onViewResult }) => {
+const NotificationDetailModal = ({
+  notification,
+  onClose,
+  onRate,
+  onViewResult,
+}) => {
   if (!notification) return null;
 
   const { title, body, data, qr, createdAt, type } = notification;
 
   // Kiểm tra loại thông báo để hiển thị nút
   const isRatingRequest = type === "rating_request";
-  const isMedicalResult = title.toLowerCase().includes("kết quả") && notification.appointment_id;
+  const isMedicalResult =
+    title.toLowerCase().includes("kết quả") && notification.appointment_id;
 
   return (
     <Modal
@@ -21,7 +35,7 @@ const NotificationDetailModal = ({ notification, onClose, onRate, onViewResult }
     >
       <div className="space-y-4">
         <p className="text-xs text-gray-400 flex items-center gap-1">
-          <Clock size={14} /> {new Date(createdAt).toLocaleString('vi-VN')}
+          <Clock size={14} /> {new Date(createdAt).toLocaleString("vi-VN")}
         </p>
 
         <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
@@ -42,7 +56,7 @@ const NotificationDetailModal = ({ notification, onClose, onRate, onViewResult }
                 </div>
               </div>
             )}
-            
+
             {data.time && data.date && (
               <div className="flex items-center gap-3 text-gray-700 border-t border-gray-200 pt-2">
                 <div className="w-8 h-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center shrink-0">
@@ -50,7 +64,9 @@ const NotificationDetailModal = ({ notification, onClose, onRate, onViewResult }
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Thời gian khám</p>
-                  <p className="font-semibold">{data.time} - {data.date}</p>
+                  <p className="font-semibold">
+                    {data.time} - {data.date}
+                  </p>
                 </div>
               </div>
             )}
@@ -60,11 +76,15 @@ const NotificationDetailModal = ({ notification, onClose, onRate, onViewResult }
         {/* QR Code */}
         {qr && (
           <div className="flex flex-col items-center justify-center pt-4 border-t border-dashed border-gray-200 mt-4">
-            <p className="text-xs font-bold text-indigo-600 mb-3 uppercase tracking-wider flex items-center gap-1">
+            <p className="text-xs font-bold text-sky-600 mb-3 uppercase tracking-wider flex items-center gap-1">
               <QrCode size={14} /> Mã Check-in
             </p>
-            <div className="p-2 border-2 border-indigo-100 rounded-xl bg-white shadow-sm">
-              <img src={qr} alt="QR Check-in" className="w-40 h-40 object-contain" />
+            <div className="p-2 border-2 border-sky-100 rounded-xl bg-white shadow-sm">
+              <img
+                src={qr}
+                alt="QR Check-in"
+                className="w-40 h-40 object-contain"
+              />
             </div>
             <p className="text-[10px] text-gray-400 mt-2 text-center">
               Đưa mã này cho lễ tân để xác thực
@@ -74,7 +94,7 @@ const NotificationDetailModal = ({ notification, onClose, onRate, onViewResult }
 
         {/* --- KHU VỰC NÚT HÀNH ĐỘNG (ACTION BUTTONS) --- */}
         <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-4">
-          <button 
+          <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition"
           >
@@ -96,7 +116,7 @@ const NotificationDetailModal = ({ notification, onClose, onRate, onViewResult }
           {isMedicalResult && (
             <button
               onClick={() => onViewResult(notification)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-sm"
+              className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-sm"
             >
               <FileText size={16} />
               Xem bệnh án

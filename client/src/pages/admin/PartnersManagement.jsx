@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Image as ImageIcon, X, Check, Search } from "lucide-react";
-import partnersService from "../../services/PartnersService"; 
-import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Image as ImageIcon,
+  X,
+  Check,
+  Search,
+} from "lucide-react";
+import partnersService from "../../services/PartnersService";
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 
 const PartnersManagement = () => {
   // --- State ---
@@ -21,7 +29,7 @@ const PartnersManagement = () => {
     setLoading(true);
     try {
       const res = await partnersService.listPartners();
-      setPartners(Array.isArray(res.data) ? res.data : res.data?.data || []); 
+      setPartners(Array.isArray(res.data) ? res.data : res.data?.data || []);
     } catch (error) {
       console.error("Lỗi tải đối tác:", error);
     } finally {
@@ -74,7 +82,10 @@ const PartnersManagement = () => {
     try {
       if (editingItem) {
         // Update
-        await partnersService.updatePartner(editingItem._id || editingItem.id, formData);
+        await partnersService.updatePartner(
+          editingItem._id || editingItem.id,
+          formData
+        );
         toastSuccess("Cập nhật đối tác thành công!");
       } else {
         // Create
@@ -82,7 +93,7 @@ const PartnersManagement = () => {
         toastSuccess("Thêm đối tác thành công!");
       }
       setIsModalOpen(false);
-      fetchPartners(); 
+      fetchPartners();
     } catch (error) {
       toastError("Lỗi: " + (error.response?.data?.error || error.message));
     }
@@ -106,8 +117,12 @@ const PartnersManagement = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Quản Lý Đối Tác</h1>
-            <p className="text-sm text-gray-500 mt-1">Danh sách các đối tác, công ty bảo hiểm liên kết</p>
+            <h1 className="text-2xl font-bold text-gray-800">
+              Quản Lý Đối Tác
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Danh sách các đối tác, công ty bảo hiểm liên kết
+            </p>
           </div>
           <button
             onClick={() => openModal(null)}
@@ -121,7 +136,9 @@ const PartnersManagement = () => {
         {/* Table Content */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {loading ? (
-            <div className="p-8 text-center text-gray-500">Đang tải dữ liệu...</div>
+            <div className="p-8 text-center text-gray-500">
+              Đang tải dữ liệu...
+            </div>
           ) : partners.length === 0 ? (
             <div className="p-12 text-center text-gray-400 flex flex-col items-center">
               <ImageIcon size={48} className="mb-3 opacity-20" />
@@ -140,18 +157,29 @@ const PartnersManagement = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {partners.map((partner, index) => (
-                    <tr key={partner._id || partner.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 text-gray-500 font-medium">{index + 1}</td>
+                    <tr
+                      key={partner._id || partner.id}
+                      className="hover:bg-gray-50 transition"
+                    >
+                      <td className="px-6 py-4 text-gray-500 font-medium">
+                        {index + 1}
+                      </td>
                       <td className="px-6 py-4">
                         <div className="w-12 h-12 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
-                            {partner.thumbnail ? (
-                                <img src={partner.thumbnail} alt={partner.name} className="w-full h-full object-contain" />
-                            ) : (
-                                <ImageIcon size={20} className="text-gray-400" />
-                            )}
+                          {partner.thumbnail ? (
+                            <img
+                              src={partner.thumbnail}
+                              alt={partner.name}
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            <ImageIcon size={20} className="text-gray-400" />
+                          )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-800">{partner.name}</td>
+                      <td className="px-6 py-4 font-medium text-gray-800">
+                        {partner.name}
+                      </td>
                       <td className="px-6 py-4 text-right space-x-2">
                         <button
                           onClick={() => openModal(partner)}
@@ -161,7 +189,9 @@ const PartnersManagement = () => {
                           <Edit size={18} />
                         </button>
                         <button
-                          onClick={() => handleDelete(partner._id || partner.id)}
+                          onClick={() =>
+                            handleDelete(partner._id || partner.id)
+                          }
                           className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition"
                           title="Xóa"
                         >
@@ -196,7 +226,6 @@ const PartnersManagement = () => {
 
             {/* Modal Body */}
             <form onSubmit={handleSave} className="p-6 space-y-4">
-              
               {/* Input Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -216,32 +245,38 @@ const PartnersManagement = () => {
               {/* Input Image */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                   Logo / Hình ảnh
+                  Logo / Hình ảnh
                 </label>
-                
-                <div className="flex items-center gap-4">
-                    {/* Preview Box */}
-                    <div className="w-20 h-20 rounded-lg border border-gray-300 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 relative group">
-                        {formData.thumbnail ? (
-                            <img src={formData.thumbnail} alt="Preview" className="w-full h-full object-contain" />
-                        ) : (
-                            <span className="text-xs text-gray-400">No Image</span>
-                        )}
-                    </div>
 
-                    {/* File Input */}
-                    <label className="flex-1 cursor-pointer">
-                        <span className="inline-block px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition shadow-sm">
-                            Chọn tệp tin...
-                        </span>
-                        <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={handleFileChange} 
-                            className="hidden" 
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Hỗ trợ JPG, PNG, WEBP</p>
-                    </label>
+                <div className="flex items-center gap-4">
+                  {/* Preview Box */}
+                  <div className="w-20 h-20 rounded-lg border border-gray-300 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 relative group">
+                    {formData.thumbnail ? (
+                      <img
+                        src={formData.thumbnail}
+                        alt="Preview"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-400">No Image</span>
+                    )}
+                  </div>
+
+                  {/* File Input */}
+                  <label className="flex-1 cursor-pointer">
+                    <span className="inline-block px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition shadow-sm">
+                      Chọn tệp tin...
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Hỗ trợ JPG, PNG, WEBP
+                    </p>
+                  </label>
                 </div>
               </div>
 

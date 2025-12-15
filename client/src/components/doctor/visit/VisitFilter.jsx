@@ -51,7 +51,7 @@ const VisitFilter = ({ filters, onChange, onSearch, onClear }) => {
         <div className="flex gap-2">
           <button
             onClick={onSearch}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex-1"
+            className="bg-sky-500 text-white px-4 py-2 rounded hover:bg-sky-700 transition flex-1"
           >
             Tìm kiếm
           </button>

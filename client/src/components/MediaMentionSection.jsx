@@ -20,7 +20,6 @@ export default function MediaMentionSection() {
   return (
     <section className="w-full bg-white py-12 md:py-16">
       <div className="container mx-auto px-4">
-
         {/* Title */}
         <div className="text-center max-w-3xl mx-auto mb-10">
           <h2 className="text-xl md:text-3xl font-bold tracking-wide color-title mb-2">
@@ -38,19 +37,20 @@ export default function MediaMentionSection() {
               key={logo.name}
               className="flex items-center justify-center h-16 md:h-20 transition"
             >
-                <a href="https://thanhnien.vn/benh-vien-mat-tphcm-chinh-thuc-ra-mat-ung-dung-dat-lich-1851509686.htm">
-              <img
-                src={logo.src}
-                alt={logo.name}
-                className="max-h-full w-[60%] justify-self-center object-contain"
-              /></a>
+              <a href="https://thanhnien.vn/benh-vien-mat-tphcm-chinh-thuc-ra-mat-ung-dung-dat-lich-1851509686.htm">
+                <img
+                  src={logo.src}
+                  alt={logo.name}
+                  className="max-h-full w-[60%] justify-self-center object-contain"
+                />
+              </a>
             </div>
           ))}
         </div>
 
         {/* VIDEO */}
         <div className="max-w-4xl mx-auto rounded-xl overflow-hidden shadow-lg">
-          <div className="relative pb-[56.25%] h-0"> 
+          <div className="relative pb-[56.25%] h-0">
             <iframe
               className="absolute top-0 left-0 w-full h-full"
               src="https://www.youtube.com/embed/g1c3V4TpMVY?rel=0"
@@ -60,7 +60,6 @@ export default function MediaMentionSection() {
             ></iframe>
           </div>
         </div>
-
       </div>
     </section>
   );

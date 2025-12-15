@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toastError } from "../utils/toast";
 import axios from "axios";
-import { ChevronDown, ChevronUp } from "lucide-react"; // Import thêm icon cho nút
+import { ChevronDown, ChevronUp } from "lucide-react"; 
 import "../index.css";
 
 const API_URL = "http://localhost:3000/api/specialties";
@@ -11,13 +11,13 @@ const API_URL = "http://localhost:3000/api/specialties";
 const resolveSpecialtyImage = (thumbnail) =>
   thumbnail || "https://via.placeholder.com/110x110.png?text=Specialty";
 
-// =================== 1 CARD CHUYÊN KHOA (GIỮ NGUYÊN GIAO DIỆN) ===================
+// =================== 1. CARD CHUYÊN KHOA (GIỮ NGUYÊN 100% GIAO DIỆN CŨ) ===================
 function SpecialtyCard({ spec }) {
   const { _id, id, name, thumbnail, imageUrl } = spec || {};
 
   const imgSrc = resolveSpecialtyImage(thumbnail || imageUrl);
   const specialtyId = _id || id;
-  
+
   const linkTo = specialtyId
     ? `/doctors?specialtyId=${specialtyId}`
     : "/doctors";
@@ -39,16 +39,37 @@ function SpecialtyCard({ spec }) {
   );
 }
 
-// =================== SECTION DANH SÁCH CHUYÊN KHOA ===================
+// =================== 2. SECTION DANH SÁCH ===================
 export default function SpecialtySection({
   title = "Chuyên khoa",
   specialties: specialtiesProp,
 }) {
   const [specialties, setSpecialties] = useState(specialtiesProp || []);
-  
-  // 1. Thêm state quản lý số lượng hiển thị, mặc định 12
+
+  // --- LOGIC MỚI: Tự động set số lượng hiển thị theo màn hình ---
+  // Mặc định là 12, nhưng sẽ tính toán lại khi component mount
   const [visibleCount, setVisibleCount] = useState(12);
-  
+
+  useEffect(() => {
+    const updateCount = () => {
+      // Nếu màn hình < 768px (Mobile) -> Hiện 6
+      if (window.innerWidth < 768) {
+        setVisibleCount(6);
+      } else {
+        // Tablet/Desktop -> Hiện 12
+        setVisibleCount(12);
+      }
+    };
+
+    // Chạy 1 lần khi mount
+    updateCount();
+
+    // (Tuỳ chọn) Lắng nghe resize nếu muốn responsive real-time
+    // window.addEventListener("resize", updateCount);
+    // return () => window.removeEventListener("resize", updateCount);
+  }, []);
+  // -------------------------------------------------------------
+
   const shouldFetch = !specialtiesProp;
 
   useEffect(() => {
@@ -57,9 +78,8 @@ export default function SpecialtySection({
 
     (async () => {
       try {
-        // 2. Sửa API call: Thêm limit: 100 để lấy đủ danh sách về client xử lý
         const res = await axios.get(API_URL, {
-          params: { limit: 100 }, 
+          params: { limit: 100 },
           headers: { "Content-Type": "application/json" },
         });
 
@@ -82,43 +102,49 @@ export default function SpecialtySection({
     };
   }, [shouldFetch]);
 
-  // 3. Logic xử lý nút bấm
+  // Logic nút bấm: Tăng thêm 6 item mỗi lần bấm (để chia hết cho 2 và 3 cột đều đẹp)
   const handleShowMore = () => {
-    setVisibleCount((prev) => prev + 4); // Thêm 4 khoa tiếp theo
+    setVisibleCount((prev) => prev + 6); 
   };
 
   const handleCollapse = () => {
-    setVisibleCount(12); // Reset về 12
+    // Khi thu gọn cũng kiểm tra lại màn hình để về đúng số lượng mặc định
+    setVisibleCount(window.innerWidth < 768 ? 6 : 12);
   };
 
   const totalItems = specialties.length;
-  // Kiểm tra xem đã hiển thị hết danh sách chưa
   const isExpandedAll = visibleCount >= totalItems;
 
   return (
-    <section className="container py-8">
+    <section className="container py-8 lg:px-0 px-4">
       <h2 className="lg:text-4xl text-2xl font-bold py-4 mb-8 color-title text-center">
         {title}
       </h2>
 
-      <div className="grid lg:grid-cols-6 md:grid-cols-3 grid-cols-2 gap-8">
+      {/* GRID SYSTEM:
+         - Mobile (grid-cols-2): 2 cột để phù hợp kích thước 110px của card.
+         - Desktop (grid-cols-6): 6 cột như cũ.
+         - Gap: Mobile gap-4 (nhỏ hơn chút cho đỡ thưa), Desktop gap-8.
+      */}
+      <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-8">
         {specialties.length === 0 ? (
           <p className="text-center col-span-full text-slate-600">
             Chưa có dữ liệu chuyên khoa.
           </p>
         ) : (
-          // 4. Chỉ render số lượng visibleCount
-          specialties.slice(0, visibleCount).map((s) => (
-            <SpecialtyCard
-              key={s._id || s.id || s.slug || Math.random()}
-              spec={s}
-            />
-          ))
+          specialties
+            .slice(0, visibleCount)
+            .map((s) => (
+              <SpecialtyCard
+                key={s._id || s.id || s.slug || Math.random()}
+                spec={s}
+              />
+            ))
         )}
       </div>
 
-      {/* 5. Khu vực nút Xem thêm / Thu lại (Chỉ hiện khi tổng số > 12) */}
-      {totalItems > 12 && (
+      {/* Nút Xem thêm */}
+      {totalItems > (window.innerWidth < 768 ? 6 : 12) && (
         <div className="mt-8 text-center">
           {!isExpandedAll ? (
             <button

@@ -1,7 +1,7 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import React from "react";
+import { Navigate, Outlet } from "react-router-dom";
 // 👇 Đảm bảo đường dẫn này đúng với nơi bạn lưu Context
-import { useAppContext } from '../context/AppContext'; 
+import { useAppContext } from "../context/AppContext";
 
 const RejectAuth = () => {
   const { user } = useAppContext(); // Lấy thông tin user hiện tại

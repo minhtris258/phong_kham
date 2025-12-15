@@ -77,7 +77,7 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
             {/* --- NÚT VỀ TRANG CHỦ (Đã OK) --- */}
             <Link 
                 to="/" 
-                className="p-2 bg-blue-800 rounded-lg hover:bg-blue-600 transition shadow-sm group relative"
+                className="p-2 bg-sky-600 rounded-lg hover:bg-sky-700 transition shadow-sm group relative"
                 title="Về trang chủ Website"
             >
                 <Home className="w-6 h-6 text-white" />
@@ -127,8 +127,8 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${
                   active 
-                    ? 'bg-white text-blue-600 shadow-xl font-bold transform scale-[1.02]' 
-                    : 'hover:bg-blue-800 hover:bg-opacity-60 text-white'
+                    ? 'bg-white text-sky-600 shadow-xl font-bold transform scale-[1.02]' 
+                    : 'hover:bg-sky-600 hover:bg-opacity-60 text-white'
                 }`}
               >
                 <Icon className={`w-5 h-5 ${active ? 'stroke-2' : ''}`} />
@@ -142,7 +142,7 @@ export default function DoctorSidebar({ sidebarOpen, setSidebarOpen }) {
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-[#00B5F1] ">
           <button 
             onClick={onLogoutClick} 
-            className="flex items-center gap-4 px-5 py-3 rounded-xl bg-blue-600 hover:bg-red-600 hover:text-white transition-all w-full text-blue-100 group"
+            className="flex items-center gap-4 px-5 py-3 rounded-xl bg-sky-600 hover:bg-red-600 hover:text-white transition-all w-full text-blue-100 group"
           >
             <LogOut className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
             <span className="font-medium">Đăng xuất</span>

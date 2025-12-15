@@ -44,7 +44,7 @@ const SpecialtyList = ({
         </div>
         <input
           type="text"
-          className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+          className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
           placeholder="Tìm kiếm theo tên hoặc từ khóa..." // Update placeholder
           value={searchTerm}
           onChange={onSearchChange}

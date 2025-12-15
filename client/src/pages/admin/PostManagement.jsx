@@ -1,45 +1,58 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { 
-  Plus, Edit, Trash2, Search, Eye, FileText, 
-  CheckCircle, XCircle, Loader2 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Eye,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Loader2,
 } from "lucide-react";
-import postService from "../../services/PostService"; 
-import { toastSuccess, toastError,toastWarning } from "../../utils/toast";
+import postService from "../../services/PostService";
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 // Lưu ý: Thay đường dẫn import service cho đúng cấu trúc thư mục của bạn
 
 const PostManagement = () => {
   // --- State ---
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState({ page: 1, limit: 10, q: "", status: "" });
+  const [filter, setFilter] = useState({
+    page: 1,
+    limit: 10,
+    q: "",
+    status: "",
+  });
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
 
   const navigate = useNavigate();
 
   // --- Fetch Data ---
   const fetchPosts = async () => {
-  setLoading(true);
-  try {
-    const res = await postService.getPosts(filter);
+    setLoading(true);
+    try {
+      const res = await postService.getPosts(filter);
 
-    // THÊM DÒNG NÀY ĐỂ DEBUG (rất quan trọng)
-    console.log("Response từ API:", res);
+      // THÊM DÒNG NÀY ĐỂ DEBUG (rất quan trọng)
+      console.log("Response từ API:", res);
 
-    // SỬA Ở ĐÂY:
-    const items = res.items || res.data?.items || res || []; // fallback an toàn
-    const pagination = res.pagination || res.data?.pagination || { total: 0, pages: 1 };
+      // SỬA Ở ĐÂY:
+      const items = res.items || res.data?.items || res || []; // fallback an toàn
+      const pagination = res.pagination ||
+        res.data?.pagination || { total: 0, pages: 1 };
 
-    setPosts(items);
-    setPagination(pagination);
-  } catch (error) {
-    console.error("Lỗi tải bài viết:", error);
-    setPosts([]);
-    setPagination({ total: 0, pages: 0 });
-  } finally {
-    setLoading(false);
-  }
-};
+      setPosts(items);
+      setPagination(pagination);
+    } catch (error) {
+      console.error("Lỗi tải bài viết:", error);
+      setPosts([]);
+      setPagination({ total: 0, pages: 0 });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchPosts();
@@ -52,10 +65,15 @@ const PostManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn chắc chắn muốn xóa bài viết này? Hành động không thể hoàn tác.")) return;
+    if (
+      !window.confirm(
+        "Bạn chắc chắn muốn xóa bài viết này? Hành động không thể hoàn tác."
+      )
+    )
+      return;
     try {
       await postService.deletePost(id);
-      setPosts(prev => prev.filter(p => p._id !== id)); // Xóa nóng trên UI
+      setPosts((prev) => prev.filter((p) => p._id !== id)); // Xóa nóng trên UI
     } catch (error) {
       toastError("Xóa thất bại: " + error.message);
     }
@@ -63,10 +81,12 @@ const PostManagement = () => {
 
   const handleToggleStatus = async (post) => {
     const newStatus = post.status === "published" ? "draft" : "published";
-    
+
     // Optimistic Update (Cập nhật giao diện ngay lập tức cho mượt)
     const oldPosts = [...posts];
-    setPosts(posts.map(p => p._id === post._id ? { ...p, status: newStatus } : p));
+    setPosts(
+      posts.map((p) => (p._id === post._id ? { ...p, status: newStatus } : p))
+    );
 
     try {
       await postService.updatePost(post._id, { status: newStatus });
@@ -81,18 +101,19 @@ const PostManagement = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
-        
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <FileText className="text-indigo-600" /> Quản Lý Bài Viết
+              <FileText className="text-sky-600" /> Quản Lý Bài Viết
             </h1>
-            <p className="text-sm text-gray-500 mt-1">Quản lý tin tức, blog và nội dung website</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Quản lý tin tức, blog và nội dung website
+            </p>
           </div>
           <Link
             to="/admin/posts/new" // Đường dẫn tới trang PostEditor
-            className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 transition shadow-md font-medium"
+            className="flex items-center justify-center gap-2 bg-sky-600 text-white px-5 py-2.5 rounded-lg hover:bg-sky-700 transition shadow-md font-medium"
           >
             <Plus size={18} /> Viết Bài Mới
           </Link>
@@ -100,7 +121,10 @@ const PostManagement = () => {
 
         {/* Filter Bar */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col md:flex-row gap-4">
-          <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-500 transition bg-gray-50 focus-within:bg-white">
+          <form
+            onSubmit={handleSearch}
+            className="flex-1 flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-sky-500 transition bg-gray-50 focus-within:bg-white"
+          >
             <Search size={18} className="text-gray-400" />
             <input
               type="text"
@@ -110,11 +134,13 @@ const PostManagement = () => {
               onChange={(e) => setFilter({ ...filter, q: e.target.value })}
             />
           </form>
-          
+
           <select
-            className="border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+            className="border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500 bg-white"
             value={filter.status}
-            onChange={(e) => setFilter({ ...filter, status: e.target.value, page: 1 })}
+            onChange={(e) =>
+              setFilter({ ...filter, status: e.target.value, page: 1 })
+            }
           >
             <option value="">Tất cả trạng thái</option>
             <option value="published">Đã xuất bản</option>
@@ -126,7 +152,7 @@ const PostManagement = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-gray-500 flex flex-col items-center">
-              <Loader2 className="w-8 h-8 animate-spin mb-2 text-indigo-500"/>
+              <Loader2 className="w-8 h-8 animate-spin mb-2 text-sky-500" />
               Đang tải dữ liệu...
             </div>
           ) : posts.length === 0 ? (
@@ -152,7 +178,11 @@ const PostManagement = () => {
                       <td className="px-6 py-4">
                         <div className="w-16 h-12 bg-gray-100 rounded-md border border-gray-200 overflow-hidden">
                           {post.thumbnail ? (
-                            <img src={post.thumbnail} alt="thumb" className="w-full h-full object-cover" />
+                            <img
+                              src={post.thumbnail}
+                              alt="thumb"
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-300">
                               <FileText size={20} />
@@ -163,14 +193,18 @@ const PostManagement = () => {
 
                       {/* Info */}
                       <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900 line-clamp-1 text-base mb-1" title={post.name}>
+                        <div
+                          className="font-medium text-gray-900 line-clamp-1 text-base mb-1"
+                          title={post.name}
+                        >
                           {post.name}
                         </div>
                         <div className="text-xs text-gray-500 font-mono bg-gray-100 inline-block px-1.5 py-0.5 rounded">
                           /{post.slug}
                         </div>
                         <div className="text-xs text-gray-400 mt-1">
-                          Ngày đăng: {new Date(post.createdAt).toLocaleDateString('vi-VN')}
+                          Ngày đăng:{" "}
+                          {new Date(post.createdAt).toLocaleDateString("vi-VN")}
                         </div>
                       </td>
 
@@ -179,15 +213,20 @@ const PostManagement = () => {
                         <button
                           onClick={() => handleToggleStatus(post)}
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all
-                            ${post.status === "published" 
-                              ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" 
-                              : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                            ${
+                              post.status === "published"
+                                ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
                             }`}
                         >
                           {post.status === "published" ? (
-                            <><CheckCircle size={12}/> Published</>
+                            <>
+                              <CheckCircle size={12} /> Published
+                            </>
                           ) : (
-                            <><XCircle size={12}/> Draft</>
+                            <>
+                              <XCircle size={12} /> Draft
+                            </>
                           )}
                         </button>
                       </td>
@@ -195,8 +234,9 @@ const PostManagement = () => {
                       {/* Views */}
                       <td className="px-6 py-4 text-center text-sm text-gray-600 font-medium">
                         <div className="flex items-center justify-center gap-1">
-                          <Eye size={14} className="text-gray-400"/>
-                          {post.views_count || 0} {/* Model bạn là views_count */}
+                          <Eye size={14} className="text-gray-400" />
+                          {post.views_count || 0}{" "}
+                          {/* Model bạn là views_count */}
                         </div>
                       </td>
 
@@ -204,8 +244,12 @@ const PostManagement = () => {
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
                           <button
-                            onClick={() => navigate(`/admin/posts/edit/${post._id}`, { state: { post } })}
-                            className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                            onClick={() =>
+                              navigate(`/admin/posts/edit/${post._id}`, {
+                                state: { post },
+                              })
+                            }
+                            className="p-2 text-gray-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition"
                             title="Chỉnh sửa"
                           >
                             <Edit size={18} />
@@ -228,28 +272,28 @@ const PostManagement = () => {
 
           {/* Footer Pagination */}
           <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-between items-center">
-             <span className="text-sm text-gray-500">
-                Hiển thị {posts.length} / {pagination.total} bài viết
-             </span>
-             <div className="flex gap-2">
-                <button 
-                  disabled={filter.page === 1}
-                  onClick={() => setFilter(p => ({...p, page: p.page - 1}))}
-                  className="px-3 py-1.5 border border-gray-300 bg-white rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Trước
-                </button>
-                <span className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">
-                   {filter.page}
-                </span>
-                <button 
-                  disabled={filter.page >= pagination.pages}
-                  onClick={() => setFilter(p => ({...p, page: p.page + 1}))}
-                  className="px-3 py-1.5 border border-gray-300 bg-white rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Sau
-                </button>
-             </div>
+            <span className="text-sm text-gray-500">
+              Hiển thị {posts.length} / {pagination.total} bài viết
+            </span>
+            <div className="flex gap-2">
+              <button
+                disabled={filter.page === 1}
+                onClick={() => setFilter((p) => ({ ...p, page: p.page - 1 }))}
+                className="px-3 py-1.5 border border-gray-300 bg-white rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Trước
+              </button>
+              <span className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">
+                {filter.page}
+              </span>
+              <button
+                disabled={filter.page >= pagination.pages}
+                onClick={() => setFilter((p) => ({ ...p, page: p.page + 1 }))}
+                className="px-3 py-1.5 border border-gray-300 bg-white rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Sau
+              </button>
+            </div>
           </div>
         </div>
       </div>

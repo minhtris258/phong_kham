@@ -60,18 +60,18 @@ const DoctorVisit = () => {
     setLoading(true);
     try {
       // Chuẩn bị params gửi lên server
-      const params = { 
-        ...filters, 
-        page: pageNumber, 
-        limit: 10 
+      const params = {
+        ...filters,
+        page: pageNumber,
+        limit: 10,
       };
 
       // Gọi API searchDoctorVisits (đã update ở backend)
       const res = await visitService.searchDoctorVisits(params);
 
-      // Cấu trúc trả về từ Backend mới: 
+      // Cấu trúc trả về từ Backend mới:
       // { data: [...], pagination: { totalItems, totalPages, currentPage, pageSize } }
-      
+
       if (res.data) {
         // 1. Lấy danh sách visits
         const fetchedVisits = res.data.data || [];
@@ -79,12 +79,12 @@ const DoctorVisit = () => {
 
         // 2. Lấy thông tin phân trang (nếu có) hoặc fallback
         const meta = res.data.pagination || {};
-        
+
         setPagination({
           page: meta.currentPage || pageNumber,
           limit: meta.pageSize || 10,
           totalDocs: meta.totalItems || fetchedVisits.length,
-          totalPages: meta.totalPages || 1
+          totalPages: meta.totalPages || 1,
         });
       }
     } catch (error) {
@@ -104,37 +104,43 @@ const DoctorVisit = () => {
 
   // Khi bấm nút "Tìm kiếm", luôn reset về trang 1
   const onSearchClick = () => {
-      handleSearch(1);
+    handleSearch(1);
   };
 
   // Khi bấm nút "Xóa lọc"
   const handleClearFilter = () => {
-    const emptyFilters = { diagnosis: "", fromDate: "", toDate: "", patientName: "" };
+    const emptyFilters = {
+      diagnosis: "",
+      fromDate: "",
+      toDate: "",
+      patientName: "",
+    };
     setFilters(emptyFilters);
-    
+
     // Gọi lại API với bộ lọc rỗng, về trang 1
     setLoading(true);
-    visitService.searchDoctorVisits({ ...emptyFilters, page: 1, limit: 10 })
-        .then(res => {
-            const fetchedVisits = res.data.data || [];
-            const meta = res.data.pagination || {};
-            
-            setVisits(fetchedVisits);
-            setPagination({
-                page: 1,
-                limit: 10,
-                totalDocs: meta.totalItems || 0,
-                totalPages: meta.totalPages || 1
-            });
-        })
-        .catch(err => toastError("Lỗi làm mới dữ liệu"))
-        .finally(() => setLoading(false));
+    visitService
+      .searchDoctorVisits({ ...emptyFilters, page: 1, limit: 10 })
+      .then((res) => {
+        const fetchedVisits = res.data.data || [];
+        const meta = res.data.pagination || {};
+
+        setVisits(fetchedVisits);
+        setPagination({
+          page: 1,
+          limit: 10,
+          totalDocs: meta.totalItems || 0,
+          totalPages: meta.totalPages || 1,
+        });
+      })
+      .catch((err) => toastError("Lỗi làm mới dữ liệu"))
+      .finally(() => setLoading(false));
   };
 
   // Chuyển trang
   const handlePageChange = (newPage) => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      handleSearch(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    handleSearch(newPage);
   };
 
   // Modal Handlers
@@ -166,10 +172,7 @@ const DoctorVisit = () => {
       />
 
       {selectedVisit && (
-        <VisitDetailModal
-          visit={selectedVisit}
-          onClose={handleCloseDetail}
-        />
+        <VisitDetailModal visit={selectedVisit} onClose={handleCloseDetail} />
       )}
     </div>
   );

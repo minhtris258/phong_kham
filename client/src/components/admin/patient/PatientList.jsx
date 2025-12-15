@@ -92,7 +92,9 @@ const PatientList = ({
             <option value="active">Hoạt động (Active)</option>
 
             {/* Value phải là "inactive" (vì Database lưu là inactive khi mới tạo) */}
-            <option value="pending_profile">Chờ cập nhật / Chưa kích hoạt</option>
+            <option value="pending_profile">
+              Chờ cập nhật / Chưa kích hoạt
+            </option>
           </select>
         </div>
       </div>
@@ -195,7 +197,7 @@ const PatientList = ({
                         </button>
                         <button
                           onClick={() => handleAddEdit(patient)}
-                          className="text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg transition"
+                          className="text-sky-600 hover:bg-sky-50 p-2 rounded-lg transition"
                           title="Sửa"
                         >
                           <Edit className="w-4 h-4" />

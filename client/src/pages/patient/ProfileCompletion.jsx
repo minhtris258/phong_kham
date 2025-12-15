@@ -1,5 +1,10 @@
 import React, { useState } from "react";
-import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
+import {
+  toastSuccess,
+  toastError,
+  toastWarning,
+  toastInfo,
+} from "../../utils/toast";
 import { useNavigate } from "react-router-dom";
 import patientService from "../../services/PatientService";
 import { useAppContext } from "../../context/AppContext";
@@ -14,7 +19,7 @@ const ProfileCompletion = () => {
   // Dữ liệu form
   const [formData, setFormData] = useState({
     fullName: "",
-    gender: "", 
+    gender: "",
     dob: "",
     phone: "",
     address: "",
@@ -46,7 +51,7 @@ const ProfileCompletion = () => {
 
       // 1. Gọi API
       const res = await patientService.completePatientProfile(formData);
-      
+
       // LOG ĐỂ KIỂM TRA RESPONSE TRẢ VỀ
       console.log("Response từ server:", res);
 
@@ -56,20 +61,19 @@ const ProfileCompletion = () => {
       const newToken = res.token || res.data?.token;
 
       if (newToken) {
-          console.log("Đã nhận Token mới:", newToken);
-          
-          // Cập nhật Token mới ngay lập tức
-          setAuthToken(newToken); 
-          
-          // Load lại User để AppContext nhận diện profile_completed = true
-          await loadCurrentUser(newToken);
+        console.log("Đã nhận Token mới:", newToken);
+
+        // Cập nhật Token mới ngay lập tức
+        setAuthToken(newToken);
+
+        // Load lại User để AppContext nhận diện profile_completed = true
+        await loadCurrentUser(newToken);
       } else {
-          toastWarning("Không tìm thấy Token trong response!");
+        toastWarning("Không tìm thấy Token trong response!");
       }
 
       toastSuccess("Hồ sơ đã hoàn tất!");
       navigate("/");
-
     } catch (err) {
       toastError(err.response?.data?.error || err.message || "Có lỗi xảy ra.");
       setError(err.response?.data?.error || err.message || "Có lỗi xảy ra.");
@@ -82,14 +86,14 @@ const ProfileCompletion = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 mt-10 mb-10">
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-100">
         <div className="grid lg:grid-cols-5">
-          
           {/* Cột trái: Thông tin & Progress Bar */}
           <div className="bg-[#00B5F1] text-white p-8 lg:col-span-2 flex flex-col justify-center">
             <h1 className="text-2xl font-bold mb-4">Hoàn tất hồ sơ</h1>
             <p className="text-sky-100 mb-6 text-sm">
-              Bạn đã hoàn thành bước đăng ký. Hãy bổ sung thông tin cá nhân để hoàn tất.
+              Bạn đã hoàn thành bước đăng ký. Hãy bổ sung thông tin cá nhân để
+              hoàn tất.
             </p>
-            
+
             <div className="relative pt-1">
               <div className="flex mb-2 items-center justify-between">
                 <div>
@@ -105,7 +109,10 @@ const ProfileCompletion = () => {
               </div>
               <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-sky-200">
                 <div
-                  style={{ width: `${progress}%`, transition: "width 0.5s ease-in-out" }}
+                  style={{
+                    width: `${progress}%`,
+                    transition: "width 0.5s ease-in-out",
+                  }}
                   className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
                     progress === 100 ? "bg-green-400" : "bg-white/80"
                   }`}
@@ -113,13 +120,17 @@ const ProfileCompletion = () => {
               </div>
             </div>
             <p className="text-xs mt-2 text-white italic">
-              {progress === 100 ? "Tuyệt vời! Bạn đã sẵn sàng." : "Vui lòng điền đủ các trường bên phải."}
+              {progress === 100
+                ? "Tuyệt vời! Bạn đã sẵn sàng."
+                : "Vui lòng điền đủ các trường bên phải."}
             </p>
           </div>
 
           {/* Cột phải: Form nhập liệu */}
           <div className="lg:col-span-3 p-8">
-            <h2 className="text-xl font-semibold text-slate-800 mb-6">Thông tin cá nhân</h2>
+            <h2 className="text-xl font-semibold text-slate-800 mb-6">
+              Thông tin cá nhân
+            </h2>
 
             {error && (
               <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded border border-red-100">
@@ -128,7 +139,6 @@ const ProfileCompletion = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Họ và tên <span className="text-red-500">*</span>
@@ -177,7 +187,10 @@ const ProfileCompletion = () => {
                 </label>
                 <div className="flex gap-6">
                   {["male", "female", "other"].map((g) => (
-                    <label key={g} className="flex items-center gap-2 cursor-pointer">
+                    <label
+                      key={g}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
                       <input
                         type="radio"
                         name="gender"
@@ -211,17 +224,18 @@ const ProfileCompletion = () => {
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={loading || progress < 100} 
+                  disabled={loading || progress < 100}
                   className={`w-full py-2.5 rounded-lg text-white font-medium text-sm transition duration-300
-                    ${loading || progress < 100 
-                        ? 'bg-slate-400 cursor-not-allowed' 
-                        : 'btn-color shadow-md transform hover:-translate-y-0.5'}
+                    ${
+                      loading || progress < 100
+                        ? "bg-slate-400 cursor-not-allowed"
+                        : "btn-color shadow-md transform hover:-translate-y-0.5"
+                    }
                   `}
                 >
                   {loading ? "Đang xử lý..." : "Lưu & Hoàn tất (100%)"}
                 </button>
               </div>
-
             </form>
           </div>
         </div>

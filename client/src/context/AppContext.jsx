@@ -196,7 +196,7 @@ const loginGoogle = async (credential) => {
   const handleLogout = () => {
     // 1. Gọi setAuthToken(null) để xóa LocalStorage và State
     setAuthToken(null); 
-    
+    window.location.href = "/login";
   };
   
   // XÓA BỎ state `isLoggedIn` gây nhầm lẫn ở đây

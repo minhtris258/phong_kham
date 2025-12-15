@@ -56,9 +56,7 @@ function TestimonialCard({ item }) {
           alt={name}
           className="w-10 h-10 rounded-full object-cover"
         />
-        <span className="font-roboto font-semibold text-slate-800">
-          {name}
-        </span>
+        <span className="font-roboto font-semibold text-slate-800">{name}</span>
       </div>
     </div>
   );

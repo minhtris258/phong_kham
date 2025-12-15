@@ -52,7 +52,7 @@ const Header = ({ toggleSidebar, setView }) => {
           >
             <img
               className="h-8 w-8 rounded-full object-cover"
-              src="https://placehold.co/32x32/indigo/white?text=A"
+              src="https://placehold.co/32x32/sky/white?text=A"
               alt="Avatar"
             />
             <span className="hidden md:block text-sm font-medium text-gray-700">

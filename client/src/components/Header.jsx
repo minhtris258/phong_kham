@@ -7,7 +7,7 @@ import {
   LogOut,
   LayoutDashboard,
   Menu, // Use lucide icon for consistency
-  X,    // Use lucide icon for consistency
+  X, // Use lucide icon for consistency
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext.jsx";
 import { useNotification } from "../context/NotificationContext.jsx";
@@ -19,7 +19,7 @@ export default function Header() {
   const drawerRef = useRef(null);
 
   const [accountOpen, setAccountOpen] = useState(false);
-  
+
   // Use Context directly instead of manual localStorage parsing
   const { user, isAuthenticated, handleLogout } = useAppContext();
   const { unreadCount } = useNotification(); // Get unread count for badge
@@ -28,10 +28,10 @@ export default function Header() {
   const getDashboardPath = () => {
     if (!user?.role) return null;
     switch (user.role) {
-      case 'admin':
-        return '/admin';
-      case 'doctor':
-        return '/doctor/appointments'; // Default doctor landing page
+      case "admin":
+        return "/admin";
+      case "doctor":
+        return "/doctor/appointments"; // Default doctor landing page
       default:
         return null;
     }
@@ -73,7 +73,11 @@ export default function Header() {
     const onKey = (e) => e.key === "Escape" && setOpen(false);
     const onClick = (e) => {
       if (!open) return;
-      if (drawerRef.current && !drawerRef.current.contains(e.target) && e.target.id !== "open-menu")
+      if (
+        drawerRef.current &&
+        !drawerRef.current.contains(e.target) &&
+        e.target.id !== "open-menu"
+      )
         setOpen(false);
     };
     document.addEventListener("keydown", onKey);
@@ -94,14 +98,34 @@ export default function Header() {
       >
         <div className="container mx-auto px-4 flex items-center">
           <ul className="flex gap-3 text-white pl-3 text-sm">
-            <li><a href="#" className="hover:text-cyan-300">FaceBook</a></li>
-            <li><a href="#" className="border-l pl-3 hover:text-cyan-300">Zalo</a></li>
-            <li><a href="#" className="border-l pl-3 hover:text-cyan-300">YouTube</a></li>
-            <li><a href="#" className="border-l pl-3 hover:text-cyan-300">TikTok</a></li>
+            <li>
+              <a href="#" className="hover:text-cyan-300">
+                FaceBook
+              </a>
+            </li>
+            <li>
+              <a href="#" className="border-l pl-3 hover:text-cyan-300">
+                Zalo
+              </a>
+            </li>
+            <li>
+              <a href="#" className="border-l pl-3 hover:text-cyan-300">
+                YouTube
+              </a>
+            </li>
+            <li>
+              <a href="#" className="border-l pl-3 hover:text-cyan-300">
+                TikTok
+              </a>
+            </li>
           </ul>
           <div className="ml-auto flex gap-6 text-white text-sm">
-            <a href="mailto:medpro@example.com" className="hover:text-cyan-300">Email: medpro@example.com</a>
-            <a href="tel:19006868" className="hover:text-cyan-300">Hotline: 1900 6868</a>
+            <a href="mailto:medpro@example.com" className="hover:text-cyan-300">
+              Email: medpro@example.com
+            </a>
+            <a href="tel:19006868" className="hover:text-cyan-300">
+              Hotline: 1900 6868
+            </a>
           </div>
         </div>
       </div>
@@ -114,7 +138,6 @@ export default function Header() {
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-[72px] md:h-[84px]">
-            
             {/* Logo */}
             <Link to="/" className="flex-shrink-0">
               <img
@@ -127,17 +150,45 @@ export default function Header() {
             {/* Nav Desktop */}
             <nav className="hidden md:flex items-center gap-8 ">
               <ul className="flex gap-6 text-black font-raleway font-semibold text-sm lg:text-lg">
-                <li><Link className="hover:text-[#0095D5] transition" to="/">Trang Chủ</Link></li>
-                <li><Link className="hover:text-[#0095D5] transition" to="/post">Bài Viết</Link></li>
-                <li><Link className="hover:text-[#0095D5] transition" to="/services">Dịch Vụ</Link></li>
-                <li><Link className="hover:text-[#0095D5] transition" to="/doctors">Bác Sĩ</Link></li>
-                <li><Link className="hover:text-[#0095D5] transition" to="/about-us">Liên Hệ</Link></li>
+                <li>
+                  <Link className="hover:text-[#0095D5] transition" to="/">
+                    Trang Chủ
+                  </Link>
+                </li>
+                <li>
+                  <Link className="hover:text-[#0095D5] transition" to="/post">
+                    Bài Viết
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className="hover:text-[#0095D5] transition"
+                    to="/services"
+                  >
+                    Dịch Vụ
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className="hover:text-[#0095D5] transition"
+                    to="/doctors"
+                  >
+                    Bác Sĩ
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className="hover:text-[#0095D5] transition"
+                    to="/about-us"
+                  >
+                    Liên Hệ
+                  </Link>
+                </li>
               </ul>
             </nav>
 
             {/* Right Actions */}
             <div className="flex items-center gap-4">
-              
               {isAuthenticated ? (
                 <>
                   {/* Notification Bell */}
@@ -148,7 +199,7 @@ export default function Header() {
                     <Bell size={20} />
                     {unreadCount > 0 && (
                       <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
-                        {unreadCount > 99 ? '99+' : unreadCount}
+                        {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
                   </Link>
@@ -161,24 +212,34 @@ export default function Header() {
                     >
                       <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
                         {user?.avatar ? (
-                           <img src={user.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover"/>
+                          <img
+                            src={user.avatar}
+                            alt="Avatar"
+                            className="w-full h-full rounded-full object-cover"
+                          />
                         ) : (
-                           <CircleUserRound size={30} strokeWidth={1.5} />
+                          <CircleUserRound size={30} strokeWidth={1.5} />
                         )}
                       </div>
-                      <span className="font-medium text-sm max-w-[100px] truncate">{user?.fullName || "User"}</span>
+                      <span className="font-medium text-sm max-w-[100px] truncate">
+                        {user?.fullName || "User"}
+                      </span>
                     </button>
 
                     {/* Dropdown Menu */}
                     {accountOpen && (
                       <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-100 border border-gray-100">
                         <div className="px-4 py-2 border-b border-gray-100">
-                          <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
-                          <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {user?.name}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {user?.email}
+                          </p>
                         </div>
 
                         {/* --- CHỈ HIỆN VỚI BỆNH NHÂN --- */}
-                        {user?.role === 'patient' && (
+                        {user?.role === "patient" && (
                           <Link
                             to="/profile"
                             className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600"
@@ -197,7 +258,9 @@ export default function Header() {
                             onClick={() => setAccountOpen(false)}
                           >
                             <LayoutDashboard size={16} className="mr-2" />
-                            {user.role === 'admin' ? 'Quản trị hệ thống' : 'Kênh bác sĩ'}
+                            {user.role === "admin"
+                              ? "Quản trị hệ thống"
+                              : "Kênh bác sĩ"}
                           </Link>
                         )}
 
@@ -248,7 +311,9 @@ export default function Header() {
         <div className="flex flex-col h-full p-5">
           {/* Drawer Header */}
           <div className="flex items-center justify-between mb-8">
-            <span className="font-bold text-xl tracking-wider text-cyan-400">MENU</span>
+            <span className="font-bold text-xl tracking-wider text-cyan-400">
+              MENU
+            </span>
             <button
               onClick={() => setOpen(false)}
               className="p-2 rounded-full hover:bg-white/10 transition"
@@ -280,29 +345,62 @@ export default function Header() {
 
           {/* Navigation Links */}
           <nav className="flex-1 space-y-1">
-            <MobileNavLink to="/" onClick={() => setOpen(false)}>Trang Chủ</MobileNavLink>
-            <MobileNavLink to="/post" onClick={() => setOpen(false)}>Bài Viết</MobileNavLink>
-            <MobileNavLink to="/doctors" onClick={() => setOpen(false)}>Đặt Lịch Bác Sĩ</MobileNavLink>
-            
+            <MobileNavLink to="/" onClick={() => setOpen(false)}>
+              Trang Chủ
+            </MobileNavLink>
+            <MobileNavLink to="/post" onClick={() => setOpen(false)}>
+              Bài Viết
+            </MobileNavLink>
+            <MobileNavLink to="/doctors" onClick={() => setOpen(false)}>
+              Đặt Lịch Bác Sĩ
+            </MobileNavLink>
+            <MobileNavLink to="/services" onClick={() => setOpen(false)}>
+              Dịch Vụ
+            </MobileNavLink>
+            <MobileNavLink to="/about-us" onClick={() => setOpen(false)}>
+              Liên Hệ
+            </MobileNavLink>
+
             {isAuthenticated && (
               <>
                 <div className="my-4 border-t border-white/10"></div>
-                
+
                 {/* --- CHỈ HIỆN VỚI BỆNH NHÂN --- */}
-                {user?.role === 'patient' && (
-                  <MobileNavLink to="/profile" onClick={() => setOpen(false)} icon={<CircleUserRound size={18}/>}>
+                {user?.role === "patient" && (
+                  <MobileNavLink
+                    to="/profile"
+                    onClick={() => setOpen(false)}
+                    icon={<CircleUserRound size={18} />}
+                  >
                     Hồ sơ cá nhân
                   </MobileNavLink>
                 )}
 
-                <MobileNavLink to="/notifications" onClick={() => setOpen(false)} icon={<Bell size={18}/>}>
-                  Thông báo {unreadCount > 0 && <span className="ml-auto bg-red-500 text-xs px-2 py-0.5 rounded-full">{unreadCount}</span>}
+                <MobileNavLink
+                  to="/notifications"
+                  onClick={() => setOpen(false)}
+                  icon={<Bell size={18} />}
+                >
+                  Thông báo{" "}
+                  {unreadCount > 0 && (
+                    <span className="ml-auto bg-red-500 text-xs px-2 py-0.5 rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
                 </MobileNavLink>
-                
+
                 {/* Admin/Doctor Link Mobile */}
                 {dashboardPath && (
-                  <MobileNavLink to={dashboardPath} onClick={() => setOpen(false)} icon={<LayoutDashboard size={18} className="text-cyan-400"/>}>
-                    <span className="text-cyan-400">{user.role === 'admin' ? 'Quản Trị Viên' : 'Kênh Bác Sĩ'}</span>
+                  <MobileNavLink
+                    to={dashboardPath}
+                    onClick={() => setOpen(false)}
+                    icon={
+                      <LayoutDashboard size={18} className="text-cyan-400" />
+                    }
+                  >
+                    <span className="text-cyan-400">
+                      {user.role === "admin" ? "Quản Trị Viên" : "Kênh Bác Sĩ"}
+                    </span>
                   </MobileNavLink>
                 )}
               </>
@@ -326,7 +424,7 @@ export default function Header() {
 
       {/* Overlay backdrop */}
       {open && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         />

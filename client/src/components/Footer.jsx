@@ -49,8 +49,6 @@ const getSpecialtyLink = (item) => {
   return id ? `/doctors?specialtyId=${id}` : "/doctors";
 };
 
-
-
 export default function Footer() {
   const [services, setServices] = useState([]);
   const [specialties, setSpecialties] = useState([]);

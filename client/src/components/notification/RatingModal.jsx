@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Star, X, Loader2 } from "lucide-react";
 import Modal from "../Modal"; // Modal dùng chung của bạn
 import ratingService from "../../services/RatingService"; // Import service vừa tạo
-import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
+import {
+  toastSuccess,
+  toastError,
+  toastWarning,
+  toastInfo,
+} from "../../utils/toast";
 
 const RatingModal = ({ isOpen, onClose, notification, onSuccess }) => {
   const [rating, setRating] = useState(5); // Mặc định 5 sao
@@ -35,20 +40,23 @@ const RatingModal = ({ isOpen, onClose, notification, onSuccess }) => {
       await ratingService.createRating({
         appointment_id: notification.appointment_id, // Lấy ID lịch hẹn từ thông báo
         star: rating,
-        comment: comment.trim()
+        comment: comment.trim(),
       });
 
       toastSuccess("Cảm ơn bạn đã gửi đánh giá thành công!");
-      
+
       // Callback để component cha (NotificationPage) xóa thông báo hoặc cập nhật UI
       if (onSuccess) {
-        onSuccess(notification._id); 
+        onSuccess(notification._id);
       }
-      
+
       onClose(); // Đóng modal
     } catch (error) {
       // Xử lý lỗi từ Backend trả về
-      const errorMsg = error.response?.data?.error || error.message || "Có lỗi xảy ra, vui lòng thử lại.";
+      const errorMsg =
+        error.response?.data?.error ||
+        error.message ||
+        "Có lỗi xảy ra, vui lòng thử lại.";
       toastError("Gửi đánh giá thất bại: " + errorMsg);
     } finally {
       setLoading(false);
@@ -57,27 +65,39 @@ const RatingModal = ({ isOpen, onClose, notification, onSuccess }) => {
 
   // Helper: Lấy nhãn hiển thị theo số sao
   const getRatingLabel = (star) => {
-    switch(star) {
-      case 5: return "Tuyệt vời!";
-      case 4: return "Rất tốt";
-      case 3: return "Bình thường";
-      case 2: return "Tệ";
-      case 1: return "Rất tệ";
-      default: return "";
+    switch (star) {
+      case 5:
+        return "Tuyệt vời!";
+      case 4:
+        return "Rất tốt";
+      case 3:
+        return "Bình thường";
+      case 2:
+        return "Tệ";
+      case 1:
+        return "Rất tệ";
+      default:
+        return "";
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Đánh giá trải nghiệm khám" maxWidth="sm">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Đánh giá trải nghiệm khám"
+      maxWidth="sm"
+    >
       <form onSubmit={handleSubmit} className="space-y-5">
-        
         <div className="text-center space-y-2">
           <p className="text-gray-600 text-sm">
             Bạn cảm thấy buổi khám với bác sĩ thế nào?
           </p>
           {/* Tên bác sĩ (nếu có trong data thông báo) */}
           {notification.data?.doctorName && (
-             <p className="font-bold text-gray-800 text-lg">{notification.data.doctorName}</p>
+            <p className="font-bold text-gray-800 text-lg">
+              {notification.data.doctorName}
+            </p>
           )}
         </div>
 
@@ -97,8 +117,8 @@ const RatingModal = ({ isOpen, onClose, notification, onSuccess }) => {
                   size={36}
                   // Logic tô màu: Nếu đang hover thì tô theo hover, nếu không thì tô theo rating đã chọn
                   className={`${
-                    star <= (hoverRating || rating) 
-                      ? "fill-yellow-400 text-yellow-400 drop-shadow-sm" 
+                    star <= (hoverRating || rating)
+                      ? "fill-yellow-400 text-yellow-400 drop-shadow-sm"
                       : "text-gray-200"
                   } transition-colors duration-200`}
                 />
@@ -114,7 +134,7 @@ const RatingModal = ({ isOpen, onClose, notification, onSuccess }) => {
         {/* --- KHU VỰC NHẬP BÌNH LUẬN --- */}
         <div>
           <textarea
-            className="w-full p-3 border border-gray-200 bg-gray-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm resize-none transition-all"
+            className="w-full p-3 border border-gray-200 bg-gray-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none text-sm resize-none transition-all"
             rows="3"
             placeholder="Hãy chia sẻ thêm chi tiết (bác sĩ nhiệt tình, khám nhanh...)"
             value={comment}
@@ -132,11 +152,11 @@ const RatingModal = ({ isOpen, onClose, notification, onSuccess }) => {
           >
             Để sau
           </button>
-          
+
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition shadow-md disabled:opacity-70 flex items-center gap-2"
+            className="px-6 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-medium transition shadow-md disabled:opacity-70 flex items-center gap-2"
           >
             {loading ? (
               <>

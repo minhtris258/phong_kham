@@ -1,7 +1,6 @@
 // src/components/Title.jsx
 import React from "react";
 
-
 export default function Title({
   children,
   size = "md",
@@ -12,7 +11,7 @@ export default function Title({
 }) {
   const sizeMap = {
     sm: "text-xl lg:text-3xl",
-    md: "text-2xl lg:text-4xl", 
+    md: "text-2xl lg:text-4xl",
     lg: "text-3xl lg:text-5xl",
   };
 

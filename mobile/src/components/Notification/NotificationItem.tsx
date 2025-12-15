@@ -21,11 +21,13 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ item, onPres
           bg: '#F3E8FF',
         };
       case 'appointment': // Lịch hẹn
-        const isResult = item.title?.toLowerCase().includes("kết quả");
+        const isResult = item.title?.toLowerCase().includes('kết quả');
         return {
-          icon: isResult
-            ? <FontAwesome5 name="file-medical" size={20} color="#4F46E5" /> // Indigo
-            : <Ionicons name="calendar" size={22} color="#00B5F1" />, // Xanh dương
+          icon: isResult ? (
+            <FontAwesome5 name="file-medical" size={20} color="#4F46E5" /> // sky
+          ) : (
+            <Ionicons name="calendar" size={22} color="#00B5F1" />
+          ), // Xanh dương
           bg: isResult ? '#EEF2FF' : '#EFF6FF',
         };
       case 'rating_request': // Đánh giá
@@ -38,7 +40,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ item, onPres
           icon: <Ionicons name="alarm" size={22} color="#EA580C" />, // Cam đậm
           bg: '#FFF7ED',
         };
-      case 'system': 
+      case 'system':
       case 'general':
         return {
           icon: <Ionicons name="notifications" size={22} color="#059669" />, // Xanh lá
@@ -58,15 +60,12 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ item, onPres
     <TouchableOpacity
       style={[
         styles.container,
-        !isRead && styles.unreadContainer // Style riêng cho tin chưa đọc
+        !isRead && styles.unreadContainer, // Style riêng cho tin chưa đọc
       ]}
       onPress={onPress}
-      activeOpacity={0.7}
-    >
+      activeOpacity={0.7}>
       {/* 1. Icon bên trái */}
-      <View style={[styles.iconBox, { backgroundColor: theme.bg }]}>
-        {theme.icon}
-      </View>
+      <View style={[styles.iconBox, { backgroundColor: theme.bg }]}>{theme.icon}</View>
 
       {/* 2. Nội dung chính */}
       <View style={styles.content}>
@@ -110,7 +109,7 @@ const styles = StyleSheet.create({
   },
   unreadContainer: {
     backgroundColor: '#F0F9FF', // Nền xanh rất nhạt để nổi bật
-    borderColor: '#BAE6FD',     // Viền xanh nhạt
+    borderColor: '#BAE6FD', // Viền xanh nhạt
   },
   iconBox: {
     width: 48,
@@ -161,5 +160,5 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#EF4444', // Đỏ
-  }
+  },
 });

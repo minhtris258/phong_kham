@@ -6,7 +6,11 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 
 export default function CalendarPage() {
   const [events, setEvents] = useState([
-    { id: "1", title: "Event Conf.", start: new Date().toISOString().slice(0,10) },
+    {
+      id: "1",
+      title: "Event Conf.",
+      start: new Date().toISOString().slice(0, 10),
+    },
     // thêm sample
   ]);
 
@@ -15,7 +19,9 @@ export default function CalendarPage() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Calendar</h2>
         <div className="flex gap-2">
-          <button className="px-3 py-1 bg-indigo-600 text-white rounded">Add Event +</button>
+          <button className="px-3 py-1 bg-sky-600 text-white rounded">
+            Add Event +
+          </button>
         </div>
       </div>
 

@@ -19,7 +19,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 import doctorSchedulesService from "../../../services/DoctorScheduleService";
-import { toastSuccess, toastError,toastWarning,toastInfo } from "../../../utils/toast";
+import {
+  toastSuccess,
+  toastError,
+  toastWarning,
+  toastInfo,
+} from "../../../utils/toast";
 
 const DoctorScheduleAdminModal = ({
   isOpen,
@@ -50,7 +55,9 @@ const DoctorScheduleAdminModal = ({
       const res = await doctorSchedulesService.getDoctorSchedule(doctorId);
       setScheduleData(res.data.schedule);
     } catch (err) {
-      toastError("Lỗi tải lịch: " + (err.response?.data?.message || err.message));
+      toastError(
+        "Lỗi tải lịch: " + (err.response?.data?.message || err.message)
+      );
       setScheduleData(null);
     } finally {
       setLoading(false);
@@ -176,11 +183,11 @@ const DoctorScheduleAdminModal = ({
                   <div>
                     <h3 className="text-xl font-bold">Lịch làm việc cố định</h3>
                     {scheduleData?.weekly_schedule?.length > 0 ? (
-                      <p className="text-indigo-100 mt-1">
+                      <p className="text-sky-100 mt-1">
                         Slot: <strong>{scheduleData.slot_minutes} phút</strong>
                       </p>
                     ) : (
-                      <p className="text-indigo-100 mt-1 flex items-center gap-2">
+                      <p className="text-sky-100 mt-1 flex items-center gap-2">
                         <AlertCircle className="w-5 h-5" />
                         Chưa thiết lập lịch cố định
                       </p>
@@ -329,11 +336,7 @@ const DoctorScheduleAdminModal = ({
                             ? "ring-2 ring-sky-500 shadow-xl scale-110 z-10 bg-sky-500 text-white"
                             : ""
                         }
-                          ${
-                            isToday && !isSelected
-                              ? "ring-2 ring-sky-400"
-                              : ""
-                          }
+                          ${isToday && !isSelected ? "ring-2 ring-sky-400" : ""}
                           hover:shadow-md hover:scale-105`}
                       >
                         {day}

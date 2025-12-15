@@ -2,7 +2,6 @@
 import React from "react";
 import { MapPin } from "lucide-react";
 
-
 export default function ProfileHeaderCard({
   doctor,
   specialtyName,
@@ -11,9 +10,7 @@ export default function ProfileHeaderCard({
 }) {
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-      <div
-        className="bg-[url('https://cdn.medpro.vn/prod-partner/e351b2c8-5d2f-40f5-94b3-41c68c20bc36-bg_dvyt.webp')] h-48 w-full relative bg-cover bg-center bg-no-repeat"
-      >
+      <div className="bg-[url('https://cdn.medpro.vn/prod-partner/e351b2c8-5d2f-40f5-94b3-41c68c20bc36-bg_dvyt.webp')] h-48 w-full relative bg-cover bg-center bg-no-repeat">
         {/* Avatar Section */}
         <div className="absolute -bottom-16 left-8">
           {avatar ? (

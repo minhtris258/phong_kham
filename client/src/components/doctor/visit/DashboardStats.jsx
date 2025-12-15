@@ -2,15 +2,16 @@ import React from "react";
 import { Calendar, Users, DollarSign } from "lucide-react"; // Import icon
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount || 0);
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(amount || 0);
 };
 
 const StatCard = ({ title, value, icon, color }) => (
   <div className="bg-white rounded-lg shadow p-5 flex items-center border-l-4 border-transparent hover:border-blue-500 transition">
     {/* color class sẽ tô màu cho background (bg-opacity) và cả icon (text-color) */}
-    <div className={`p-3 rounded-full mr-4 ${color} bg-opacity-20`}>
-      {icon}
-    </div>
+    <div className={`p-3 rounded-full mr-4 ${color} bg-opacity-20`}>{icon}</div>
     <div>
       <p className="text-sm text-gray-500 font-medium uppercase">{title}</p>
       <p className="text-2xl font-bold text-gray-800">{value}</p>
