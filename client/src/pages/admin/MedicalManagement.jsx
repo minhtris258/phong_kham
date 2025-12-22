@@ -1,7 +1,7 @@
 // src/pages/admin/MedicineManagement.jsx
 import React, { useState, useEffect } from "react";
 import { Plus, Search } from "lucide-react";
-import medicineService from "../../services/medicineService";
+import medicineService from "../../services/MedicineService";
 import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 
 import MedicineList from "../../components/admin/medicine/MedicineList";
