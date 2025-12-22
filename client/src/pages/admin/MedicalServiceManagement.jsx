@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Search } from "lucide-react";
-import medicalServiceService from "../../services/medicalServiceService";
+import medicalServiceService from "../../services/MedicalServiceService.js";
 import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 
 import ServiceList from "../../components/admin/service/ServiceList";
