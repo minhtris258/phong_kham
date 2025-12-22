@@ -1,4 +1,5 @@
 import React from "react";
+import phone from "../assets/phone.png";
 
 const DownloadAppSection = () => {
   return (
@@ -77,7 +78,7 @@ const DownloadAppSection = () => {
             />
              {/* Hình điện thoại: Scale 100% width của cột giữa */}
             <img
-              src="src/assets/phone.png"
+              src={phone}
               alt="app-preview"
               className="relative z-10 w-full h-auto max-h-[300px] lg:max-h-[500px] object-contain drop-shadow-lg"
             />
