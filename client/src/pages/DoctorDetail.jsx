@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import doctorService from "../services/DoctorService.js";
+import doctorService from "../services/doctorService.js";
 import doctorSchedulesService from "../services/DoctorScheduleService.js";
 import DoctorInfoCard from "../components/patient/DoctorInfoCard.jsx";
 import BookingSection from "../components/patient/BookingSection.jsx";
