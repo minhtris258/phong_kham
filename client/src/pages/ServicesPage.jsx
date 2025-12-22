@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 // import { Link } from "react-router-dom"; // Không dùng Link nếu muốn bật Modal
 import { ChevronLeft, ChevronRight, Filter, ArrowUpDown } from "lucide-react";
-import medicalServiceService from "../services/medicalServiceService";
+import medicalServiceService from "../services/MedicalServiceService";
 import ServicesModal from "../components/ServicesModal";
 
 const ITEMS_PER_PAGE = 6;
