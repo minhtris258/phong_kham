@@ -1,7 +1,7 @@
 // src/pages/doctor/DoctorProfile.jsx
 import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
+import { toastSuccess, toastError } from "../../utils/toast";
 import doctorService from "../../services/DoctorService.js";
 import EditDoctorProfileModal from "../../components/doctor/EditDoctorProfileModal";
 import ProfileHeaderCard from "../../components/doctor/profile/ProfileHeaderCard";
