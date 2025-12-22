@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosClient = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: import.meta.env.VITE_SERVER + "/api", // Sử dụng biến môi trường cho URL cơ sở
   headers: {
     "Content-Type": "application/json",
   },

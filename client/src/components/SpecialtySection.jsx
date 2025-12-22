@@ -1,37 +1,35 @@
 // src/components/SpecialtySection.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+// 1. Giữ nguyên import service
+import specialtyService from "../services/SpecialtyService";
 import { toastError } from "../utils/toast";
-import axios from "axios";
 import { ChevronDown, ChevronUp } from "lucide-react"; 
 import "../index.css";
 
-const API_URL = "http://localhost:3000/api/specialties";
+// Xóa bỏ API_URL và axios vì đã có trong service
 
 const resolveSpecialtyImage = (thumbnail) =>
   thumbnail || "https://via.placeholder.com/110x110.png?text=Specialty";
 
-// =================== 1. CARD CHUYÊN KHOA (GIỮ NGUYÊN 100% GIAO DIỆN CŨ) ===================
+// =================== 1. CARD CHUYÊN KHOA (GIỮ NGUYÊN) ===================
 function SpecialtyCard({ spec }) {
   const { _id, id, name, thumbnail, imageUrl } = spec || {};
-
   const imgSrc = resolveSpecialtyImage(thumbnail || imageUrl);
   const specialtyId = _id || id;
 
-  const linkTo = specialtyId
-    ? `/doctors?specialtyId=${specialtyId}`
-    : "/doctors";
+  const linkTo = specialtyId ? `/doctors?specialtyId=${specialtyId}` : "/doctors";
 
   return (
     <Link to={linkTo} className="col-span-1 block">
-      <div className="w-[110px] h-auto justify-self-center mx-auto">
+      <div className="w-[110px] h-auto justify-self-center mx-auto text-center">
         <img
           src={imgSrc}
           alt={name || "Chuyên khoa"}
           className="w-full h-auto object-cover"
           loading="lazy"
         />
-        <h3 className="font-roboto text-xl color-title text-center mt-2">
+        <h3 className="font-roboto text-xl color-title mt-2">
           {name || "Chuyên khoa"}
         </h3>
       </div>
@@ -45,30 +43,14 @@ export default function SpecialtySection({
   specialties: specialtiesProp,
 }) {
   const [specialties, setSpecialties] = useState(specialtiesProp || []);
-
-  // --- LOGIC MỚI: Tự động set số lượng hiển thị theo màn hình ---
-  // Mặc định là 12, nhưng sẽ tính toán lại khi component mount
   const [visibleCount, setVisibleCount] = useState(12);
 
   useEffect(() => {
     const updateCount = () => {
-      // Nếu màn hình < 768px (Mobile) -> Hiện 6
-      if (window.innerWidth < 768) {
-        setVisibleCount(6);
-      } else {
-        // Tablet/Desktop -> Hiện 12
-        setVisibleCount(12);
-      }
+      setVisibleCount(window.innerWidth < 768 ? 6 : 12);
     };
-
-    // Chạy 1 lần khi mount
     updateCount();
-
-    // (Tuỳ chọn) Lắng nghe resize nếu muốn responsive real-time
-    // window.addEventListener("resize", updateCount);
-    // return () => window.removeEventListener("resize", updateCount);
   }, []);
-  // -------------------------------------------------------------
 
   const shouldFetch = !specialtiesProp;
 
@@ -78,21 +60,23 @@ export default function SpecialtySection({
 
     (async () => {
       try {
-        const res = await axios.get(API_URL, {
-          params: { limit: 100 },
-          headers: { "Content-Type": "application/json" },
-        });
+        // 2. Thay thế axios.get bằng specialtyService
+        const res = await specialtyService.getAllSpecialties({ limit: 100 });
 
+        // Dữ liệu từ axiosClient trả về thường nằm trong res.data
+        const rawData = res.data;
+        
+        // Logic trích xuất mảng linh hoạt
         const list =
-          res.data?.specialties ||
-          res.data?.data ||
-          (Array.isArray(res.data) ? res.data : []);
+          rawData?.specialties ||
+          rawData?.data ||
+          (Array.isArray(rawData) ? rawData : []);
 
         if (!cancelled) {
           setSpecialties(Array.isArray(list) ? list : []);
         }
       } catch (e) {
-        toastError("Fetch specialties failed:", e);
+        toastError("Lỗi khi tải chuyên khoa:", e);
         if (!cancelled) setSpecialties([]);
       }
     })();
@@ -102,15 +86,8 @@ export default function SpecialtySection({
     };
   }, [shouldFetch]);
 
-  // Logic nút bấm: Tăng thêm 6 item mỗi lần bấm (để chia hết cho 2 và 3 cột đều đẹp)
-  const handleShowMore = () => {
-    setVisibleCount((prev) => prev + 6); 
-  };
-
-  const handleCollapse = () => {
-    // Khi thu gọn cũng kiểm tra lại màn hình để về đúng số lượng mặc định
-    setVisibleCount(window.innerWidth < 768 ? 6 : 12);
-  };
+  const handleShowMore = () => setVisibleCount((prev) => prev + 6);
+  const handleCollapse = () => setVisibleCount(window.innerWidth < 768 ? 6 : 12);
 
   const totalItems = specialties.length;
   const isExpandedAll = visibleCount >= totalItems;
@@ -121,11 +98,6 @@ export default function SpecialtySection({
         {title}
       </h2>
 
-      {/* GRID SYSTEM:
-         - Mobile (grid-cols-2): 2 cột để phù hợp kích thước 110px của card.
-         - Desktop (grid-cols-6): 6 cột như cũ.
-         - Gap: Mobile gap-4 (nhỏ hơn chút cho đỡ thưa), Desktop gap-8.
-      */}
       <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-8">
         {specialties.length === 0 ? (
           <p className="text-center col-span-full text-slate-600">
@@ -143,7 +115,6 @@ export default function SpecialtySection({
         )}
       </div>
 
-      {/* Nút Xem thêm */}
       {totalItems > (window.innerWidth < 768 ? 6 : 12) && (
         <div className="mt-8 text-center">
           {!isExpandedAll ? (

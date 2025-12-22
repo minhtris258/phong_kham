@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 const SocketContext = createContext();
 
 // Thay thế bằng URL và Port của server Node.js/Express của bạn
-const SOCKET_SERVER_URL = "http://localhost:3000";
+const SOCKET_SERVER_URL = `${import.meta.env.VITE_SERVER}`;
 
 // Custom Hook để dễ dàng sử dụng Socket trong các component
 export const useSocket = () => {
