@@ -14,7 +14,7 @@ import {
   SortAsc,
   SortDesc,
 } from "lucide-react";
-import doctorService from "../../services/DoctorService.js";
+import doctorService from "../../services/doctorService.js";
 import specialtyService from "../../services/SpecialtyService.js";
 import { toastError } from "../../utils/toast";
 

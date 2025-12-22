@@ -1,6 +1,6 @@
 // src/pages/admin/DoctorManagement.jsx
 import React, { useState, useMemo, useEffect } from "react";
-import doctorService from "../../services/DoctorService.js";
+import doctorService from "../../services/doctorService.js";
 // ... giữ nguyên các imports khác ...
 import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 import DoctorList from "./../../components/admin/doctor/DoctorList";

@@ -19,7 +19,7 @@ import {
   toastWarning,
   toastInfo,
 } from "../../utils/toast";
-import doctorService from "../../services/DoctorService.js";
+import doctorService from "../../services/doctorService.js";
 import Modal from "../Modal";
 
 export default function EditDoctorProfileModal({ doctor, onClose, onSuccess }) {

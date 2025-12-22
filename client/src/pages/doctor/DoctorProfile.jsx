@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { toastSuccess, toastError } from "../../utils/toast";
-import doctorService from "../../services/DoctorService.js";
+import doctorService from "../../services/doctorService.js";
 import EditDoctorProfileModal from "../../components/doctor/EditDoctorProfileModal";
 import ProfileHeaderCard from "../../components/doctor/profile/ProfileHeaderCard";
 import ContactInfo from "../../components/doctor/profile/ContactInfo";

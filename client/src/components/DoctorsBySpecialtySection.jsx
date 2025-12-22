@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Star, MapPin, Banknote, CalendarCheck, Briefcase } from "lucide-react";
-import doctorService from "../services/DoctorService.js";
+import doctorService from "../services/doctorService.js";
 
 // Format tiền
 const formatVND = (value) => {
@@ -130,7 +130,7 @@ export default function DoctorsBySpecialtySection() {
               </p>
             </div>
           </div>
-          
+
           <div className="w-full overflow-x-auto pb-2 scrollbar-hide">
             <div className="flex justify-start md:justify-center gap-2 md:gap-3 min-w-max px-1">
               {loadingSpecialties && (
@@ -213,7 +213,7 @@ export default function DoctorsBySpecialtySection() {
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     </div>
-                    
+
                     {/* Info Header: Mobile căn giữa, Desktop căn trái */}
                     <div className="text-center md:text-left w-full overflow-hidden">
                       <span className="inline-block text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 mb-1">
@@ -265,7 +265,7 @@ export default function DoctorsBySpecialtySection() {
 
                   {/* Button */}
                   <div className="mt-auto w-full py-2 md:py-2.5 rounded-lg md:rounded-xl bg-slate-50 text-slate-600 text-xs md:text-sm font-bold text-center group-hover:bg-sky-500 group-hover:text-white transition-all flex items-center justify-center gap-2 group-hover:shadow-md">
-                    <CalendarCheck size={14} className="md:w-4 md:h-4" /> 
+                    <CalendarCheck size={14} className="md:w-4 md:h-4" />
                     <span className="hidden md:inline">Đặt lịch</span>
                     <span className="md:hidden">Đặt ngay</span>
                   </div>

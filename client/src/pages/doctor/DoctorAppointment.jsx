@@ -13,7 +13,7 @@ import { useSocket } from "../../context/SocketContext";
 
 // Services
 import appointmentsService from "../../services/AppointmentsService.js";
-import doctorService from "../../services/DoctorService.js";
+import doctorService from "../../services/doctorService.js";
 
 // Components
 import AppointmentCalendar from "../../components/doctor/appointment/AppointmentCalendar";

@@ -4,7 +4,7 @@ import { Bell, Lock, HelpCircle, Phone, Mail } from "lucide-react";
 import SettingsCard from "../../components/doctor/settings/SettingsCard";
 import NotificationToggle from "../../components/doctor/settings/NotificationToggle";
 import PasswordModal from "../../components/doctor/settings/PasswordModal";
-import doctorService from "../../services/DoctorService.js";
+import doctorService from "../../services/doctorService.js";
 import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 
 export default function DoctorSettings() {

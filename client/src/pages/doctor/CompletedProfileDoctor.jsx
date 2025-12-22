@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
-import doctorService from "../../services/DoctorService.js"; 
+import doctorService from "../../services/doctorService.js";
 import specialtyService from "../../services/SpecialtyService.js";
 // 1. Import Context
 import { useAppContext } from "../../context/AppContext";

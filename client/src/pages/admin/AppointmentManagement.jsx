@@ -12,7 +12,7 @@ import AppointmentDayModal from "../../components/admin/appointment/AppointmentD
 
 // Services
 import appointmentsService from "../../services/AppointmentsService.js";
-import doctorService from "../../services/DoctorService.js";
+import doctorService from "../../services/doctorService.js";
 import patientService from "../../services/PatientService.js";
 
 const AppointmentManagement = () => {
