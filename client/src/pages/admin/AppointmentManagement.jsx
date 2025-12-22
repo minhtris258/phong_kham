@@ -1,7 +1,7 @@
 // src/pages/admin/AppointmentManagement.jsx
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Calendar, List, Plus, Loader2 } from "lucide-react";
-import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
+import { toastSuccess, toastError } from "../../utils/toast";
 
 // Import components
 import AppointmentCalendar from "../../components/admin/appointment/AppointmentCalendar";
