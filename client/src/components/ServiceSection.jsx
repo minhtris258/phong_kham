@@ -1,7 +1,7 @@
 // src/components/ServiceSection.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import medicalServiceService from "../services/medicalServiceService";
+import medicalServiceService from "../services/MedicalServiceService";
 import ServicesModal from "./ServicesModal";
 
 // --- Dùng chung logic với file modal ---
