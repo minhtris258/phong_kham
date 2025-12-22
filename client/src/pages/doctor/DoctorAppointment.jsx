@@ -12,8 +12,8 @@ import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 import { useSocket } from "../../context/SocketContext";
 
 // Services
-import appointmentsService from "../../services/AppointmentsService";
-import doctorService from "../../services/DoctorService";
+import appointmentsService from "../../services/AppointmentsService.js";
+import doctorService from "../../services/DoctorService.js";
 
 // Components
 import AppointmentCalendar from "../../components/doctor/appointment/AppointmentCalendar";

@@ -9,7 +9,7 @@ import {
   ArrowRight,
   Briefcase,
 } from "lucide-react";
-import doctorService from "../services/DoctorService";
+import doctorService from "../services/DoctorService.js";
 
 // Format tiền tệ
 const formatVND = (value) => {

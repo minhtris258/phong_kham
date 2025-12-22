@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Star, MapPin, Banknote, CalendarCheck, Briefcase } from "lucide-react";
-import doctorService from "../services/DoctorService";
+import doctorService from "../services/DoctorService.js";
 
 // Format tiền
 const formatVND = (value) => {

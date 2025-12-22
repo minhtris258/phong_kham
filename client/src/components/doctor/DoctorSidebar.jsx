@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, Calendar, Settings, LogOut, X, Stethoscope, Home } from 'lucide-react'; 
-import doctorService from '../../services/DoctorService';
+import doctorService from '../../services/DoctorService.js';
 import { toastSuccess,toastError, toastWarning, toastInfo } from "../../utils/toast";
 import { useAppContext } from '../../context/AppContext';
 

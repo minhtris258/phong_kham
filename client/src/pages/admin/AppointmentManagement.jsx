@@ -11,9 +11,9 @@ import AppointmentDeleteModal from "../../components/admin/appointment/Appointme
 import AppointmentDayModal from "../../components/admin/appointment/AppointmentDayModal";
 
 // Services
-import appointmentsService from "../../services/AppointmentsService";
-import doctorService from "../../services/DoctorService";
-import patientService from "../../services/PatientService";
+import appointmentsService from "../../services/AppointmentsService.js";
+import doctorService from "../../services/DoctorService.js";
+import patientService from "../../services/PatientService.js";
 
 const AppointmentManagement = () => {
   // === 1. State Dữ liệu ===
