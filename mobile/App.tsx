@@ -41,6 +41,8 @@ import { SocketProvider, useSocket } from './src/context/SocketContext';
 import { NotificationProvider } from './src/context/NotificationContext';
 
 import './global.css';
+import { SupportCenter } from '@/Screen/SupportCenter';
+import { MedicalRecordsScreen } from '@/Screen/MedicalRecordsScreen';
 
 function AppContent() {
   const { isAuthenticated, isLoading, loadCurrentUser, user } = useAppContext();
@@ -291,6 +293,19 @@ function AppContent() {
                 />
             </MainLayout>
         );
+        case 'MEDICAL_RECORDS':
+  return (
+      <MainLayout showNavbar={false} backgroundColor="#F9FAFB">
+          <MedicalRecordsScreen
+              onBack={() => setCurrentView('PROFILE')}
+              onViewResult={(appointmentId) => {
+                  setSelectedAppointmentId(appointmentId);
+                  setReturnView('MEDICAL_RECORDS'); // Để khi bấm back ở PatientVisitDetail sẽ về lại trang hồ sơ
+                  setCurrentView('VISIT_DETAIL');
+              }}
+          />
+      </MainLayout>
+  );
 
       case 'VISIT_DETAIL':
         return (
@@ -302,15 +317,23 @@ function AppContent() {
             </MainLayout>
         );
 
+      case 'SUPPORT_CENTER': // 👈 Thêm Case mới này
+        return (
+          <MainLayout showNavbar={false} backgroundColor="#F9FAFB">
+            <SupportCenter onBack={() => setCurrentView('PROFILE')} />
+          </MainLayout>
+        );
+
       case 'PROFILE':
         return (
           <MainLayout showNavbar={true}>
             <Profile 
                 onLoginPress={() => { setAuthType('LOGIN'); setShowAuth(true); }}
-               onRegisterPress={() => { 
+                onRegisterPress={() => { 
                     setAuthType('REGISTER'); 
                     setShowAuth(true); 
                 }}
+                // Hàm này sẽ nhận string 'SUPPORT_CENTER' từ Profile.tsx và nhảy vào case trên
                 onNavigate={(screen) => setCurrentView(screen)} 
             />
           </MainLayout>

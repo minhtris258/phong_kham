@@ -155,7 +155,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLoginPress, onRegisterPress,
               <ProfileOption
                 iconName="document-text-outline"
                 title="Hồ sơ y tế"
-                onPress={() => console.log('Medical Record')}
+                onPress={() => onNavigate('MEDICAL_RECORDS')}
                 isLast
               />
             </View>
@@ -163,20 +163,17 @@ export const Profile: React.FC<ProfileProps> = ({ onLoginPress, onRegisterPress,
         )}
 
         {/* Luôn hiện (Kể cả Guest) */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hỗ trợ</Text>
-          <ProfileOption
-            iconName="settings-outline"
-            title="Cài đặt ứng dụng"
-            onPress={() => console.log('Settings')}
-          />
-          <ProfileOption
-            iconName="help-circle-outline"
-            title="Trung tâm trợ giúp"
-            onPress={() => console.log('Help')}
-            isLast
-          />
-        </View>
+       <View style={styles.section}>
+  <Text style={styles.sectionTitle}>Hỗ trợ</Text>
+ 
+  <ProfileOption
+    iconName="help-circle-outline"
+    title="Trung tâm trợ giúp"
+    // THAY ĐỔI: Gọi onNavigate tới màn hình SUPPORT_CENTER
+    onPress={() => onNavigate('SUPPORT_CENTER')} 
+    isLast
+  />
+</View>
 
         {/* Nút Đăng xuất (Chỉ hiện khi đã đăng nhập) */}
         {isAuthenticated && (
