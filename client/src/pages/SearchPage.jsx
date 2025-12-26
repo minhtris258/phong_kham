@@ -3,9 +3,9 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
 // IMPORT CÁC SERVICE CỦA BẠN
-import doctorService from "../services/doctorService";
-import specialtyService from "../services/specialtyService";
-import medicalServiceService from "../services/medicalServiceService";
+import doctorService from "../services/DoctorService";
+import specialtyService from "../services/SpecialtyService";
+import medicalServiceService from "../services/MedicalServiceService";
 import postService from "../services/PostService";
 
 // Hàm format tiền
