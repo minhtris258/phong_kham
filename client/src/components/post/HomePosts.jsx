@@ -197,7 +197,9 @@ const SubCard = ({ post }) => {
           <img
             src={thumbnail}
             alt={name}
-            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover object-center
+               transition-transform duration-500 ease-out
+               group-hover:scale-105"
           />
         </div>
 
