@@ -121,7 +121,9 @@ export const bookAppointment = async (req, res, next) => {
     const notificationBody =
       `Chào ${patientNameForNotif}, đặt lịch thành công!\n` +
       `- Bác sĩ: ${doctorName}\n` +
-      `- Thời gian: ${createdAppt.start} ngày ${formattedDate}`;
+      `- Lý do: ${reason || "Không ghi chú"} `+
+      `- Thời gian: ${createdAppt.start} ngày ${formattedDate}`+
+      `\nVui lòng đến trước 15 phút để làm thủ tục.`;
 
     const newNotification = await Notification.create({
       user_id: notificationUserId,

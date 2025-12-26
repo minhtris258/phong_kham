@@ -189,11 +189,42 @@ const DoctorManagement = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
   const handleFileChange = (e) => {
-    /* Logic cũ */
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Kiểm tra file có phải là ảnh không
+  if (!file.type.startsWith("image/")) {
+    toastError("Vui lòng chọn tệp hình ảnh hợp lệ!");
+    return;
+  }
+
+  const reader = new FileReader();
+  setIsImagePending(true); // Hiển thị trạng thái đang xử lý
+
+  reader.onloadend = () => {
+    // Lưu chuỗi base64 vào trường thumbnail để gửi lên backend
+    setFormData((prev) => ({
+      ...prev,
+      thumbnail: reader.result, 
+    }));
+    setIsImagePending(false);
+    toastSuccess("Đã chọn ảnh mới!");
   };
-  const clearThumbnail = () => {
-    /* Logic cũ */
+
+  reader.onerror = () => {
+    toastError("Lỗi khi đọc file ảnh!");
+    setIsImagePending(false);
   };
+
+  reader.readAsDataURL(file); // Chuyển file thành chuỗi base64
+};
+
+const clearThumbnail = () => {
+  setFormData((prev) => ({
+    ...prev,
+    thumbnail: "", // Xóa ảnh trong formData
+  }));
+};
 
   // 👇 3. VIẾT HÀM MỞ MODAL ĐỔI MẬT KHẨU
   const handleOpenPasswordModal = (doctor) => {

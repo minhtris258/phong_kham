@@ -301,7 +301,8 @@ const tryGenerateResponse = async (
                   user_id: realAccountId,
                   type: "appointment",
                   title: "✅ Đặt Lịch Thành Công",
-                  body: `Chào ${patientProfile.fullName}, đặt lịch thành công!\n- Bác sĩ: ${doctorName}\n- Thời gian: ${args.time} ngày ${formattedDate}`,
+                  body: `Chào ${patientProfile.fullName}, đặt lịch thành công!\n- Bác sĩ: ${doctorName}
+                  \n- Lý do: ${args.reason || "Không ghi chú"}\n- Thời gian: ${args.time} ngày ${formattedDate}\nVui lòng đến trước 15 phút để làm thủ tục.`,
                   data: { doctorName, time: args.time, date: formattedDate },
                   appointment_id: newAppt._id,
                   qr: qrCodeBase64,

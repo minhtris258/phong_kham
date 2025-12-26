@@ -112,12 +112,13 @@ export default function ServicesPage() {
     return <div className="py-20 text-center text-red-500">{error}</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 mt-14 py-10 min-h-screen">
+    <div className="max-w-7xl mx-auto px-4 mt-20 py-10 min-h-screen">
       {/* HEADER */}
       <div className="text-center mb-10">
-        <h1 className="text-3xl lg:text-4xl font-bold text-[#0a2463]">
+        <h2 className="text-3xl font-bold text-[#0a2463] mb-2">
           DỊCH VỤ CHUYÊN SÂU
-        </h1>
+        </h2>
+        <p className=" text-slate-500">Mang đến trải nghiệm chăm sóc y tế chuẩn mực và tận tâm</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -231,7 +232,7 @@ export default function ServicesPage() {
                         </span>
 
                         {/* Nút giả lập (chỉ để đẹp, click vào div cha đã kích hoạt rồi) */}
-                        <button className="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                        <button className="text-sm font-semibold text-sky-600 flex items-center gap-1">
                           Chi tiết <ChevronRight size={16} />
                         </button>
                       </div>

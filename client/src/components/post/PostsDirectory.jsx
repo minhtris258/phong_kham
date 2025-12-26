@@ -122,14 +122,14 @@ export default function PostsDirectory() {
 
   // 4. RENDER
   return (
-    <section className="bg-gray-50 min-h-screen py-12 mt-15">
+    <section className="bg-gray-50 min-h-screen py-12 mt-20">
       <div className="container mx-auto px-4">
         {/* --- Header --- */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl lg:text-4xl font-bold text-[#081839] mb-4">
+          <h2 className="text-3xl font-bold text-[#081839] mb-4">
             Tin Tức & Cẩm Nang
           </h2>
-          <p className="text-slate-600 max-w-2xl mx-auto">
+          <p className="text-slate-500 max-w-2xl mx-auto">
             Cập nhật những thông tin y tế mới nhất, kiến thức sức khỏe bổ ích từ
             đội ngũ chuyên gia.
           </p>
