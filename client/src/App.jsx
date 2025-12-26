@@ -61,7 +61,7 @@ import SearchPage from "./pages/SearchPage.jsx";
 
 // 👇 1. KHAI BÁO CLIENT ID (Lấy từ Google Cloud Console)
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-// Ví dụ: "123456-abcdef.apps.googleusercontent.com"
+
 
 export default function App() {
   return (
@@ -79,7 +79,7 @@ export default function App() {
             </Route>
             <Route path="about-us" element={<AboutUsPage />} />
             <Route path="services" element={<ServicesPage />} />
-            <Route path="/search" element={<SearchPage />} />
+            <Route path="search" element={<SearchPage />} />
 
             {/* --- ONBOARDING ROUTES --- */}
             <Route element={<RequireProfile />}>

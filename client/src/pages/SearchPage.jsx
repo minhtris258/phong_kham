@@ -3,10 +3,10 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
 // IMPORT CÁC SERVICE CỦA BẠN
-import doctorService from "../services/DoctorService";
-import specialtyService from "../services/SpecialtyService";
-import medicalServiceService from "../services/MedicalServiceService";
-import postService from "../services/PostService";
+import doctorService from "../services/doctorService.js";
+import specialtyService from "../services/SpecialtyService.js";
+import medicalServiceService from "../services/MedicalServiceService.js";
+import postService from "../services/PostService.js";
 
 // Hàm format tiền
 const formatVND = (value) => {
