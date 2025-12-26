@@ -113,7 +113,7 @@ export default function ContactHospitalPage() {
             <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 md:p-8">
               {/* Info + Map */}
               <div className="space-y-6 grid grid-cols-2 gap-6 mb-8">
-                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 md:p-7 col-span-2 md:col-span-1">
+                <div className="bg-white rounded-2x  shadow-lg border border-slate-100 p-6 md:p-7 col-span-2 md:col-span-1">
                   <h2 className="text-lg font-bold text-slate-900 mb-4">
                     Thông tin liên hệ
                   </h2>
@@ -156,7 +156,7 @@ export default function ContactHospitalPage() {
                 </div>
 
                 {/* Google Map */}
-                <div className="bg-white rounded-2xl shadow-lg h-56 md:h-auto overflow-hidden col-span-2 md:col-span-1 min-h-[250px]">
+                <div className="bg-white rounded-2xl shadow-lg h-86 overflow-hidden col-span-2 md:col-span-1">
                   <div className="h-full w-full">
                     <iframe
                       title="Bản đồ bệnh viện"
