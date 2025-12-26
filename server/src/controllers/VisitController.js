@@ -8,6 +8,7 @@ import Patient from "../models/PatientModel.js";
 import MedicalService from "../models/MedicalServiceModel.js"; // Import để tra giá dịch vụ
 import { getDoctorIdFromUser } from "../utils/getDoctorIdFromUser.js";
 import sendEmail from "../utils/sendEmail.js";
+import QRCode from "qrcode";
 
 // Helper: Tính tổng tiền (Dùng cho hàm update hoặc tính toán nội bộ)
 function calcTotals(fee, items) {
@@ -28,14 +29,13 @@ function calcTotals(fee, items) {
 /** POST /api/visits
  * Tạo hồ sơ khám bệnh
  */
+
 export const createVisit = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     const io = req.app.get("io");
-    console.log("👉 CREATE VISIT BODY:", req.body);
-
     const {
       appointment_id,
       symptoms,
@@ -47,22 +47,11 @@ export const createVisit = async (req, res, next) => {
       serviceIds = [],
     } = req.body || {};
 
-    // 1. Validate
-    if (!appointment_id || !symptoms) {
-      throw new Error("MISSING_FIELDS");
-    }
-    if (!mongoose.Types.ObjectId.isValid(appointment_id)) {
-      throw new Error("INVALID_APPOINTMENT_ID");
-    }
-
-    // 2. Lấy thông tin bác sĩ
+    // 1. Validate & Lấy thông tin cơ bản
+    if (!appointment_id || !symptoms) throw new Error("MISSING_FIELDS");
     const myDoctorId = await getDoctorIdFromUser(req.user._id);
-    if (!myDoctorId) throw new Error("DOCTOR_NOT_FOUND");
-
-    // 3. Kiểm tra Appointment & Quyền
     const appt = await Appointment.findById(appointment_id).session(session);
-    if (!appt) throw new Error("APPT_NOT_FOUND");
-    if (String(appt.doctor_id) !== String(myDoctorId))
+    if (!appt || String(appt.doctor_id) !== String(myDoctorId))
       throw new Error("FORBIDDEN");
 
     const existed = await Visit.findOne({ appointment_id: appt._id }).session(
@@ -70,56 +59,21 @@ export const createVisit = async (req, res, next) => {
     );
     if (existed) throw new Error("VISIT_EXISTS");
 
-    // 4. Xử lý Dịch vụ
-    let billItems = [];
-    if (Array.isArray(serviceIds) && serviceIds.length > 0) {
-      const validServiceIds = serviceIds.filter((id) =>
-        mongoose.Types.ObjectId.isValid(id)
-      );
-      if (validServiceIds.length > 0) {
-        const services = await MedicalService.find({
-          _id: { $in: validServiceIds },
-        }).session(session);
-        billItems = services.map((svc) => ({
-          service_id: svc._id,
-          name: svc.name,
-          quantity: 1,
-          price: svc.price,
-        }));
-      }
-    }
-
-    // 5. Xử lý Thuốc
-    const formattedPrescriptions = Array.isArray(prescriptions)
-      ? prescriptions.map((p) => ({
-          medicine_id:
-            p.medicine_id && mongoose.Types.ObjectId.isValid(p.medicine_id)
-              ? p.medicine_id
-              : null,
-          drug: p.drug || "Thuốc kê ngoài",
-          dosage: p.dosage || "", // Bác sĩ chọn 1 liều cụ thể (vd: "500mg") từ mảng dosages của thuốc
-          frequency: p.frequency || "",
-          duration: p.duration || "",
-          note: p.note || "",
-          quantity: Number(p.quantity) || 1,
-          unit: p.unit || "Viên",
-        }))
-      : [];
-
-    // 6. Xử lý Tái khám
-    let nextVisitDate = null;
+    // 2. Xử lý Tái khám
     let followupInfo = { scheduled: false };
+    let targetSlot = null;
+    let qrCodeBase64Followup = null;
 
     if (
       next_visit_timeslot_id &&
       mongoose.Types.ObjectId.isValid(next_visit_timeslot_id)
     ) {
-      const targetSlot = await Timeslot.findOne({
+      targetSlot = await Timeslot.findOne({
         _id: next_visit_timeslot_id,
         status: "free",
       }).session(session);
       if (targetSlot) {
-        const newAppt = await Appointment.create(
+        const [newAppt] = await Appointment.create(
           [
             {
               patient_id: appt.patient_id,
@@ -129,24 +83,58 @@ export const createVisit = async (req, res, next) => {
               start: targetSlot.start,
               status: "confirmed",
               reason: `Tái khám: ${diagnosis}`.substring(0, 100),
+              checkinCode: Math.random()
+                .toString(36)
+                .substring(2, 10)
+                .toUpperCase(),
             },
           ],
           { session }
         );
 
         targetSlot.status = "booked";
-        targetSlot.appointment_id = newAppt[0]._id;
+        targetSlot.appointment_id = newAppt._id;
         await targetSlot.save({ session });
 
-        nextVisitDate = targetSlot.date;
-        followupInfo = { scheduled: true, date: targetSlot.date };
+        followupInfo = {
+          scheduled: true,
+          date: targetSlot.date,
+          appointment_id: newAppt._id,
+          start: targetSlot.start,
+          checkinCode: newAppt.checkinCode,
+        };
+
+        const qrData = JSON.stringify({
+          apptId: newAppt._id.toString(),
+          patientId: appt.patient_id.toString(),
+          code: followupInfo.checkinCode,
+          action: "CHECK_IN",
+        });
+        qrCodeBase64Followup = await QRCode.toDataURL(qrData);
       }
     }
 
-    // 7. Tính tiền & Tạo Visit
+    // 3. Tính tiền & Tạo Visit
     const doc = await Doctor.findById(myDoctorId).session(session);
-    const consultationFee = Math.max(Number(doc?.consultation_fee || 0), 0);
+    const consultationFee = Number(doc?.consultation_fee || 0);
+
+    let billItems = [];
+    if (serviceIds?.length > 0) {
+      const services = await MedicalService.find({
+        _id: { $in: serviceIds },
+      }).session(session);
+      billItems = services.map((svc) => ({
+        service_id: svc._id,
+        name: svc.name,
+        quantity: 1,
+        price: svc.price,
+      }));
+    }
     const totalAmount = calcTotals(consultationFee, billItems);
+    const formattedPrescriptions = prescriptions.map((p) => ({
+      ...p,
+      quantity: Number(p.quantity) || 1,
+    }));
 
     const [createdVisit] = await Visit.create(
       [
@@ -161,7 +149,7 @@ export const createVisit = async (req, res, next) => {
           next_visit_timeslot_id: followupInfo.scheduled
             ? next_visit_timeslot_id
             : null,
-          next_visit_date: nextVisitDate,
+          next_visit_date: followupInfo.scheduled ? followupInfo.date : null,
           prescriptions: formattedPrescriptions,
           consultation_fee_snapshot: consultationFee,
           bill_items: billItems,
@@ -171,226 +159,209 @@ export const createVisit = async (req, res, next) => {
       { session }
     );
 
-    // 8. Cập nhật trạng thái lịch hẹn cũ
+    // 4. Hoàn tất lịch cũ
     appt.status = "completed";
     await appt.save({ session });
 
-    // 9. Tạo thông báo (Notification)
-    let notifData = null;
-    let targetUserIdStr = null;
+    // 5. THÔNG BÁO REALTIME (FIXED)
     const patientProfile = await Patient.findById(appt.patient_id).session(
       session
     );
+    if (patientProfile?.user_id) {
+      const targetUserId = patientProfile.user_id.toString();
 
-    if (patientProfile && patientProfile.user_id) {
-      const targetUserId = patientProfile.user_id;
-      targetUserIdStr = targetUserId.toString();
-
-      let visitBody = `Chẩn đoán: ${
-        diagnosis || symptoms
-      }. Tổng chi phí: ${totalAmount.toLocaleString("vi-VN")} đ.`;
-      if (followupInfo.scheduled) visitBody += " Có lịch tái khám mới.";
-
-      const [newNotif] = await Notification.create(
+      // A. Thông báo Kết quả khám
+      const [notifResult] = await Notification.create(
         [
           {
             user_id: targetUserId,
             type: "visit",
             title: "✅ Kết Quả Khám Bệnh",
-            body: visitBody,
+            body: `Bác sĩ ${doc.fullName} đã trả kết quả. Chẩn đoán: ${
+              diagnosis || symptoms
+            }.`,
             appointment_id: appt._id,
             data: { visit_id: createdVisit._id },
-            channels: ["in-app"],
-            status: "unread",
             sent_at: new Date(),
           },
         ],
         { session }
       );
+      if (io)
+        io.to(targetUserId).emit("new_notification", {
+          message: notifResult.title,
+          data: notifResult,
+        });
 
-      notifData = newNotif;
+      // B. Thông báo yêu cầu đánh giá
+      const [notifRating] = await Notification.create(
+        [
+          {
+            user_id: targetUserId,
+            type: "rating_request",
+            title: "⭐ Đánh giá dịch vụ",
+            body: `Hãy dành chút thời gian đánh giá bác sĩ ${doc.fullName} nhé!`,
+            appointment_id: appt._id,
+            sent_at: new Date(),
+          },
+        ],
+        { session }
+      );
+      if (io)
+        io.to(targetUserId).emit("new_notification", {
+          message: notifRating.title,
+          data: notifRating,
+        });
+
+      // C. Thông báo lịch tái khám
+      if (followupInfo.scheduled) {
+        const followupDateStr = new Date(followupInfo.date).toLocaleDateString(
+          "vi-VN"
+        );
+        const [notifFollowup] = await Notification.create(
+          [
+            {
+              user_id: targetUserId,
+              type: "appointment",
+              title: "📅 Lịch Tái Khám Mới",
+              body: `Chào ${patientProfile.fullName}, bạn có lịch tái khám lúc ${followupInfo.start} ngày ${followupDateStr}.`,
+              appointment_id: followupInfo.appointment_id,
+              qr: qrCodeBase64Followup,
+              sent_at: new Date(),
+            },
+          ],
+          { session }
+        );
+        if (io)
+          io.to(targetUserId).emit("new_notification", {
+            message: notifFollowup.title,
+            data: notifFollowup,
+          });
+      }
     }
 
-    // 10. Commit Transaction
     await session.commitTransaction();
 
-    // 11. Gửi Socket
-    if (io && notifData && targetUserIdStr) {
-      io.to(targetUserIdStr).emit("new_notification", {
-        message: notifData.title,
-        data: notifData,
-      });
-    }
-
-    // ============================================================
-    // 12. GỬI EMAIL KẾT QUẢ KHÁM (Code chuẩn)
-    // ============================================================
-    try {
-      if (patientProfile && patientProfile.email) {
-        // HTML Danh sách thuốc (Sửa lỗi thẻ b và căn chỉnh)
+    // 6. GỬI EMAIL TỔNG HỢP (GIỮ NGUYÊN LOGIC CỦA BẠN)
+    if (patientProfile?.email) {
+      try {
         const prescriptionListHtml =
           formattedPrescriptions.length > 0
             ? formattedPrescriptions
                 .map(
-                  (p, index) =>
-                    `<tr>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${
-                          index + 1
-                        }</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">
-                            <b>${p.drug}</b>
-                        </td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${
-                          p.quantity
-                        } ${p.unit}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${
-                          p.dosage || ""
-                        }</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">
-                            ${p.frequency || ""}
-                            ${
-                              p.note
-                                ? `<br><i style="color: #666; font-size: 12px;">(${p.note})</i>`
-                                : ""
-                            }
-                        </td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${
-                          p.duration || ""
-                        }</td>
-                    </tr>`
+                  (p, index) => `
+            <tr>
+              <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${
+                index + 1
+              }</td>
+              <td style="padding: 8px; border: 1px solid #ddd;"><b>${
+                p.drug
+              }</b></td>
+              <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${
+                p.quantity
+              } ${p.unit || "Viên"}</td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${
+                p.dosage || ""
+              }</td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${
+                p.frequency || ""
+              }</td>
+              <td style="padding: 8px; border: 1px solid #ddd;">${
+                p.duration || ""
+              }</td>
+            </tr>`
                 )
                 .join("")
-            : `<tr><td colspan="6" style="padding: 15px; text-align: center; color: #777;"><i>Không có thuốc được kê</i></td></tr>`;
+            : `<tr><td colspan="6" style="padding: 15px; text-align: center; color: #777;"><i>Không có thuốc kê đơn</i></td></tr>`;
 
-        // HTML Danh sách dịch vụ
-        const serviceListHtml =
-          billItems.length > 0
-            ? billItems
-                .map(
-                  (s) =>
-                    `<li>${s.name}: ${s.price.toLocaleString("vi-VN")} đ</li>`
-                )
-                .join("")
-            : "<li>Chỉ khám lâm sàng (Không dùng dịch vụ thêm)</li>";
+        const serviceListHtml = billItems
+          .map(
+            (s) => `<li>${s.name}: ${s.price.toLocaleString("vi-VN")} đ</li>`
+          )
+          .join("");
 
-        // HTML Lịch tái khám
-        const followUpHtml = followupInfo.scheduled
-          ? `<div style="margin-top: 15px; padding: 10px; background-color: #e8f5e9; border-left: 5px solid #28a745; color: #2e7d32;">
-                    <strong>📅 LỊCH TÁI KHÁM:</strong> Ngày ${new Date(
-                      followupInfo.date
-                    ).toLocaleDateString("vi-VN")}
-                   </div>`
-          : "";
+        let followUpSectionHtml = "";
+        let emailAttachments = [];
 
-        // Gửi Email
+        if (followupInfo.scheduled) {
+          const followupDateStr = new Date(
+            followupInfo.date
+          ).toLocaleDateString("vi-VN");
+          emailAttachments.push({
+            filename: "qrcode_followup.png",
+            path: qrCodeBase64Followup,
+            cid: "qr_followup_cid",
+          });
+
+          followUpSectionHtml = `
+            <div style="margin-top: 30px; border: 2px solid #007bff; border-radius: 12px; overflow: hidden; font-family: Arial, sans-serif;">
+              <div style="background-color: #007bff; color: white; padding: 15px; text-align: center;">
+                <h2 style="margin: 0; font-size: 20px;">THÔNG TIN HẸN TÁI KHÁM</h2>
+              </div>
+              <div style="padding: 20px; background-color: #e9f2ff;">
+                <p style="margin: 0 0 10px 0;">Bác sĩ đã chỉ định lịch tái khám cho bạn:</p>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr><td style="width: 100px; color: #666;">Thời gian:</td><td style="font-weight: bold; color: #333;">${followupInfo.start} - ${followupDateStr}</td></tr>
+                  <tr><td style="color: #666;">Bác sĩ:</td><td style="font-weight: bold; color: #333;">${doc.fullName}</td></tr>
+                </table>
+                <div style="text-align: center; margin-top: 20px; padding: 15px; border: 1px dashed #28a745; border-radius: 8px; background-color: #ffffff;">
+                  <p style="font-weight: bold; color: #28a745; margin-bottom: 10px;">MÃ QR CHECK-IN TÁI KHÁM</p>
+                  <img src="cid:qr_followup_cid" alt="QR Code" style="width: 160px; height: 160px; display: inline-block;"/>
+                  <p style="font-size: 12px; color: #666; margin-top: 10px;">(Vui lòng đưa mã này cho lễ tân khi đến tái khám)</p>
+                </div>
+              </div>
+            </div>`;
+        }
+
         await sendEmail({
           email: patientProfile.email,
-          subject: `Kết Quả Khám Bệnh - ${new Date().toLocaleDateString(
-            "vi-VN"
-          )} - PK MedPro`,
-          message: `Xin chào ${patientProfile.fullName}, đây là kết quả khám bệnh của bạn.`,
+          subject: `Kết Quả Khám & Lịch Tái Khám - PK MedPro`,
+          attachments: emailAttachments,
           html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
-                        
-                        <div style="text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 15px; margin-bottom: 20px;">
-                            <h2 style="color: #007bff; margin: 0;">PHIẾU KẾT QUẢ KHÁM BỆNH</h2>
-                            <p style="color: #555; margin: 5px 0;">Phòng Khám MedPro</p>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px;">
-                            <div style="width: 48%;">
-                                <p><b>Bệnh nhân:</b> ${
-                                  patientProfile.fullName
-                                }</p>
-                                <p><b>Ngày khám:</b> ${new Date().toLocaleDateString(
-                                  "vi-VN"
-                                )}</p>
-                            </div>
-                            <div style="width: 48%; text-align: right;">
-                                <p><b>Bác sĩ:</b> ${
-                                  doc?.fullName || "Bác sĩ"
-                                }</p>
-                                <p><b>Chuyên khoa:</b> ${
-                                  doc?.specialty || "Đa khoa"
-                                }</p>
-                            </div>
-                        </div>
-
-                        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #e9ecef;">
-                            <h3 style="margin-top: 0; color: #333; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">I. KẾT QUẢ KHÁM</h3>
-                            <p><b>🔍 Triệu chứng:</b> ${symptoms}</p>
-                            <p><b>🩺 Chẩn đoán:</b> ${diagnosis}</p>
-                            <p><b>💡 Lời dặn:</b> ${advice || "Không có"}</p>
-                            ${followUpHtml}
-                        </div>
-
-                        <div style="margin-bottom: 20px;">
-                            <h3 style="color: #333; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">II. ĐƠN THUỐC</h3>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                                <thead>
-                                    <tr style="background-color: #007bff; color: white;">
-                                        <th style="padding: 8px; border: 1px solid #ddd; width: 5%;">#</th>
-                                        <th style="padding: 8px; border: 1px solid #ddd; width: 25%;">Tên thuốc</th>
-                                        <th style="padding: 8px; border: 1px solid #ddd; width: 10%;">SL</th>
-                                        <th style="padding: 8px; border: 1px solid #ddd; width: 15%;">Liều lượng</th>
-                                        <th style="padding: 8px; border: 1px solid #ddd; width: 30%;">Cách dùng</th>
-                                        <th style="padding: 8px; border: 1px solid #ddd; width: 15%;">Thời gian</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${prescriptionListHtml}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div style="margin-bottom: 20px;">
-                            <h3 style="color: #333; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">III. CHI PHÍ</h3>
-                            <ul style="list-style-type: circle; padding-left: 20px; color: #555;">
-                                <li>Phí khám tư vấn: ${consultationFee.toLocaleString(
-                                  "vi-VN"
-                                )} đ</li>
-                                ${serviceListHtml}
-                            </ul>
-                            <p style="font-size: 18px; text-align: right; margin-top: 10px;">
-                                <b>Tổng cộng: <span style="color: #d9534f; font-size: 20px;">${totalAmount.toLocaleString(
-                                  "vi-VN"
-                                )} đ</span></b>
-                            </p>
-                        </div>
-                        
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                        <p style="text-align: center; font-size: 12px; color: #777;">
-                            Đây là email tự động, vui lòng không trả lời.<br>
-                            Cảm ơn bạn đã tin tưởng dịch vụ của chúng tôi.
-                        </p>
-                    </div>
-                `,
+            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff; padding: 20px;">
+              <h2 style="color: #007bff; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px;">PHIẾU KẾT QUẢ KHÁM BỆNH</h2>
+              <p><b>Bệnh nhân:</b> ${
+                patientProfile.fullName
+              } | <b>Bác sĩ:</b> ${doc.fullName}</p>
+              <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #eee;">
+                <p><b>Triệu chứng:</b> ${symptoms}</p>
+                <p><b>Chẩn đoán:</b> ${diagnosis}</p>
+                <p><b>Lời dặn:</b> ${
+                  advice || "Theo dõi và uống thuốc theo đơn"
+                }</p>
+              </div>
+              <h3 style="color: #333;">ĐƠN THUỐC</h3>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <tr style="background-color: #007bff; color: white;">
+                  <th style="padding: 8px; border: 1px solid #ddd;">#</th>
+                  <th style="padding: 8px; border: 1px solid #ddd;">Tên thuốc</th>
+                  <th style="padding: 8px;">SL</th>
+                  <th style="padding: 8px;">Liều</th>
+                  <th style="padding: 8px;">Cách dùng</th>
+                  <th style="padding: 8px;">TG</th>
+                </tr>
+                ${prescriptionListHtml}
+              </table>
+              <h3 style="color: #333; margin-top: 25px;">CHI PHÍ</h3>
+              <ul><li>Phí khám: ${consultationFee.toLocaleString(
+                "vi-VN"
+              )} đ</li>${serviceListHtml}</ul>
+              <p style="text-align: right; font-size: 18px;"><b>Tổng thanh toán: <span style="color: #d9534f;">${totalAmount.toLocaleString(
+                "vi-VN"
+              )} đ</span></b></p>
+              ${followUpSectionHtml}
+            </div>`,
         });
-        console.log(
-          `✅ Email kết quả khám đã gửi tới: ${patientProfile.email}`
-        );
+      } catch (err) {
+        console.error("❌ Email Error:", err.message);
       }
-    } catch (emailErr) {
-      console.error("❌ Lỗi gửi email Visit:", emailErr.message);
     }
 
-    return res.status(201).json({
-      message: "Tạo hồ sơ khám thành công.",
-      visit: createdVisit,
-      followup: followupInfo,
-    });
+    return res.status(201).json({ message: "Thành công", visit: createdVisit });
   } catch (e) {
     await session.abortTransaction();
     console.error("❌ CREATE VISIT ERROR:", e);
-    if (e.message === "MISSING_FIELDS")
-      return res.status(400).json({ error: "Thiếu thông tin bắt buộc." });
-    if (e.message === "APPT_NOT_FOUND")
-      return res.status(404).json({ error: "Không tìm thấy lịch hẹn." });
-    if (e.message === "FORBIDDEN")
-      return res.status(403).json({ error: "Không có quyền xử lý lịch này." });
-    if (e.message === "VISIT_EXISTS")
-      return res.status(409).json({ error: "Hồ sơ khám đã tồn tại." });
-    return res.status(500).json({ error: "Lỗi Server.", details: e.message });
+    next(e);
   } finally {
     session.endSession();
   }

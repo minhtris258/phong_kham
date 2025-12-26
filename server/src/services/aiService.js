@@ -20,7 +20,7 @@ export const chatSessions = new Map();
 
 // --- CẤU HÌNH MODEL (Failover) ---
 // Ưu tiên Lite trước (index 0), nếu lỗi thì qua Flash thường (index 1)
-const MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+const MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-flash"];
 
 // --- 1. ĐỊNH NGHĨA TOOLS ---
 const tools = [
@@ -29,7 +29,8 @@ const tools = [
       // Tool 1: Tìm bác sĩ
       {
         name: "search_doctors",
-        description: "Tìm kiếm bác sĩ. QUAN TRỌNG: Nếu người dùng tìm theo tên (vd: 'bác sĩ Hùng'), hãy CHỈ lấy tên riêng (vd: 'Hùng') làm keyword, LOẠI BỎ từ 'bác sĩ', 'dr', 'bs'.",
+        description:
+          "Tìm kiếm bác sĩ. QUAN TRỌNG: Nếu người dùng tìm theo tên (vd: 'bác sĩ Hùng'), hãy CHỈ lấy tên riêng (vd: 'Hùng') làm keyword, LOẠI BỎ từ 'bác sĩ', 'dr', 'bs'.",
         parameters: {
           type: "OBJECT",
           properties: { keyword: { type: "STRING" } },
@@ -39,7 +40,8 @@ const tools = [
       // Tool 2: Check lịch ngày cụ thể
       {
         name: "check_availability",
-        description: "Kiểm tra các khung giờ trống của bác sĩ trong một ngày cụ thể.",
+        description:
+          "Kiểm tra các khung giờ trống của bác sĩ trong một ngày cụ thể.",
         parameters: {
           type: "OBJECT",
           properties: {
@@ -52,7 +54,8 @@ const tools = [
       // Tool 3: Tìm ngày gần nhất
       {
         name: "find_next_available",
-        description: "Tìm các ngày có lịch trống GẦN NHẤT. Dùng khi khách hỏi 'khi nào rảnh', 'lịch sớm nhất' mà không nói ngày.",
+        description:
+          "Tìm các ngày có lịch trống GẦN NHẤT. Dùng khi khách hỏi 'khi nào rảnh', 'lịch sớm nhất' mà không nói ngày.",
         parameters: {
           type: "OBJECT",
           properties: { doctorId: { type: "STRING" } },
@@ -62,7 +65,8 @@ const tools = [
       // Tool 4: Đặt lịch
       {
         name: "book_appointment",
-        description: "Thực hiện hành động đặt lịch khám. CHỈ GỌI KHI KHÁCH ĐÃ CHỐT GIỜ.",
+        description:
+          "Thực hiện hành động đặt lịch khám. CHỈ GỌI KHI KHÁCH ĐÃ CHỐT GIỜ.",
         parameters: {
           type: "OBJECT",
           properties: {
@@ -85,17 +89,25 @@ export const handleAIChat = async (userMessage, socketId, userId, io) => {
 };
 
 // --- HÀM RECURSIVE (XỬ LÝ CHÍNH + FAILOVER) ---
-const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io) => {
-  const currentModelName = MODELS[modelIndex]; 
-  
+const tryGenerateResponse = async (
+  modelIndex,
+  userMessage,
+  socketId,
+  userId,
+  io
+) => {
+  const currentModelName = MODELS[modelIndex];
+
   // Nếu đã thử hết danh sách model mà vẫn lỗi -> Báo hệ thống bận
   if (!currentModelName) {
     return "Hệ thống đang bận, tất cả các AI đều quá tải. Vui lòng thử lại sau.";
   }
 
   try {
-    console.log(`🤖 Đang dùng model: ${currentModelName} (Index: ${modelIndex}) cho User ${socketId}`);
-    
+    console.log(
+      `🤖 Đang dùng model: ${currentModelName} (Index: ${modelIndex}) cho User ${socketId}`
+    );
+
     const model = genAI.getGenerativeModel({
       model: currentModelName,
       tools: tools,
@@ -108,7 +120,8 @@ const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io
         history: [
           {
             role: "user",
-            parts: [{
+            parts: [
+              {
                 text: `
                     Bạn là trợ lý ảo của phòng khám. Hôm nay là ngày ${today}.
                     
@@ -123,8 +136,9 @@ const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io
                     - Nhắc khách đăng nhập nếu thiếu userId.
                     - Báo lại kết quả rõ ràng (Ngày, Giờ, Bác sĩ).
                     - Trả lời ngắn gọn, lịch sự.
-                    `
-            }],
+                    `,
+              },
+            ],
           },
           {
             role: "model",
@@ -156,30 +170,48 @@ const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io
           const doctors = await Doctor.find({
             fullName: { $regex: args.keyword, $options: "i" },
             status: "active",
-          }).select("_id fullName specialty").lean();
-          toolResult = doctors.length > 0 ? { status: "success", data: doctors } : { status: "failed", message: "Không tìm thấy." };
-        } catch (err) { toolResult = { error: "Lỗi DB." }; }
+          })
+            .select("_id fullName specialty")
+            .lean();
+          toolResult =
+            doctors.length > 0
+              ? { status: "success", data: doctors }
+              : { status: "failed", message: "Không tìm thấy." };
+        } catch (err) {
+          toolResult = { error: "Lỗi DB." };
+        }
       }
 
       // 2. Check Availability
       else if (functionName === "check_availability") {
-        if (!mongoose.Types.ObjectId.isValid(args.doctorId)) toolResult = { status: "error", message: "ID bác sĩ lỗi." };
-        else toolResult = { available_slots: await getAvailableSlots(args.doctorId, args.date) };
+        if (!mongoose.Types.ObjectId.isValid(args.doctorId))
+          toolResult = { status: "error", message: "ID bác sĩ lỗi." };
+        else
+          toolResult = {
+            available_slots: await getAvailableSlots(args.doctorId, args.date),
+          };
       }
 
       // 3. Find Next Available
       else if (functionName === "find_next_available") {
-        if (!mongoose.Types.ObjectId.isValid(args.doctorId)) toolResult = { status: "error", message: "ID bác sĩ lỗi." };
+        if (!mongoose.Types.ObjectId.isValid(args.doctorId))
+          toolResult = { status: "error", message: "ID bác sĩ lỗi." };
         else {
           const days = await findNextAvailableSlot(args.doctorId);
-          toolResult = days.length > 0 ? { status: "success", data: days } : { status: "empty", message: "Kín lịch 7 ngày tới." };
+          toolResult =
+            days.length > 0
+              ? { status: "success", data: [days[0]] }
+              : { status: "empty", message: "Kín lịch 7 ngày tới." };
         }
       }
 
       // 4. Book Appointment (Logic chính)
       else if (functionName === "book_appointment") {
-         if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-          toolResult = { status: "error", message: "Bạn cần đăng nhập để đặt lịch." };
+        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+          toolResult = {
+            status: "error",
+            message: "Bạn cần đăng nhập để đặt lịch.",
+          };
         } else {
           try {
             // Xác định User và Patient Profile
@@ -188,25 +220,43 @@ const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io
             let realAccountId = userId;
 
             if (userAccount) {
-               patientProfile = await Patient.findOne({ user_id: userId });
+              patientProfile = await Patient.findOne({ user_id: userId });
             } else {
-               patientProfile = await Patient.findById(userId);
-               if (patientProfile) {
-                 realAccountId = patientProfile.user_id;
-                 userAccount = await User.findById(realAccountId);
-               }
+              patientProfile = await Patient.findById(userId);
+              if (patientProfile) {
+                realAccountId = patientProfile.user_id;
+                userAccount = await User.findById(realAccountId);
+              }
             }
 
-            if (!userAccount) toolResult = { status: "error", message: "Không tìm thấy tài khoản." };
-            else if (!patientProfile) toolResult = { status: "error", message: "Vui lòng cập nhật Hồ sơ bệnh nhân." };
+            if (!userAccount)
+              toolResult = {
+                status: "error",
+                message: "Không tìm thấy tài khoản.",
+              };
+            else if (!patientProfile)
+              toolResult = {
+                status: "error",
+                message: "Vui lòng cập nhật Hồ sơ bệnh nhân.",
+              };
             else {
               // Khóa Slot
               const slot = await TimeSlot.findOneAndUpdate(
-                { doctor_id: args.doctorId, date: args.date, start: args.time, status: "free" },
-                { status: "booked" }, { new: true }
+                {
+                  doctor_id: args.doctorId,
+                  date: args.date,
+                  start: args.time,
+                  status: "free",
+                },
+                { status: "booked" },
+                { new: true }
               );
 
-              if (!slot) toolResult = { status: "error", message: "Khung giờ này vừa bị đặt mất rồi." };
+              if (!slot)
+                toolResult = {
+                  status: "error",
+                  message: "Khung giờ này vừa bị đặt mất rồi.",
+                };
               else {
                 // Tạo Appointment
                 const newAppt = await Appointment.create({
@@ -218,20 +268,32 @@ const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io
                   status: "confirmed",
                   paymentStatus: "unpaid",
                   reason: args.reason || "Đặt qua AI",
-                  checkinCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
+                  checkinCode: Math.random()
+                    .toString(36)
+                    .substring(2, 10)
+                    .toUpperCase(),
                 });
 
                 slot.appointment_id = newAppt._id;
                 await slot.save();
 
                 // Chuẩn bị thông tin thông báo
-                const doctorInfo = await Doctor.findById(args.doctorId).select("fullName user_id");
+                const doctorInfo = await Doctor.findById(args.doctorId).select(
+                  "fullName user_id"
+                );
                 const doctorName = doctorInfo ? doctorInfo.fullName : "Bác sĩ";
                 const doctorUserId = doctorInfo ? doctorInfo.user_id : null;
-                const formattedDate = new Date(args.date).toLocaleDateString("vi-VN");
+                const formattedDate = new Date(args.date).toLocaleDateString(
+                  "vi-VN"
+                );
 
                 // Tạo QR Code
-                const qrData = JSON.stringify({ apptId: newAppt._id.toString(), patientId: patientProfile._id.toString(), code: newAppt.checkinCode, action: "CHECK_IN" });
+                const qrData = JSON.stringify({
+                  apptId: newAppt._id.toString(),
+                  patientId: patientProfile._id.toString(),
+                  code: newAppt.checkinCode,
+                  action: "CHECK_IN",
+                });
                 const qrCodeBase64 = await QRCode.toDataURL(qrData);
 
                 // --- A. Thông báo cho Bệnh nhân ---
@@ -250,7 +312,7 @@ const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io
 
                 // --- B. Thông báo cho Bác sĩ ---
                 if (doctorUserId) {
-                   await Notification.create({
+                  await Notification.create({
                     user_id: doctorUserId,
                     type: "appointment",
                     title: "📅 Có Lịch Hẹn Mới",
@@ -264,19 +326,33 @@ const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io
 
                 // --- C. Socket Realtime ---
                 if (io) {
-                  io.to(realAccountId.toString()).emit("new_notification", { message: newNotif.title, data: newNotif });
-                  io.emit("slot_booked", { timeslotId: slot._id, doctorId: args.doctorId, bookedByUserId: realAccountId.toString() });
+                  io.to(realAccountId.toString()).emit("new_notification", {
+                    message: newNotif.title,
+                    data: newNotif,
+                  });
+                  io.emit("slot_booked", {
+                    timeslotId: slot._id,
+                    doctorId: args.doctorId,
+                    bookedByUserId: realAccountId.toString(),
+                  });
                 }
 
                 // --- D. Gửi Email (ĐÃ THÊM PHẦN NÀY) ---
                 try {
-                  const patientEmail = userAccount.email || patientProfile.email;
+                  const patientEmail =
+                    userAccount.email || patientProfile.email;
                   if (patientEmail) {
                     await sendEmail({
                       email: patientEmail,
                       subject: `[MedPro] Xác nhận lịch khám - ${formattedDate}`,
                       message: `Xin chào ${patientProfile.fullName}, bạn đã đặt lịch thành công.`,
-                      attachments: [{ filename: "qrcode.png", path: qrCodeBase64, cid: "unique_qr_code_image" }],
+                      attachments: [
+                        {
+                          filename: "qrcode.png",
+                          path: qrCodeBase64,
+                          cid: "unique_qr_code_image",
+                        },
+                      ],
                       html: `
                         <div style="background-color: #f3f4f6; padding: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
                             <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -286,7 +362,7 @@ const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io
                                 </div>
                                 <div style="padding: 30px;">
                                     <p style="font-size: 16px; color: #333;">Xin chào <strong>${patientProfile.fullName}</strong>,</p>
-                                    <p style="color: #555; line-height: 1.5;">Lịch hẹn của bạn đã được xác nhận:</p>
+                                    <p style="color: #555; line-height: 1.5;">Cảm ơn bạn đã tin tưởng lựa chọn dịch vụ của chúng tôi. Lịch hẹn của bạn đã được xác nhận với thông tin chi tiết dưới đây:</p>
                                     <table style="width: 100%; border-collapse: collapse; margin: 25px 0; background-color: #f8f9fa; border-radius: 8px;">
                                         <tr>
                                             <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #666;">Bác sĩ:</td>
@@ -295,6 +371,10 @@ const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io
                                         <tr>
                                             <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #666;">Thời gian:</td>
                                             <td style="padding: 12px 15px; border-bottom: 1px solid #eee; font-weight: bold; color: #333;">${args.time} - ${formattedDate}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #666;">Lý do khám:</td>
+                                            <td style="padding: 12px 15px; border-bottom: 1px solid #eee; font-weight: bold; color: #333;">${args.reason}</td>
                                         </tr>
                                     </table>
                                     <div style="text-align: center; margin-top: 30px; padding: 20px; border: 2px dashed #007bff; border-radius: 10px; background-color: #f0f7ff;">
@@ -307,46 +387,76 @@ const tryGenerateResponse = async (modelIndex, userMessage, socketId, userId, io
                                 </div>
                             </div>
                         </div>
-                      `
+                      `,
                     });
-                    console.log(`📧 Email xác nhận đã gửi tới: ${patientEmail}`);
+                    console.log(
+                      `📧 Email xác nhận đã gửi tới: ${patientEmail}`
+                    );
                   }
-                } catch(e) { console.error("❌ Email error", e); }
+                } catch (e) {
+                  console.error("❌ Email error", e);
+                }
 
-                toolResult = { status: "success", message: `Đã đặt thành công cho ${patientProfile.fullName}!`, details: { date: args.date, time: args.time, doctor: doctorName } };
+                toolResult = {
+                  status: "success",
+                  message: `Đã đặt thành công cho ${patientProfile.fullName}!`,
+                  details: {
+                    date: args.date,
+                    time: args.time,
+                    doctor: doctorName,
+                  },
+                };
               }
             }
           } catch (err) {
             console.error("Booking Error", err);
-            if (args.doctorId && args.date && args.time) await TimeSlot.updateOne({ doctor_id: args.doctorId, date: args.date, start: args.time }, { status: "free", appointment_id: null });
+            if (args.doctorId && args.date && args.time)
+              await TimeSlot.updateOne(
+                { doctor_id: args.doctorId, date: args.date, start: args.time },
+                { status: "free", appointment_id: null }
+              );
             toolResult = { status: "error", message: "Có lỗi xảy ra." };
           }
         }
       }
 
       console.log("   📤 Gửi kết quả Tool về AI...");
-      result = await chat.sendMessage([{ functionResponse: { name: functionName, response: toolResult } }]);
+      result = await chat.sendMessage([
+        { functionResponse: { name: functionName, response: toolResult } },
+      ]);
       response = result.response;
       call = response.functionCalls();
     }
 
     return response.text();
-
   } catch (error) {
     // === LOGIC FAILOVER (QUAN TRỌNG) ===
     console.error(`❌ Lỗi tại model ${currentModelName}:`, error.message);
 
     // Nếu gặp lỗi quá tải (429) hoặc lỗi Server (503/500) -> Chuyển sang model tiếp theo
-    if (error.status === 429 || error.status === 503 || error.message?.includes('429') || error.message?.includes('503')) {
-      console.log(`⚠️ Model ${currentModelName} quá tải. Đang chuyển sang model dự phòng...`);
-      
+    if (
+      error.status === 429 ||
+      error.status === 503 ||
+      error.message?.includes("429") ||
+      error.message?.includes("503")
+    ) {
+      console.log(
+        `⚠️ Model ${currentModelName} quá tải. Đang chuyển sang model dự phòng...`
+      );
+
       // Xóa session lỗi để tạo mới
-      chatSessions.delete(socketId); 
-      
+      chatSessions.delete(socketId);
+
       // ĐỆ QUY: Gọi lại hàm này với index tiếp theo (Flash)
-      return await tryGenerateResponse(modelIndex + 1, userMessage, socketId, userId, io);
+      return await tryGenerateResponse(
+        modelIndex + 1,
+        userMessage,
+        socketId,
+        userId,
+        io
+      );
     }
-    
+
     chatSessions.delete(socketId);
     return "Hệ thống đang bận, vui lòng thử lại sau.";
   }
