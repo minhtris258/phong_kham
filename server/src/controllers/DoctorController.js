@@ -645,7 +645,7 @@ export const getAllDoctors = async (req, res, next) => {
         try {
             const token = req.headers.authorization.split(" ")[1];
             if (token) {
-                const secret = process.env.JWT_SECRET || "fallback_secret";
+                const secret = process.env.JWT_SECRET;
                 const decoded = jwt.verify(token, secret);
                 role = decoded.role || decoded.role?.name;
             }
@@ -669,10 +669,17 @@ export const getAllDoctors = async (req, res, next) => {
 
     // Tìm kiếm (Search)
     if (search) {
+      const matchingSpecialties = await Specialty.find({
+    name: { $regex: search, $options: "i" }
+  }).select("_id");
+  
+  const specialtyIds = matchingSpecialties.map(s => s._id);
+  
       query.$or = [
         { fullName: { $regex: search, $options: "i" } },
         { phone: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } }
+        { email: { $regex: search, $options: "i" } },
+        { specialty_id: { $in: specialtyIds } }
       ];
     }
 

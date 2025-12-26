@@ -240,8 +240,8 @@ export default function DoctorsBySpecialtySection() {
                       />
                       <span className="text-[11px] md:text-xs text-center md:text-left">
                         {experienceYears !== "—"
-                          ? `${experienceYears} năm KN`
-                          : "Chưa cập nhật KN"}
+                          ? `${experienceYears} năm Kinh Nghiệm`
+                          : "Chưa cập nhật Kinh Nghiệm"}
                       </span>
                     </div>
 

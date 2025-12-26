@@ -175,8 +175,8 @@ export default function DoctorsFavorite({ title = "Bác Sĩ Nổi Bật Tuần N
                       />
                       <span className="text-[11px] md:text-xs">
                         {experienceYears !== "—"
-                          ? `${experienceYears} năm KN`
-                          : "Chưa cập nhật KN"}
+                          ? `${experienceYears} năm Kinh Nghiệm`
+                          : "Chưa cập nhật Kinh Nghiệm"}
                       </span>
                     </div>
 

@@ -17,16 +17,18 @@ export const Search: React.FC<SearchProps> = ({ onBack, onSelectDoctor }) => {
 
   // Lấy danh sách chuyên khoa để gợi ý khi chưa nhập gì
   useEffect(() => {
-    const fetchSpecialties = async () => {
-      try {
-        const res = await specialtyService.getAllSpecialties({ limit: 10 });
-        setSpecialties(res.data?.data || []);
-      } catch (err) {
-        console.log("Lỗi tải chuyên khoa:", err);
-      }
-    };
-    fetchSpecialties();
-  }, []);
+  const fetchSpecialties = async () => {
+    try {
+      const res = await specialtyService.getAllSpecialties({ limit: 10 });
+      // SỬA TẠI ĐÂY: Dùng res.data.specialties theo đúng Backend trả về
+      const list = res.data?.specialties || [];
+      setSpecialties(list);
+    } catch (err) {
+      console.log("Lỗi tải chuyên khoa:", err);
+    }
+  };
+  fetchSpecialties();
+}, []);
 
   const handleSearch = async (text: string) => {
     setKeyword(text);
@@ -35,18 +37,26 @@ export const Search: React.FC<SearchProps> = ({ onBack, onSelectDoctor }) => {
       return;
     }
 
-    setLoading(true);
-    try {
-      // Gọi API tìm kiếm bác sĩ
-      const res = await doctorService.getAllDoctors({ search: text, limit: 10 });
-      setResults(res.data?.data || []);
-    } catch (err) {
-      console.log("Lỗi tìm kiếm:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+   setLoading(true);
+  try {
+    // 1. Đảm bảo params khớp với Backend
+    const res = await doctorService.getAllDoctors({ search: text, page: 1, limit: 10 });
+    
+    // 2. SỬA TẠI ĐÂY: Backend trả về { doctors: [...] } chứ không phải { data: [...] }
+    const doctorsList = res.data?.doctors || [];
+    setResults(doctorsList);
+    
+  } catch (err) {
+    console.log("Lỗi tìm kiếm:", err);
+    setResults([]);
+  } finally {
+    setLoading(false);
+  }
+};
+const handleSelectSpecialty = (specialtyName: string) => {
+  setKeyword(specialtyName); // Điền tên khoa vào ô nhập liệu
+  handleSearch(specialtyName); // Gọi hàm tìm kiếm ngay lập tức với tên khoa đó
+};
   return (
     <View style={styles.container}>
       {/* Search Header */}
@@ -73,32 +83,41 @@ export const Search: React.FC<SearchProps> = ({ onBack, onSelectDoctor }) => {
           data={results}
           keyExtractor={(item) => item._id}
           contentContainerStyle={{ padding: 16 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.doctorItem} onPress={() => onSelectDoctor(item)}>
-              <Image source={{ uri: item.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.doctorName}>{item.fullName}</Text>
-                <Text style={styles.specialtyName}>{item.specialty?.name}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={
-            keyword.length < 2 ? (
-              <View>
-                <Text style={styles.sectionTitle}>Chuyên khoa gợi ý</Text>
-                <View style={styles.specialtyGrid}>
-                  {specialties.map((s) => (
-                    <TouchableOpacity key={s._id} style={styles.tag}>
-                      <Text style={styles.tagText}>{s.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            ) : (
-              <Text style={styles.emptyText}>Không tìm thấy bác sĩ nào</Text>
-            )
-          }
+         renderItem={({ item }) => (
+  <TouchableOpacity style={styles.doctorItem} onPress={() => onSelectDoctor(item)}>
+    <Image 
+      source={{ uri: item.thumbnail || 'https://via.placeholder.com/150' }} // Backend dùng thumbnail
+      style={styles.avatar} 
+    />
+    <View style={{ flex: 1 }}>
+      <Text style={styles.doctorName}>{item.fullName}</Text>
+      {/* SỬA TẠI ĐÂY: Dùng specialty_id thay vì specialty */}
+      <Text style={styles.specialtyName}>{item.specialty_id?.name || "Đa khoa"}</Text>
+    </View>
+    <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+  </TouchableOpacity>
+)}
+         ListEmptyComponent={
+  keyword.length < 2 ? (
+    <View>
+      <Text style={styles.sectionTitle}>Chuyên khoa gợi ý</Text>
+      <View style={styles.specialtyGrid}>
+        {specialties.map((s) => (
+          <TouchableOpacity 
+            key={s._id} 
+            style={styles.tag}
+            // 2. GẮN SỰ KIỆN NHẤN TẠI ĐÂY
+            onPress={() => handleSelectSpecialty(s.name)}
+          >
+            <Text style={styles.tagText}>{s.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  ) : (
+    <Text style={styles.emptyText}>Không tìm thấy bác sĩ nào</Text>
+  )
+}
         />
       )}
     </View>

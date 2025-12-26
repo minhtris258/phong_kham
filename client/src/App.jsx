@@ -57,7 +57,6 @@ import AboutUsPage from "./pages/ContactHospitalPage.jsx";
 import ServicesPage from "./pages/ServicesPage.jsx";
 import ContactManagement from "./pages/admin/ContactManagement.jsx";
 import RejectAuth from "./components/RejectAuth.jsx";
-import SearchPage from "./pages/SearchPage.jsx";
 
 // 👇 1. KHAI BÁO CLIENT ID (Lấy từ Google Cloud Console)
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -79,7 +78,6 @@ export default function App() {
             </Route>
             <Route path="about-us" element={<AboutUsPage />} />
             <Route path="services" element={<ServicesPage />} />
-            <Route path="search" element={<SearchPage />} />
 
             {/* --- ONBOARDING ROUTES --- */}
             <Route element={<RequireProfile />}>
