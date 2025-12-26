@@ -1,6 +1,7 @@
 // src/components/ServiceSection.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowRight, Clock } from "lucide-react";
 import medicalServiceService from "../services/MedicalServiceService";
 import ServicesModal from "./ServicesModal";
 
@@ -89,58 +90,56 @@ export default function ServiceSection() {
       {/* GRID GIỐNG ẢNH: 1 ô to bên trái + 4 ô bên phải */}
       <div className="grid gap-6 lg:grid-cols-4 auto-rows-[1fr]">
         {/* Ô to bên trái (dịch vụ nổi bật) */}
-        {featured && (
-          <button
-            type="button"
-            onClick={() => openModal(featured)}
-            className="lg:col-span-2 lg:row-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden text-left flex flex-col"
-          >
-            <div className="relative">
-              <div className="w-full h-56 md:h-72 overflow-hidden">
-                <img
-                  src={resolveServiceImage(featured)}
-                  alt={featured.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+       {featured && (
+  <button
+    type="button"
+    onClick={() => openModal(featured)}
+    className="lg:col-span-2 lg:row-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden text-left flex flex-col"
+  >
+    <div className="relative">
+      <div className="w-full h-56 md:h-90 overflow-hidden">
+        <img
+          src={resolveServiceImage(featured)}
+          alt={featured.name}
+          className="w-full h-full object-cover"
+        />
+      </div>
 
-              <span className="absolute top-4 left-4 inline-flex items-center rounded-md bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow">
-                NỔI BẬT
-              </span>
-            </div>
+      <span className="absolute top-4 left-4 inline-flex items-center rounded-md bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow">
+        NỔI BẬT
+      </span>
+    </div>
 
-            <div className="flex-1 p-5 md:p-6 flex flex-col">
-              {/* Có thể hiện ngày tạo nếu API có */}
-              {featured.createdAt && (
-                <p className="text-xs md:text-sm text-slate-500 mb-2 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-slate-300 text-[10px]">
-                    ⏱
-                  </span>
-                  {new Date(featured.createdAt).toLocaleDateString("vi-VN")}
-                </p>
-              )}
+    {/* THAY ĐỔI Ở ĐÂY: Thêm items-center và text-center để canh giữa */}
+    <div className="flex-1 p-5 md:p-8 flex flex-col">
+      {featured.createdAt && (
+        <p className="text-xs md:text-sm text-slate-500 mb-3 flex items-center gap-2">
+          <Clock size={12} />
+          {new Date(featured.createdAt).toLocaleDateString("vi-VN")}
+        </p>
+      )}
 
-              <h3 className="text-xl md:text-3xl font-bold color-title mb-2 line-clamp-2">
-                {featured.name}
-              </h3>
+      <h3 className="text-2xl md:text-4xl font-bold color-title mb-4 line-clamp-2">
+        {featured.name}
+      </h3>
 
-              <p className="text-base text-slate-600 mb-3 line-clamp-8">
-                {featured.shortDescription ||
-                  featured.description ||
-                  "Dịch vụ y tế chất lượng cao dành cho mọi người."}
-              </p>
+      <p className="text-base text-slate-600 mb-4 line-clamp-3 max-w-prose">
+        {featured.shortDescription ||
+          featured.description ||
+          "Dịch vụ y tế chất lượng cao dành cho mọi người."}
+      </p>
 
-              <p className="text-base md:text-2xl font-semibold color-title">
-                Giá từ: {formatPrice(featured.price || featured.fee)}
-              </p>
+      <p className="text-xl md:text-2xl font-semibold color-title">
+        Giá từ: {formatPrice(featured.price || featured.fee)}
+      </p>
 
-              <span className="mt-4 inline-flex items-center gap-1 text-base font-medium text-[#00B5F1]">
-                Xem chi tiết
-                <span aria-hidden="true">→</span>
-              </span>
-            </div>
-          </button>
-        )}
+      <span className="mt-6 inline-flex items-center gap-2 text-lg font-medium text-[#00B5F1] hover:gap-3 transition-all">
+        Xem chi tiết
+        <span aria-hidden="true">→</span>
+      </span>
+    </div>
+  </button>
+)}
 
         {/* 4 ô nhỏ bên phải */}
         {others.map((sv) => (

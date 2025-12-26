@@ -27,7 +27,7 @@ export default function ServicesModal({ isOpen, onClose, service }) {
     >
       <div className="flex flex-col gap-4">
         {/* ẢNH FULL TRÊN CÙNG */}
-        <div className="w-full h-60 md:h-72 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+        <div className="w-full h-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
           <img
             src={resolveServiceImage(service)}
             alt={service.name}

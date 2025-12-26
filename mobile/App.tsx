@@ -173,6 +173,7 @@ function AppContent() {
           <MainLayout showNavbar={true}>
             <HomeScreen 
               onNotificationIconPress={() => setCurrentView('NOTIFICATIONS')}
+              onSearchIconPress={() => setCurrentView('SEARCH')}
               onDoctorSelect={(doctor) => {
                   setSelectedDoctor(doctor);
                   setCurrentView('DOCTOR_DETAIL');
@@ -404,6 +405,18 @@ function AppContent() {
                 />
             </MainLayout>
         );
+       case 'SEARCH': // 👈 Thêm Case mới cho Tìm kiếm
+      return (
+        <MainLayout showNavbar={false} backgroundColor="#FFF">
+          <Search
+            onBack={() => setCurrentView('HOME')}
+            onSelectDoctor={(doctor) => {
+              setSelectedDoctor(doctor);
+              setCurrentView('DOCTOR_DETAIL');
+            }}
+          />
+        </MainLayout>
+  );
       
       default:
         return (

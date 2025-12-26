@@ -9,6 +9,7 @@ import { HomePosts } from '../components/HomePosts';
 
 interface HomeScreenProps {
   onNotificationIconPress: () => void;
+  onSearchIconPress: () => void;
   onDoctorSelect?: (doctor: any) => void;
   onPostSelect?: (slug: string) => void;
   onSelectSpecialty?: (id: string) => void;
@@ -18,6 +19,7 @@ interface HomeScreenProps {
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNotificationIconPress,
+  onSearchIconPress,
   onDoctorSelect,
   onPostSelect,
   onSelectSpecialty,
@@ -29,7 +31,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <HomeHeader
-        onSearchPress={() => {}} // Hoặc xử lý search
+      
+       onSearchPress={onSearchIconPress}
         onNotificationPress={onNotificationIconPress}
       />
 
